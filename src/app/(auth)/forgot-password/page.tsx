@@ -20,17 +20,23 @@ export default function ForgotPasswordPage() {
     setIsSubmitting(true);
 
     try {
-      await fetch('/api/auth/forgot-password', {
+      const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
 
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to send reset email');
+      }
+
       // Always show success message
       toast.success('If an account exists with this email, you will receive a reset link shortly.');
       setEmail('');
     } catch (error) {
-      toast.error('Something went wrong. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
