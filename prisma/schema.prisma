@@ -32,25 +32,26 @@ model Organization {
 }
 
 model User {
-  id                 String              @id @default(uuid())
-  email              String              @unique
-  passwordHash       String              @map("password_hash")
-  emailVerified      Boolean             @default(false) @map("email_verified")
-  firstName          String?             @map("first_name")
-  lastName           String?             @map("last_name")
-  phone              String?
-  avatarUrl          String?             @map("avatar_url")
-  status             UserStatus          @default(ACTIVE)
-  lastLoginAt        DateTime?           @map("last_login_at")
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
-  sentInvites        Invite[]            @relation("UserInvites")
-  leases             Lease[]
-  listings           Listing[]
-  tenantApplications Tenantapplication[]
-  organizationUsers  OrganizationUser[]
-  vendors            Vendor[]
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  passwordHash        String               @map("password_hash")
+  firstName           String?              @map("first_name")
+  lastName            String?              @map("last_name")
+  phone               String?
+  avatarUrl           String?              @map("avatar_url")
+  status              UserStatus           @default(ACTIVE)
+  lastLoginAt         DateTime?            @map("last_login_at")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  emailVerified       DateTime?            @map("email_verified")
+  verificationToken   String?              @unique
+  sentInvites         Invite[]             @relation("UserInvites")
+  leases              Lease[]
+  listings            Listing[]
   passwordResetTokens PasswordResetToken[]
+  tenantApplications  Tenantapplication[]
+  organizationUsers   OrganizationUser[]
+  vendors             Vendor[]
 
   @@map("users")
 }
@@ -918,6 +919,17 @@ model RentEscalation {
   @@index([leaseId], map: "idx_rentEscalation_leaseId")
 }
 
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 enum UserRole {
   SYSTEM_ADMIN
   PROPERTY_MANAGER
@@ -1087,18 +1099,4 @@ enum LeaseNotification_notificationType {
   CUSTOM
   AMENDMENT_PROPOSED
   AMENDMENT_EXECUTED
-}
-
-
-model PasswordResetToken {
-  id        String   @id @default(uuid())
-  token     String   @unique // Hashed token
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  
-  // Relation to User
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
 }
