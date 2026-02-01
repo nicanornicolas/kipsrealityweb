@@ -1,11 +1,13 @@
 // src/components/website/PropertyManager/RegisterPropertyForm.tsx
 'use client'
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { postProperty, PropertyPayload } from "@/lib/property-manager";
-import toast, { Toaster } from "react-hot-toast";
 import { usePropertyForm } from "@/hooks/usePropertyForm";
 import { useGeocoding } from "@/hooks/useGeocoding";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { LocationForm } from "@/components/website/PropertyManager/sub-propertyFroms/LocationForm";
 import { HouseDetailForm } from "@/components/website/PropertyManager/sub-propertyFroms/HouseDetailForm";
 import { ApartmentDetailForm } from "@/components/website/PropertyManager/sub-propertyFroms/ApartmentDetailForm";
@@ -13,6 +15,7 @@ import { CondoDetailForm } from "@/components/website/PropertyManager/sub-proper
 import { LandDetailForm } from "@/components/website/PropertyManager/sub-propertyFroms/landDetailForm";
 import { TownhouseDetailForm } from "@/components/website/PropertyManager/sub-propertyFroms/TownhouseDetailForm";
 import { ContactDetailsForm } from "@/components/website/PropertyManager/sub-propertyFroms/ContactDetailsForm";
+import PropertyCreationSuccessModal from "./PropertyCreationSuccessModal";
 import { Property } from "@/app/data/PropertyData";
 
 interface PropertyFormProps {
@@ -20,12 +23,16 @@ interface PropertyFormProps {
 }
 
 export default function PropertyForm({ onSuccess }: PropertyFormProps) {
+  const router = useRouter();
   const { user } = useAuth();
   const { form, propertyTypes, appliances } = usePropertyForm();
   const { register, handleSubmit, watch, reset, setValue } = form;
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
+  const [successfulImageCount, setSuccessfulImageCount] = useState(0);
 
   const selectedPropertyTypeId = watch("propertyTypeId");
   const selectedPropertyTypeName = propertyTypes.find(
@@ -49,12 +56,16 @@ export default function PropertyForm({ onSuccess }: PropertyFormProps) {
 
   const onSubmit = async (data: Property) => {
     if (!user) {
-      toast.error("You must be logged in to create a property.");
+      toast.error("Unauthorized", {
+        description: "You must be logged in to create a property."
+      });
       return;
     }
 
-    if (!data.latitude || !data.longitude) {
-      toast.error("Set the property location on the map first.");
+    if (!mapCoordinates) {
+      toast.error("Location Missing", {
+        description: "Please pin the property location on the map before submitting."
+      });
       return;
     }
 
@@ -89,8 +100,8 @@ export default function PropertyForm({ onSuccess }: PropertyFormProps) {
         selectedPropertyTypeName === "apartment"
           ? data.apartmentComplexDetail
           : selectedPropertyTypeName === "house"
-          ? data.houseDetail
-          : undefined,
+            ? data.houseDetail
+            : undefined,
       applianceIds: data.applianceIds || [],
     };
 
@@ -102,12 +113,15 @@ export default function PropertyForm({ onSuccess }: PropertyFormProps) {
 
       console.log("Property created with ID:", propertyId);
       toast.success("Property created successfully!");
+      setCreatedPropertyId(propertyId);
 
+      let imageCount = 0;
+      
       // Upload images if any
       if (data.images && data.images.length > 0) {
         setUploadingImages(true);
         setUploadProgress(`Uploading ${data.images.length} images to Cloudinary...`);
-        
+
         const formData = new FormData();
         formData.append("propertyId", propertyId);
 
@@ -129,8 +143,11 @@ export default function PropertyForm({ onSuccess }: PropertyFormProps) {
         const uploadResult = await imageUploadRes.json();
         console.log("Images uploaded and saved:", uploadResult);
         
+        imageCount = uploadResult.images.length;
+        setSuccessfulImageCount(imageCount);
+
         toast.success(
-          `All done! ${uploadResult.images.length} images uploaded to Cloudinary and saved to database.`
+          `All done! ${imageCount} images uploaded to Cloudinary and saved to database.`
         );
         setUploadingImages(false);
       }
@@ -141,12 +158,16 @@ export default function PropertyForm({ onSuccess }: PropertyFormProps) {
       setShowMap(false);
       setUploadProgress("");
 
+      // Show success modal
+      setShowSuccessModal(true);
+
       if (onSuccess) {
         onSuccess();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating property:", error);
-      toast.error(error.message || "Failed to create property.");
+      const errorMessage = error instanceof Error ? error.message : "Failed to create property.";
+      toast.error(errorMessage);
       setUploadProgress("");
     } finally {
       setLoading(false);
@@ -154,9 +175,35 @@ export default function PropertyForm({ onSuccess }: PropertyFormProps) {
     }
   };
 
+  // Navigation handlers
+  const handleViewPropertyAnalytics = (propertyId: string) => {
+    // Use property detail page (simpler route that exists)
+    router.push(`/property-manager`);
+    setShowSuccessModal(false);
+    // TODO: In future, use property detail page when Next.js type issues are resolved
+    // router.push(`/property-manager/view-own-property/${propertyId}`);
+  };
+
+  const handleReturnToDashboard = () => {
+    router.push('/property-manager');
+    setShowSuccessModal(false);
+  };
+
+  const handleAddAnotherProperty = () => {
+    // Modal will close, form is already reset
+    setShowSuccessModal(false);
+    // Optional: Scroll to top of form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCloseModal = () => {
+    setShowSuccessModal(false);
+    // Default action: return to dashboard if user closes modal
+    router.push('/property-manager');
+  };
+
   return (
-    <div className="bg-white">
-      <Toaster position="top-center" reverseOrder={false} />
+    <div className="bg-gradient-to-b from-gray-50 to-gray-200">
 
       <main className="max-w-4xl mx-auto px-6 sm:px-8 py-8">
         <div className="bg-white">
@@ -206,12 +253,12 @@ export default function PropertyForm({ onSuccess }: PropertyFormProps) {
                 </div>
                 <h2 className="text-lg font-bold text-gray-500">Additional Options</h2>
               </div>
-              
+
               <label className="flex items-center gap-3 p-3 rounded-lg cursor-pointer group">
-                <input 
-                  type="checkbox" 
-                  {...register("isFurnished")} 
-                  className="h-5 w-5 accent-blue-200 rounded cursor-pointer" 
+                <input
+                  type="checkbox"
+                  {...register("isFurnished")}
+                  className="h-5 w-5 accent-blue-200 rounded cursor-pointer"
                 />
                 <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
                   Property is Furnished
@@ -237,30 +284,35 @@ export default function PropertyForm({ onSuccess }: PropertyFormProps) {
 
             <button
               type="submit"
-              disabled={loading || uploadingImages || !mapCoordinates}
-              className={`w-full px-2 py-3 rounded-lg font-bold text-base ${
-                loading || uploadingImages || !mapCoordinates
-                  ? "bg-blue-600 text-white cursor-not-allowed" 
-                  : "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
-              }`}
+              disabled={loading || uploadingImages}
+              className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-all ${loading || uploadingImages
+                ? "bg-blue-400 cursor-wait"
+                : "bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl"
+                }`}
             >
-              {loading ? (
-                <span className="flex items-center justify-center gap-3">
-                  <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
-                  {"Creating Property..."}
+              {loading || uploadingImages ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="animate-spin" size={20} />
+                  {uploadingImages ? "Uploading Images..." : "Registering..."}
                 </span>
               ) : (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
-                  </svg>
-                  Submit Property
-                </span>
+                "Register Property"
               )}
             </button>
           </form>
         </div>
       </main>
+
+      {/* Success Modal */}
+      <PropertyCreationSuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleCloseModal}
+        propertyId={createdPropertyId}
+        imageCount={successfulImageCount}
+        onViewPropertyAnalytics={handleViewPropertyAnalytics}
+        onReturnToDashboard={handleReturnToDashboard}
+        onAddAnotherProperty={handleAddAnotherProperty}
+      />
     </div>
   );
 }

@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
 // GET /api/lease-utilities/:id -> Get lease utility assignment
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const assignment = await prisma.lease_utility.findUnique({
       where: { id },
       include: { utility: true, Lease: true },
@@ -23,19 +23,19 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 // PUT /api/lease-utilities/:id -> Update assignment (e.g., is_tenant_responsible)
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
-    const { is_tenant_responsible } = body;
+    const { isTenantResponsible } = body;
 
-    if (is_tenant_responsible === undefined) {
-      return NextResponse.json({ success: false, error: "is_tenant_responsible is required" }, { status: 400 });
+    if (isTenantResponsible === undefined) {
+      return NextResponse.json({ success: false, error: "isTenantResponsible is required" }, { status: 400 });
     }
 
     const updated = await prisma.lease_utility.update({
       where: { id },
-      data: { is_tenant_responsible: is_tenant_responsible },
+      data: { is_tenant_responsible: isTenantResponsible },
     });
 
     return NextResponse.json({ success: true, data: updated });
@@ -46,9 +46,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE /api/lease-utilities/:id -> Remove assignment
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     await prisma.lease_utility.delete({ where: { id } });
     return NextResponse.json({ success: true, message: "Lease utility removed successfully" });
   } catch (error: any) {
