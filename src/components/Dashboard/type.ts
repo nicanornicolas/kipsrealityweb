@@ -90,3 +90,34 @@ export type TenantApplication = {
     tenantName?: string | null;
   } | null;
 };
+
+// Lease interfaces for CreateInvoiceModal and other components
+export interface Lease {
+  id: string;
+  tenant?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+    phone?: string | null;
+  } | null;
+  property?: {
+    id: string;
+    name?: string | null;
+    city?: string | null;
+    address?: string | null;
+  } | null;
+  unit?: {
+    id: string;
+    unitNumber: string;
+    unitName?: string | null;
+    rentAmount?: number | null;
+  } | null;
+  startDate?: string;
+  endDate?: string;
+  rentAmount?: number;
+  securityDeposit?: number | null;
+  leaseStatus?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
