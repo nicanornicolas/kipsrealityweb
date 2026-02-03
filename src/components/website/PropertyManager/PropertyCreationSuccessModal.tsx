@@ -40,7 +40,7 @@ export default function PropertyCreationSuccessModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-lg z-[100]">
         <DialogHeader>
           <div className="flex items-center justify-center mb-4">
             <div className="bg-green-100 p-3 rounded-full">
