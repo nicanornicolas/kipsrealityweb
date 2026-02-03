@@ -44,7 +44,7 @@ export const fetchUnits = async (propertyId: string): Promise<Unit[]> => {
       bedrooms: existing?.bedrooms ?? null,
       bathrooms: existing?.bathrooms ?? null,
       floorNumber: existing?.floorNumber ?? null,
-      rentAmountu: existing?.rentAmount ?? null,
+      rentAmount: existing?.rentAmount ?? null,
       currency: existing?.currency ?? null,
       isOccupied: existing?.isOccupied ?? false,
       createdAt: existing?.createdAt instanceof Date ? existing.createdAt.toISOString() : now,
@@ -128,13 +128,25 @@ export const updateUnitDetails = async (
 };
 
 
-export const fetchUnitDetails = async (propertyId: string, unitNumber: string, p0: boolean) => {
+export const fetchUnitDetails = async (propertyId: string, unitNumber: string, isServerSide: boolean) => {
   try {
-    const response = await fetch(`/api/units/${propertyId}/${unitNumber}`);
+    let url: string;
+    
+    if (isServerSide) {
+      // Server-side: need absolute URL
+      const { getServerBaseUrl } = await import('./server-base-url');
+      const baseUrl = await getServerBaseUrl();
+      url = `${baseUrl}/api/units/${propertyId}/${unitNumber}`;
+    } else {
+      // Client-side: relative URL is fine
+      url = `/api/units/${propertyId}/${unitNumber}`;
+    }
+
+    const response = await fetch(url);
 
     if (!response.ok) {
       console.error(
-        `API Error: ${response.status} ${response.statusText} for /api/units/${propertyId}/${unitNumber}`
+        `API Error: ${response.status} ${response.statusText} for ${url}`
       );
       throw new Error("Failed to fetch unit details");
     }
