@@ -1,20 +1,20 @@
-"use client"
-import React, { useState } from "react";
-import { Calendar, Home, Wrench, CreditCard, AlertCircle, CheckCircle, Clock, DollarSign } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
-import { TenantLeasesCard } from "@/components/Dashboard/tenant-leases-card";
+"use client";
 
-// Mock lease data - TO DO: replace with API call
-const mockLeaseData = {
-  unitNumber: "2B",
-  address: "123 Main Street",
-  leaseStartDate: "2024-01-15",
-  leaseEndDate: "2025-01-14",
-  monthlyRent: 1500,
-  nextPaymentDue: "2026-02-01",
-  paymentStatus: "upcoming", // "paid", "upcoming", "overdue"
-  daysUntilPayment: 19
-};
+import React, { useState } from "react";
+import {
+  Calendar,
+  Home,
+  Wrench,
+  CreditCard,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  DollarSign,
+} from "lucide-react";
+
+import { useAuth } from "@/context/AuthContext";
+import { useLease } from "@/hooks/useLease";
+import { useInvoices } from "@/hooks/useInvoice";
 
 // Mock maintenance requests - TODO: replace with API call
 const mockMaintenanceRequests = [
@@ -23,7 +23,7 @@ const mockMaintenanceRequests = [
     title: "Kitchen faucet leaking",
     status: "in_progress",
     submittedDate: "2026-01-10",
-    priority: "medium"
+    priority: "medium",
   },
   {
     id: "MNT-002",
@@ -31,15 +31,33 @@ const mockMaintenanceRequests = [
     status: "completed",
     submittedDate: "2026-01-05",
     completedDate: "2026-01-08",
-    priority: "high"
-  }
+    priority: "high",
+  },
 ];
 
 const DashboardPage = () => {
   const [isLoading] = useState(false);
   const { user } = useAuth();
+
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+
+  // Leases hook
+  const {
+    leases,
+    activeLease,
+    loading: leasesLoading,
+    error: leasesError,
+    refetch: refetchLeases,
+  } = useLease();
+
+  // Invoices hook
+  const {
+    invoices,
+    loading: invoicesLoading,
+    error: invoiceError,
+    refetch: refetchInvoices,
+  } = useInvoices();
 
   const generateInviteLink = async () => {
     setIsGeneratingInvite(true);
@@ -52,10 +70,15 @@ const DashboardPage = () => {
     }, 1000);
   };
 
+  //TODO: Wee mzee, replace na API call ama Weekend refu
   const copyInviteLink = async () => {
     if (!inviteLink) return;
     await navigator.clipboard.writeText(inviteLink);
     alert("Invite link copied to clipboard");
+  };
+
+  const refetchAll = async () => {
+    await Promise.all([refetchLeases(), refetchInvoices()]);
   };
 
   // Calculate days remaining in lease
@@ -67,9 +90,69 @@ const DashboardPage = () => {
     return diffDays;
   };
 
-  const daysRemaining = calculateDaysRemaining(mockLeaseData.leaseEndDate);
-  const leasePercentComplete = ((365 - daysRemaining) / 365) * 100;
+  // Calculate next rent payment info from invoices
+  const getNextPaymentInfo = () => {
+    if (invoices.length === 0) {
+      return {
+        nextPaymentDue: null,
+        paymentStatus: "upcoming",
+        daysUntilPayment: 0,
+        amount: activeLease?.rentAmount || 0,
+      };
+    }
 
+    // Find unpaid or partially paid rent invoices... hawalipangi rent hawa
+    const pendingInvoices = invoices
+      .filter((inv) => inv.type === "RENT" && inv.balance > 0)
+      .sort(
+        (a, b) =>
+          new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+      );
+
+    if (pendingInvoices.length === 0) {
+      return {
+        nextPaymentDue: null,
+        paymentStatus: "paid",
+        daysUntilPayment: 0,
+        amount: activeLease?.rentAmount || 0,
+      };
+    }
+
+    const nextInvoice = pendingInvoices[0];
+    const dueDate = new Date(nextInvoice.dueDate);
+    const today = new Date();
+    const daysUntil = Math.ceil(
+      (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    return {
+      nextPaymentDue: nextInvoice.dueDate,
+      paymentStatus: daysUntil < 0 ? "overdue" : "upcoming",
+      daysUntilPayment: daysUntil,
+      amount: nextInvoice.balance,
+    };
+  };
+
+  const paymentInfo = getNextPaymentInfo();
+
+  // Use API data
+  const daysRemaining = activeLease
+    ? calculateDaysRemaining(activeLease.endDate)
+    : 0;
+
+  // Calculate lease duration in days
+  const leaseDurationDays = activeLease
+    ? Math.ceil(
+        (new Date(activeLease.endDate).getTime() -
+          new Date(activeLease.startDate).getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
+    : 365;
+
+  const leasePercentComplete =
+    leaseDurationDays > 0
+      ? ((leaseDurationDays - daysRemaining) / leaseDurationDays) * 100
+      : 0;
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
@@ -96,12 +179,31 @@ const DashboardPage = () => {
     }
   };
 
-  if (isLoading) {
+  if (leasesLoading || invoicesLoading || isLoading) {
     return (
       <div className="bg-gray-50 h-full flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if API calls failed
+  if (leasesError || invoiceError) {
+    return (
+      <div className="bg-gray-50 h-full flex items-center justify-center">
+        <div className="text-center max-w-md p-6">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Data</h2>
+          <p className="text-gray-600 mb-4">{leasesError || invoiceError}</p>
+          <button 
+            onClick={refetchLeases}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -137,15 +239,26 @@ const DashboardPage = () => {
     );
   }
 
+  // Show message if no active lease found
+  if (!activeLease) {
+    return (
+      <div className="bg-gray-50 h-full p-10">
+        <div className="max-w-2xl mx-auto text-center">
+          <h1 className="text-3xl font-bold mb-4 text-gray-900">Welcome, {user?.firstName}!</h1>
+          <div className="p-6 border rounded-lg bg-yellow-50 border-yellow-200">
+            <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-yellow-900 mb-2">No Active Lease Found</h3>
+            <p className="text-yellow-700">You don't have an active lease at the moment. Please contact your property manager.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-50 h-screen overflow-hidden flex flex-col">
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto p-6">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.firstName}!</h1>
-            <p className="text-gray-600 mt-1">Your personal dashboard</p>
-          </div>
 
           {/* Invite Agent */}
           <div className="lg:col-span-3 rounded-lg p-6 mb-7">
@@ -153,7 +266,7 @@ const DashboardPage = () => {
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">Invite an Agent</h2>
                 <p className="text-sm text-gray-600">
-                  Generate a secure invite link for your agent. The link expires after 6 hours.
+                  Invite a real estate agent with whom you delegate tenant duties for assistance.
                 </p>
               </div>
             </div>
@@ -164,7 +277,7 @@ const DashboardPage = () => {
                 disabled={isGeneratingInvite}
                 className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-medium transition-colors"
               >
-                {isGeneratingInvite ? "Generating link..." : "Generate Invite Link"}
+                {isGeneratingInvite ? "Generating link..." : "Generate Agent Invite Link"}
               </button>
             ) : (
               <div className="space-y-3">
@@ -184,30 +297,26 @@ const DashboardPage = () => {
                 </div>
 
                 <p className="text-xs text-gray-500">
-                  This link will expire in <strong>6 hours</strong> if not used.
+                  This link will expire in <strong>1 hour</strong> if not used.
                 </p>
               </div>
             )}
           </div>
 
-          {/* Financial Overview - New Component */}
-          <div className="mb-7">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Financial Overview</h2>
-            <p className="text-gray-600 mb-6">View your leases, balances, and invoices in one place</p>
-            <TenantLeasesCard />
-          </div>
-
           {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-6">
             {/* Lease Duration Card */}
-            <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="lg:col-span-2 rounded-lg p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
                   <Home className="w-6 h-6 text-blue-600" />
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-xl font-semibold text-gray-900">Lease Information</h2>
-                  <p className="text-sm text-gray-500 truncate">{mockLeaseData.address}, Unit {mockLeaseData.unitNumber}</p>
+                  <p className="text-sm text-gray-500 truncate">
+                    {activeLease.property.propertyName !== 'Unnamed Property' && `${activeLease.property.propertyName}, `}
+                    {activeLease.property.address}, Unit {activeLease.unit.unitNumber}
+                  </p>
                 </div>
               </div>
 
@@ -215,7 +324,7 @@ const DashboardPage = () => {
                 <div className="flex justify-between items-center gap-4">
                   <span className="text-gray-600 flex-shrink-0">Lease Period</span>
                   <span className="font-medium text-gray-900 text-right text-sm">
-                    {new Date(mockLeaseData.leaseStartDate).toLocaleDateString()} - {new Date(mockLeaseData.leaseEndDate).toLocaleDateString()}
+                    {new Date(activeLease.startDate).toLocaleDateString()} - {new Date(activeLease.endDate).toLocaleDateString()}
                   </span>
                 </div>
 
@@ -225,9 +334,9 @@ const DashboardPage = () => {
                     <span className="font-bold text-2xl text-blue-600">{daysRemaining}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div
+                    <div 
                       className="bg-blue-600 h-3 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(leasePercentComplete, 100)}%` }}
+                      style={{ width: `${Math.min(Math.max(leasePercentComplete, 0), 100)}%` }}
                     ></div>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">{leasePercentComplete.toFixed(0)}% of lease period completed</p>
@@ -236,17 +345,17 @@ const DashboardPage = () => {
                 <div className="pt-4 border-t border-gray-200">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Calendar className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate">Lease ends on {new Date(mockLeaseData.leaseEndDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    <span className="truncate">Lease ends on {new Date(activeLease.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Payment Reminder Card */}
-            <div className={`bg-white rounded-lg shadow-sm border p-6 ${getPaymentStatusColor(mockLeaseData.paymentStatus)}`}>
+            <div className={`bg-white rounded-lg shadow-sm border p-6 ${getPaymentStatusColor(paymentInfo.paymentStatus)}`}>
               <div className="flex items-center gap-3 mb-4">
-                <div className={`p-2 rounded-lg ${mockLeaseData.paymentStatus === 'overdue' ? 'bg-red-100' : 'bg-blue-100'}`}>
-                  <CreditCard className={`w-6 h-6 ${mockLeaseData.paymentStatus === 'overdue' ? 'text-red-600' : 'text-blue-600'}`} />
+                <div className={`p-2 rounded-lg ${paymentInfo.paymentStatus === 'overdue' ? 'bg-red-100' : paymentInfo.paymentStatus === 'paid' ? 'bg-green-100' : 'bg-blue-100'}`}>
+                  <CreditCard className={`w-6 h-6 ${paymentInfo.paymentStatus === 'overdue' ? 'text-red-600' : paymentInfo.paymentStatus === 'paid' ? 'text-green-600' : 'text-blue-600'}`} />
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900">Rent Payment</h2>
               </div>
@@ -254,20 +363,46 @@ const DashboardPage = () => {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Monthly Rent</p>
-                  <p className="text-3xl font-bold text-gray-900">${mockLeaseData.monthlyRent.toLocaleString()}</p>
+                  <p className="text-3xl font-bold text-gray-900">${activeLease.rentAmount.toLocaleString()}</p>
                 </div>
 
-                <div className="pt-3 border-t border-gray-200">
-                  <p className="text-sm text-gray-600 mb-1">Next Payment Due</p>
-                  <p className="font-semibold text-gray-900">{new Date(mockLeaseData.nextPaymentDue).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                {paymentInfo.nextPaymentDue ? (
+                  <div className="pt-3 border-t border-gray-200">
+                    <p className="text-sm text-gray-600 mb-1">
+                      {paymentInfo.paymentStatus === 'overdue' ? 'Overdue Payment' : 'Next Payment Due'}
+                    </p>
+                    <p className="font-semibold text-gray-900">
+                      {new Date(paymentInfo.nextPaymentDue).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                    
+                    {paymentInfo.paymentStatus === 'upcoming' && paymentInfo.daysUntilPayment > 0 && (
+                      <div className="flex items-center gap-2 mt-2 text-sm text-blue-600">
+                        <Clock className="w-4 h-4" />
+                        <span>{paymentInfo.daysUntilPayment} days remaining</span>
+                      </div>
+                    )}
+                    
+                    {paymentInfo.paymentStatus === 'overdue' && (
+                      <div className="flex items-center gap-2 mt-2 text-sm text-red-600">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>{Math.abs(paymentInfo.daysUntilPayment)} days overdue</span>
+                      </div>
+                    )}
 
-                  {mockLeaseData.paymentStatus === 'upcoming' && (
-                    <div className="flex items-center gap-2 mt-2 text-sm text-blue-600">
-                      <Clock className="w-4 h-4" />
-                      <span>{mockLeaseData.daysUntilPayment} days remaining</span>
+                    {paymentInfo.amount !== activeLease.rentAmount && (
+                      <p className="text-sm text-gray-600 mt-2">
+                        Amount due: <span className="font-semibold">${paymentInfo.amount.toLocaleString()}</span>
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <CheckCircle className="w-4 h-4" />
+                      <span>All payments current</span>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 <button className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
                   <DollarSign className="w-5 h-5" />
@@ -303,10 +438,11 @@ const DashboardPage = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 mb-2 flex-wrap">
                             <h3 className="font-semibold text-gray-900 truncate">{request.title}</h3>
-                            <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap flex-shrink-0 ${request.priority === 'high' ? 'bg-red-100 text-red-700' :
-                                request.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-gray-100 text-gray-700'
-                              }`}>
+                            <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap flex-shrink-0 ${
+                              request.priority === 'high' ? 'bg-red-100 text-red-700' :
+                              request.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
                               {request.priority}
                             </span>
                           </div>
@@ -349,12 +485,12 @@ const DashboardPage = () => {
                 <button className="p-4 border-2 border-gray-200 hover:border-blue-400 rounded-lg text-left transition-colors group min-w-0">
                   <Home className="w-8 h-8 text-gray-600 group-hover:text-blue-600 mb-2 flex-shrink-0" />
                   <h3 className="font-semibold text-gray-900 truncate">Lease Documents</h3>
-                  <p className="text-sm text-gray-600 truncate">Access your lease documents</p>
+                  <p className="text-sm text-gray-600 truncate">Access your lease</p>
                 </button>
                 <button className="p-4 border-2 border-gray-200 hover:border-blue-400 rounded-lg text-left transition-colors group min-w-0">
                   <Wrench className="w-8 h-8 text-gray-600 group-hover:text-blue-600 mb-2 flex-shrink-0" />
-                  <h3 className="font-semibold text-gray-900 truncate">Maintenance</h3>
-                  <p className="text-sm text-gray-600 truncate">View your requests</p>
+                  <h3 className="font-semibold text-gray-900 truncate">Request Service</h3>
+                  <p className="text-sm text-gray-600 truncate">Report an issue</p>
                 </button>
               </div>
             </div>
