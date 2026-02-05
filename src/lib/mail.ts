@@ -19,9 +19,10 @@ interface SendEmailOptions {
     subject: string;
     react?: React.ReactElement; // We still accept React components!
     text?: string;              // Fallback plain text
+    html?: string;              // Optional raw HTML
 }
 
-export const sendEmail = async ({ to, subject, react, text }: SendEmailOptions) => {
+export const sendEmail = async ({ to, subject, react, text, html }: SendEmailOptions) => {
     // Safety Check: If creds are missing, don't crash, just log.
     if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
         console.warn("⚠️ SMTP credentials missing. Logging email to console.");
@@ -32,7 +33,7 @@ export const sendEmail = async ({ to, subject, react, text }: SendEmailOptions) 
     try {
         // 2. Convert React Component to HTML String
         // Using @react-email/render which is compatible with Next.js API routes
-        const htmlBody = react ? await render(react) : undefined;
+        const htmlBody = react ? await render(react) : html;
 
         // 3. Send via Nodemailer
         const info = await transporter.sendMail({
