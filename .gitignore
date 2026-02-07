@@ -66,3 +66,11 @@ WARP.md
 PHASE_1_COMPLETION_PLAN.md
 
 RentFlow360-Complete-PRD.md
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

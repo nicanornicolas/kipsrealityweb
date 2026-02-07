@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/Getcurrentuser";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
-export async function renewLease(req: NextRequest, leaseId: string) {
+async function internalRenewLease(req: NextRequest, leaseId: string) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -67,8 +67,17 @@ export async function renewLease(req: NextRequest, leaseId: string) {
     });
 
     return NextResponse.json({ renewal, message: "Renewal initiated" });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Renewal error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
+}
+
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+  return internalRenewLease(req, id);
 }

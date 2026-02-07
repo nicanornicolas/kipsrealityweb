@@ -14,7 +14,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import router from "next/router";
 import { TenantApplication } from "../../type";
 
 // Types
@@ -47,8 +46,22 @@ interface FinancialSummary {
   lastPaymentDate?: string;
 }
 
+interface Payment {
+  id: string;
+  amount: number;
+  isReversed: boolean;
+  // Add other payment properties as needed
+}
+
+interface Invoice {
+  id: string;
+  amount: number;
+  payment?: Payment[];
+  // Add other invoice properties as needed
+}
+
 interface Lease {
-  invoice: any;
+  invoice?: Invoice[];
   id: string;
   tenant?: Tenant;
   property?: Property;
@@ -517,11 +530,11 @@ export default function EnhancedTenantDashboard() {
       if (lease.leaseStatus === "SIGNED") acc.activeLeases++;
 
       // Sum invoiced across all invoices
-      const totalInvoiced = lease.invoice?.reduce((sum: any, inv: { amount: any; }) => sum + (inv.amount || 0), 0) || 0;
+      const totalInvoiced = lease.invoice?.reduce((sum: number, inv: Invoice) => sum + (inv.amount || 0), 0) || 0;
 
       // Sum paid ignoring reversed payments
-      const totalPaid = lease.invoice?.reduce((sum: any, inv: { payment: any[]; }) => {
-        const paid = inv.payment?.filter(p => !p.isReversed).reduce((pSum, p) => pSum + (p.amount || 0), 0) || 0;
+      const totalPaid = lease.invoice?.reduce((sum: number, inv: Invoice) => {
+        const paid = inv.payment?.filter(p => !p.isReversed).reduce((pSum: number, p: Payment) => pSum + (p.amount || 0), 0) || 0;
         return sum + paid;
       }, 0) || 0;
 
@@ -782,9 +795,9 @@ export default function EnhancedTenantDashboard() {
                           <div className="space-y-1 text-sm">
                             {(() => {
                               // Calculate adjusted totals considering reversed payments
-                              const totalInvoiced = lease.invoice?.reduce((sum: any, inv: { amount: any; }) => sum + (inv.amount || 0), 0) || 0;
-                              const totalPaid = lease.invoice?.reduce((sum: any, inv: { payment: any[]; }) => {
-                                const paid = inv.payment?.filter(p => !p.isReversed).reduce((pSum, p) => pSum + (p.amount || 0), 0) || 0;
+                              const totalInvoiced = lease.invoice?.reduce((sum: number, inv: Invoice) => sum + (inv.amount || 0), 0) || 0;
+                              const totalPaid = lease.invoice?.reduce((sum: number, inv: Invoice) => {
+                                const paid = inv.payment?.filter(p => !p.isReversed).reduce((pSum: number, p: Payment) => pSum + (p.amount || 0), 0) || 0;
                                 return sum + paid;
                               }, 0) || 0;
                               const balance = totalInvoiced - totalPaid;
@@ -1176,8 +1189,9 @@ export default function EnhancedTenantDashboard() {
               {/* Form Content */}
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-900 mb-2">Select Lease *</label>
+                  <label htmlFor="lease-select" className="block text-sm font-medium text-slate-900 mb-2">Select Lease *</label>
                   <select
+                    id="lease-select"
                     value={selectedLeaseId || ""}
                     onChange={(e) => setSelectedLeaseId(e.target.value || null)}
                     className="w-full border border-slate-300 px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-slate-900"
@@ -1205,8 +1219,9 @@ export default function EnhancedTenantDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-900 mb-2">Email Address *</label>
+                  <label htmlFor="invite-email" className="block text-sm font-medium text-slate-900 mb-2">Email Address *</label>
                   <input
+                    id="invite-email"
                     type="email"
                     placeholder="tenant@example.com"
                     value={inviteEmail}
@@ -1465,6 +1480,3 @@ export default function EnhancedTenantDashboard() {
   );
 }
 
-function setSelectedTenant(tenant: Tenant) {
-  throw new Error("Function not implemented.");
-}
