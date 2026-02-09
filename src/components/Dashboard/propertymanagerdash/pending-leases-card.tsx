@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { api } from '@/lib/api-client';
 
 interface PendingLease {
   id: string;
@@ -43,17 +44,30 @@ export function PendingLeasesCard() {
   async function fetchPendingLeases() {
     try {
       setLoading(true);
-      const response = await fetch('/api/lease/pending');
+      setError(null);
       
-      if (!response.ok) {
+      const result = await api.get<{ success: boolean; leases: PendingLease[] }>('/api/lease/pending');
+
+      if (result.error) {
+        // Handle API client errors (including 401 redirects)
+        if (result.status === 401) {
+          // The api client already handled redirect, but we can set error message
+          setError('Session expired. Please log in again.');
+          return;
+        }
+        throw new Error(result.error);
+      }
+
+      if (!result.data?.success) {
         throw new Error('Failed to fetch pending leases');
       }
 
-      const data = await response.json();
-      setLeases(data.leases || []);
-      setError(null);
+      setLeases(result.data.leases || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      // Only set error if it's not a 401 (which already redirected)
+      if (err instanceof Error && !err.message.includes('Session expired')) {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -65,20 +79,33 @@ export function PendingLeasesCard() {
     }
 
     try {
-      const response = await fetch(`/api/lease/${leaseId}/sign/landlord`, {
-        method: 'POST'
-      });
+      const result = await api.post<{ success: boolean; error?: string }>(
+        `/api/lease/${leaseId}/sign/landlord`,
+        {}
+      );
 
-      const result = await response.json();
-
-      if (result.success) {
-        alert('Lease activated successfully!');
-        fetchPendingLeases(); // Refresh the list
-      } else {
+      if (result.error) {
+        // Handle API client errors (including 401 redirects)
+        if (result.status === 401) {
+          alert('Session expired. Please log in again.');
+          return;
+        }
         alert(`Activation failed: ${result.error}`);
+        return;
       }
+
+      if (!result.data?.success) {
+        alert('Activation failed: Unknown error');
+        return;
+      }
+
+      alert('Lease activated successfully!');
+      fetchPendingLeases(); // Refresh the list
     } catch (err) {
-      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      // Only show alert if it's not a 401 (which already redirected)
+      if (err instanceof Error && !err.message.includes('Session expired')) {
+        alert(`Error: ${err.message}`);
+      }
     }
   }
 
