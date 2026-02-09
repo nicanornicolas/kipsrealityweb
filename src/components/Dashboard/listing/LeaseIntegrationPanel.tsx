@@ -16,6 +16,7 @@ import {
   Bell,
   ExternalLink
 } from 'lucide-react';
+import { api } from '@/lib/api-client';
 
 interface LeaseStatusChange {
   id: string;
@@ -51,19 +52,36 @@ export function LeaseIntegrationPanel({
   const fetchLeaseStatusChanges = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const params = new URLSearchParams();
       if (propertyId) params.append('propertyId', propertyId);
       if (unitId) params.append('unitId', unitId);
 
-      const response = await fetch(`/api/lease/status-changes?${params}`);
-      if (!response.ok) {
+      const result = await api.get<{ success: boolean; changes: LeaseStatusChange[]; total: number }>(
+        `/api/lease/status-changes?${params}`
+      );
+
+      if (result.error) {
+        // Handle API client errors (including 401 redirects)
+        if (result.status === 401) {
+          // The api client already handled redirect, but we can set error message
+          setError('Session expired. Please log in again.');
+          return;
+        }
+        throw new Error(result.error);
+      }
+
+      if (!result.data?.success) {
         throw new Error('Failed to fetch lease status changes');
       }
 
-      const data = await response.json();
-      setStatusChanges(data.changes || []);
+      setStatusChanges(result.data.changes || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      // Only set error if it's not a 401 (which already redirected)
+      if (err instanceof Error && !err.message.includes('Session expired')) {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
