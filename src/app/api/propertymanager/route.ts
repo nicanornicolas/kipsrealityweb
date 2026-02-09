@@ -7,26 +7,26 @@ export async function POST(req: Request) {
   try {
     const data = await req.json();
 
-const {
-  listingId,
-  managerId,
-  name,
-  propertyTypeId,
-  locationId,
-  city,
-  address,
-  amenities,
-  isFurnished,
-  availabilityStatus,
-  country,
-  zipCode,
-  latitude,
-  longitude,
-  contactPhone,
-  contactEmail,
-  propertyDetails,
-  images,
-} = data;
+    const {
+      listingId,
+      managerId,
+      name,
+      propertyTypeId,
+      locationId,
+      city,
+      address,
+      amenities,
+      isFurnished,
+      availabilityStatus,
+      country,
+      zipCode,
+      latitude,
+      longitude,
+      contactPhone,
+      contactEmail,
+      propertyDetails,
+      images,
+    } = data;
 
 
     if (!managerId) {
@@ -61,36 +61,36 @@ const {
     const property = await prisma.$transaction(async (tx) => {
       const prop = await tx.property.create({
         data: {
-                listingId,
-                managerId: orgUser.id,
-                organizationId: orgUser.organizationId,
-                name,
-                propertyTypeId,
-                locationId,
-                city,
-                address,
-                amenities,
-                isFurnished,
-                availabilityStatus,
-                country,
-                zipCode,
-                latitude,
-                longitude,
-                contactPhone,
-                contactEmail,
-              },
+          listingId,
+          managerId: orgUser.id,
+          organizationId: orgUser.organizationId,
+          name,
+          propertyTypeId,
+          locationId,
+          city,
+          address,
+          amenities,
+          isFurnished,
+          availabilityStatus,
+          country,
+          zipCode,
+          latitude,
+          longitude,
+          contactPhone,
+          contactEmail,
+        },
       });
 
       if (images && images.length > 0) {
         const imageData = images.map((img: string) => ({
           propertyId: prop.id,
           url: img,
-      }));
+        }));
 
-      await tx.propertyImage.createMany({
-        data: imageData,
-      });
-    }
+        await tx.propertyImage.createMany({
+          data: imageData,
+        });
+      }
 
       if (propertyType.name.toLowerCase() === "apartment" && propertyDetails) {
         const complex = await tx.apartmentComplexDetail.create({
@@ -156,8 +156,11 @@ export async function GET(req: Request) {
   try {
     // Add debug logging
     console.log('=== GET Properties Debug ===');
-    console.log('Request URL:', req.url);
-    
+    const host = req.headers.get('host') || 'localhost:3000';
+    const protocol = req.headers.get('x-forwarded-proto') || 'http';
+    const absoluteUrl = `${protocol}://${host}${new URL(req.url).search}`;
+    console.log('Request URL (Absolute):', absoluteUrl);
+
     const user = await getCurrentUser(req);
     console.log('Current user:', user ? 'Found' : 'Not found');
     console.log('User details:', JSON.stringify({
@@ -253,12 +256,12 @@ export async function GET(req: Request) {
       totalUnits: p.units?.length || 0,
       manager: p.manager
         ? {
-            id: p.manager.user.id,
-            email: p.manager.user.email,
-            firstName: p.manager.user.firstName,
-            lastName: p.manager.user.lastName,
-            role: p.manager.role,
-          }
+          id: p.manager.user.id,
+          email: p.manager.user.email,
+          firstName: p.manager.user.firstName,
+          lastName: p.manager.user.lastName,
+          role: p.manager.role,
+        }
         : null,
       organization: p.organization || null,
       createdAt: p.createdAt,
