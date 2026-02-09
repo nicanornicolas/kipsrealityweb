@@ -10,7 +10,12 @@ export const fetchUnits = async (propertyId: string): Promise<Unit[]> => {
     include: {
       units: {
         include: {
-          appliances: true, 
+          appliances: true,
+          listing: {
+            include: {
+              status: true
+            }
+          }
         },
       },
       apartmentComplexDetail: true,
@@ -53,6 +58,15 @@ export const fetchUnits = async (propertyId: string): Promise<Unit[]> => {
           name: a.name,
           createdAt: a.createdAt instanceof Date ? a.createdAt.toISOString() : now,
         })) ?? []
+      ,
+      listing: existing?.listing
+        ? {
+            id: existing.listing.id,
+            status: existing.listing.status
+              ? { name: existing.listing.status.name }
+              : null
+          }
+        : null
     };
   });
 } else if (property.houseDetail) {
@@ -85,6 +99,14 @@ export const fetchUnits = async (propertyId: string): Promise<Unit[]> => {
           name: a.name,
           createdAt: a.createdAt instanceof Date ? a.createdAt.toISOString() : now,
         })) ?? [],
+      listing: existing?.listing
+        ? {
+            id: existing.listing.id,
+            status: existing.listing.status
+              ? { name: existing.listing.status.name }
+              : null
+          }
+        : null
     };
   });
 }
@@ -101,7 +123,7 @@ export const updateUnitDetails = async (
   propertyId: string,
   unitNumber: string,
   data: Partial<UnitFormData>  
-): Promise<{ success: boolean; message: string }> => {
+): Promise<{ success: boolean; message: string; isNewUnit?: boolean; unit?: any }> => {
   try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_URL}/api/units/${propertyId}/${unitNumber}`,
@@ -120,7 +142,12 @@ export const updateUnitDetails = async (
     }
 
     const resData = await response.json();
-    return { success: true, message: resData.message || "Unit updated" };
+    return { 
+      success: true, 
+      message: resData.message || "Unit updated",
+      isNewUnit: resData.isNewUnit,
+      unit: resData.unit
+    };
   } catch (error: any) {
     console.error("updateUnitDetails:", error);
     return { success: false, message: error.message || "Update failed" };
@@ -134,9 +161,14 @@ export const fetchUnitDetails = async (propertyId: string, unitNumber: string, i
     
     if (isServerSide) {
       // Server-side: need absolute URL
-      const { getServerBaseUrl } = await import('./server-base-url');
-      const baseUrl = await getServerBaseUrl();
-      url = `${baseUrl}/api/units/${propertyId}/${unitNumber}`;
+      // Use environment variable or construct from available info
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                     process.env.NEXTAUTH_URL || 
+                     process.env.VERCEL_URL ||
+                     'http://localhost:3000'; // fallback for development
+      
+      const fullBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
+      url = `${fullBaseUrl}/api/units/${propertyId}/${unitNumber}`;
     } else {
       // Client-side: relative URL is fine
       url = `/api/units/${propertyId}/${unitNumber}`;
