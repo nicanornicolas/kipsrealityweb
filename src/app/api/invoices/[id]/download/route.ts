@@ -1,15 +1,46 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+interface InvoiceItem {
+  description: string;
+  amount: number;
+}
+
+interface Payment {
+  amount: number;
+}
+
+interface Lease {
+  tenant?: {
+    firstName?: string;
+    lastName?: string;
+  };
+  property?: {
+    name?: string;
+  };
+  unit?: {
+    unitNumber?: string;
+  };
+}
+
+interface Invoice {
+  totalAmount: number;
+  status: string;
+  type: string;
+  InvoiceItem: InvoiceItem[];
+  payments: Payment[];
+  Lease?: Lease;
+}
+
 export async function GET(
   req: Request,
-  context: { params: Promise<{ groupId: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { groupId } = await context.params;
+    const { id } = await context.params;
 
-    // Parse groupId (format: lease_id-date)
-    const [leaseId, dateString] = decodeURIComponent(groupId).split('-');
+    // Parse id (format: lease_id-date)
+    const [leaseId, dateString] = decodeURIComponent(id).split('-');
     const dueDate = new Date(dateString);
 
     // Fetch all invoices for this lease and due date
@@ -33,7 +64,7 @@ export async function GET(
         }
       },
       orderBy: { type: 'asc' }
-    });
+    }) as Invoice[];
 
     if (!invoices.length) {
       return NextResponse.json(
@@ -55,24 +86,25 @@ export async function GET(
       },
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching combined invoice:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to fetch combined invoice";
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to fetch combined invoice" },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
 }
 
-function generateTextContent(invoices: any[], dateString: string): string {
+function generateTextContent(invoices: Invoice[], dateString: string): string {
   const tenant = invoices[0]?.Lease?.tenant;
   const property = invoices[0]?.Lease?.property;
   const unit = invoices[0]?.Lease?.unit;
 
   // Fixed: Added proper types for reduce functions
-  const totalAmount = invoices.reduce((sum: number, inv: any) => sum + inv.totalAmount, 0);
-  const totalPaid = invoices.reduce((sum: number, inv: any) =>
-    sum + inv.payments.reduce((pSum: number, p: any) => pSum + p.amount, 0), 0
+  const totalAmount = invoices.reduce((sum: number, inv: Invoice) => sum + inv.totalAmount, 0);
+  const totalPaid = invoices.reduce((sum: number, inv: Invoice) =>
+    sum + inv.payments.reduce((pSum: number, p: Payment) => pSum + p.amount, 0), 0
   );
 
   let content = `
@@ -87,13 +119,13 @@ Due Date: ${dateString}
 INVOICE BREAKDOWN:
 `;
 
-  invoices.forEach((invoice: any) => {
+  invoices.forEach((invoice: Invoice) => {
     content += `
 ${invoice.type} INVOICE:
   Amount: USD ${invoice.totalAmount.toLocaleString()}
   Status: ${invoice.status}
   Items:${invoice.InvoiceItem.length > 0 ? '' : ' None'}
-${invoice.InvoiceItem.map((item: any) => `    - ${item.description}: USD ${item.amount.toLocaleString()}`).join('\n')}
+${invoice.InvoiceItem.map((item: InvoiceItem) => `    - ${item.description}: USD ${item.amount.toLocaleString()}`).join('\n')}
 `;
   });
 
