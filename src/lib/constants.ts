@@ -40,6 +40,6 @@ export const getBaseUrl = () => {
     }
 
     // 5. Only for local development
-    console.log("📌 Development: Falling back to localhost:3000");
+    console.log("📌 Development: No APP_URL or BASE_URL found. Falling back to localhost:3000 (Check .env if using network IP)");
     return "http://localhost:3000";
 };
