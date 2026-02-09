@@ -33,4 +33,10 @@ export interface Unit {
   currency?: string | null;
   createdAt: string; // must be string
   appliances?: Appliance[];
+  listing?: {
+    id: string;
+    status?: {
+      name?: string;
+    } | null;
+  } | null;
 }
