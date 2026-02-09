@@ -92,9 +92,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ tenantId
       lease: inv.Lease ? {
         tenant: inv.Lease.tenant
           ? {
-            firstName: inv.Lease.tenant.firstName,
-            lastName: inv.Lease.tenant.lastName,
-            email: inv.Lease.tenant.email,
+            firstName: inv.Lease.tenant.firstName ?? undefined,
+            lastName: inv.Lease.tenant.lastName ?? undefined,
+            email: inv.Lease.tenant.email ?? undefined,
           }
           : undefined,
         property: inv.Lease.property

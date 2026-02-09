@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { sendEmail } from "@/lib/mail";
+import { 
+  sendTenantApplicationNotification, 
+  sendApplicationConfirmation 
+} from "@/lib/mail-service";
 import { APP_NAME } from "@/lib/constants";
+import { encryptSSN } from '@/lib/encryption';
 
 export async function POST(request: Request) {
   try {
@@ -54,10 +58,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // Fetch unit and include its property with manager details
+    // Fetch unit and include its property with manager details and listing status
     const unit = await prisma.unit.findUnique({
       where: { id: String(unitId).trim() },
       include: { 
+        listing: {
+          include: {
+            status: true
+          }
+        }, // Include listing to check if unit is publicly available
         property: {
           include: {
             manager: {
@@ -83,6 +92,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Property for this unit not found', unitId }, { status: 400 });
     }
 
+    // Check if unit has an active listing - applications only allowed for listed units
+      if (!unit.listing) {
+        return NextResponse.json({ 
+          error: 'This unit is not currently available for applications. Only units with active marketplace listings accept applications.',
+          code: 'UNIT_NOT_LISTED',
+          unitId 
+        }, { status: 403 });
+      }
+      const listingStatusName = unit.listing.status?.name as string;
+      if (listingStatusName && !["ACTIVE", "COMING_SOON"].includes(listingStatusName)) {
+        return NextResponse.json({
+          error: 'This unit is not currently available for applications.',
+          code: 'UNIT_NOT_AVAILABLE',
+          unitId
+        }, { status: 403 });
+      }
+
     // Validate user if provided
     let user = null;
     if (userId) {
@@ -94,6 +120,20 @@ export async function POST(request: Request) {
     const numericOccupants = occupants ? Number(occupants) : null;
     const numericIncome = monthlyIncome ? parseFloat(monthlyIncome) : null;
 
+    // Encrypt SSN if provided
+    let ssnEncrypted = null;
+    if (ssn && typeof ssn === 'string' && ssn.trim()) {
+      try {
+        ssnEncrypted = encryptSSN(ssn.trim());
+      } catch (encryptionError) {
+        console.error('Failed to encrypt SSN:', encryptionError);
+        return NextResponse.json(
+          { error: 'Failed to encrypt SSN data', details: 'Encryption error' },
+          { status: 500 }
+        );
+      }
+    }
+
     // Create tenant application
     const newApplication = await prisma.tenantapplication.create({
       data: {
@@ -101,7 +141,8 @@ export async function POST(request: Request) {
         email,
         phone,
         dob: new Date(dob),
-        ssn: ssn || null,
+        ssn: null, // Do not store plaintext SSN
+        ssnEncrypted, // Store encrypted SSN
         address: address || null,
         employerName: employerName || null,
         jobTitle: jobTitle || null,
@@ -152,76 +193,19 @@ export async function POST(request: Request) {
         const managerName = unit.property.manager.user.firstName || 'Property Manager';
         const propertyName = unit.property.name || unit.property.city || 'Unknown Property';
         const unitNumber = unit.unitNumber || 'N/A';
-        const moveInDateStr = new Date(moveInDate).toLocaleDateString();
+        const moveInDateStr = new Date(moveInDate);
         
-        // Create HTML email body as string to avoid JSX parsing issues
-        const emailHtml = `
-          <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-            <h1>New Tenant Application Received</h1>
-            <p>Hello ${managerName},</p>
-            <p>A new tenant application has been submitted for your property.</p>
-            
-            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
-              <h3 style="margin-top: 0;">Application Details:</h3>
-              <p><strong>Applicant:</strong> ${fullName}</p>
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Phone:</strong> ${phone}</p>
-              <p><strong>Property:</strong> ${propertyName}</p>
-              <p><strong>Unit:</strong> ${unitNumber}</p>
-              <p><strong>Desired Move-in Date:</strong> ${moveInDateStr}</p>
-              <p><strong>Lease Type:</strong> ${leaseType}</p>
-            </div>
-            
-            <p>
-              <a 
-                href="${process.env.NEXT_PUBLIC_BASE_URL}/property-manager/content/tenants"
-                style="
-                  display: inline-block;
-                  padding: 10px 20px;
-                  background-color: #003b73;
-                  color: #ffffff;
-                  text-decoration: none;
-                  border-radius: 5px;
-                  margin-top: 10px;
-                "
-              >
-                Review Application
-              </a>
-            </p>
-            
-            <p style="margin-top: 20px; font-size: 12px; color: #666;">
-              This is an automated notification from ${APP_NAME}.
-            </p>
-          </div>
-        `;
-
-        // Create plain text version
-        const emailText = `
-          New Tenant Application Received
-        
-          Hello ${managerName},
-          
-          A new tenant application has been submitted for your property.
-          
-          Application Details:
-          - Applicant: ${fullName}
-          - Email: ${email}
-          - Phone: ${phone}
-          - Property: ${propertyName}
-          - Unit: ${unitNumber}
-          - Desired Move-in Date: ${moveInDateStr}
-          - Lease Type: ${leaseType}
-          
-          Review the application at: ${process.env.NEXT_PUBLIC_BASE_URL}/property-manager/content/tenants
-          
-          This is an automated notification from ${APP_NAME}.
-        `;
-
-        await sendEmail({
-          to: managerEmail,
-          subject: `New Tenant Application for ${propertyName} - ${APP_NAME}`,
-          text: emailText,
-        });
+        await sendTenantApplicationNotification(
+          managerEmail,
+          managerName,
+          fullName,
+          email,
+          phone,
+          propertyName,
+          unitNumber,
+          moveInDateStr,
+          leaseType
+        );
         
         console.log(`📧 Notification email sent to property manager: ${managerEmail}`);
       } catch (emailError) {
@@ -230,6 +214,24 @@ export async function POST(request: Request) {
       }
     } else {
       console.warn('No property manager email found for notification');
+    }
+
+    // Send confirmation email to applicant
+    try {
+      const propertyName = unit.property.name || unit.property.city || 'Unknown Property';
+      const unitNumber = unit.unitNumber || 'N/A';
+      
+      await sendApplicationConfirmation(
+        email,
+        fullName,
+        propertyName,
+        unitNumber
+      );
+      
+      console.log(`📧 Application confirmation email sent to applicant: ${email}`);
+    } catch (emailError) {
+      console.error('Failed to send confirmation email:', emailError);
+      // Don't fail the application submission if email fails
     }
 
     return NextResponse.json({ success: true, application: newApplication }, { status: 201 });
