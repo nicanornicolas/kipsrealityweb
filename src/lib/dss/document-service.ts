@@ -2,16 +2,28 @@ import { prisma } from "@/lib/db";
 import { computeDocumentHash, verifyDocumentIntegrity } from "./hashing";
 import { getNextSigner } from "./workflow";
 import { DssParticipantRole, DssDocumentStatus, DssSigningMode, DssParticipant } from "@prisma/client";
+import fs from "fs/promises";
+import path from "path";
 
-// Placeholder for actual file upload storage (S3/UploadThing)
+// Local file storage for DSS documents
 async function uploadFileToStorage(fileBuffer: Buffer): Promise<{ url: string; key: string }> {
-    // TODO: Replace with actual UploadThing or S3 logic
-    // For now, we simulate a successful upload
-    const fakeId = crypto.randomUUID();
-    console.log("Mock Upload: File uploaded to storage", fakeId);
+    // Create uploads directory if it doesn't exist
+    const uploadDir = path.join(process.cwd(), "uploads", "dss-documents");
+    await fs.mkdir(uploadDir, { recursive: true });
+    
+    // Generate unique filename
+    const fileName = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.pdf`;
+    const filePath = path.join(uploadDir, fileName);
+    
+    // Write file to disk
+    await fs.writeFile(filePath, fileBuffer);
+    
+    console.log(`Document uploaded to local storage: ${filePath}`);
+    
+    // Return relative URL for serving
     return {
-        url: `https://mock-storage.com/${fakeId}.pdf`,
-        key: fakeId
+        url: `/uploads/dss-documents/${fileName}`,
+        key: fileName
     };
 }
 
