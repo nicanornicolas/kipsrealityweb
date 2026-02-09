@@ -45,6 +45,7 @@ export async function GET(req: Request) {
               include: {
                 property: true,
                 unit: true,
+                tenant: true, // Added tenant to prevent undefined errors
               },
             },
           },
