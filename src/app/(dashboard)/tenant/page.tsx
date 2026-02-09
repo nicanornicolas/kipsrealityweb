@@ -41,6 +41,7 @@ const DashboardPage = () => {
 
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   // Leases hook
   const {
@@ -61,20 +62,42 @@ const DashboardPage = () => {
 
   const generateInviteLink = async () => {
     setIsGeneratingInvite(true);
+    setInviteError(null);
 
-    // TODO: Replace with API call
-    setTimeout(() => {
-      const fakeToken = Math.random().toString(36).substring(2, 10);
-      setInviteLink(`${window.location.origin}/agent/invite/${fakeToken}`);
+    try {
+      const response = await fetch("/api/auth/invites/agent/agent-invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate invite link");
+      }
+
+      setInviteLink(data.inviteUrl);
+    } catch (error) {
+      console.error("Error generating invite:", error);
+      setInviteError(error instanceof Error ? error.message : "Failed to generate invite link");
+    } finally {
       setIsGeneratingInvite(false);
-    }, 1000);
+    }
   };
 
-  //TODO: Wee mzee, replace na API call ama Weekend refu
   const copyInviteLink = async () => {
     if (!inviteLink) return;
-    await navigator.clipboard.writeText(inviteLink);
-    alert("Invite link copied to clipboard");
+    
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      // To replace alert with a toast notification
+      alert("Invite link copied to clipboard");
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      alert("Failed to copy link");
+    }
   };
 
   const refetchAll = async () => {
@@ -101,7 +124,7 @@ const DashboardPage = () => {
       };
     }
 
-    // Find unpaid or partially paid rent invoices... hawalipangi rent hawa
+    // Find unpaid or partially paid rent invoices
     const pendingInvoices = invoices
       .filter((inv) => inv.type === "RENT" && inv.balance > 0)
       .sort(
@@ -153,6 +176,7 @@ const DashboardPage = () => {
     leaseDurationDays > 0
       ? ((leaseDurationDays - daysRemaining) / leaseDurationDays) * 100
       : 0;
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
@@ -199,7 +223,7 @@ const DashboardPage = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Data</h2>
           <p className="text-gray-600 mb-4">{leasesError || invoiceError}</p>
           <button 
-            onClick={refetchLeases}
+            onClick={refetchAll}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
           >
             Retry
@@ -261,21 +285,28 @@ const DashboardPage = () => {
         <div className="max-w-7xl mx-auto p-6">
 
           {/* Invite Agent */}
-          <div className="lg:col-span-3 rounded-lg p-6 mb-7">
+          <div className="lg:col-span-3 bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-7">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">Invite an Agent</h2>
                 <p className="text-sm text-gray-600">
-                  Invite a real estate agent with whom you delegate tenant duties for assistance.
+                  Invite a real estate agent to assist you with tenant duties.
                 </p>
               </div>
             </div>
+
+            {inviteError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{inviteError}</p>
+              </div>
+            )}
 
             {!inviteLink ? (
               <button
                 onClick={generateInviteLink}
                 disabled={isGeneratingInvite}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium transition-colors"
               >
                 {isGeneratingInvite ? "Generating link..." : "Generate Agent Invite Link"}
               </button>
@@ -299,6 +330,16 @@ const DashboardPage = () => {
                 <p className="text-xs text-gray-500">
                   This link will expire in <strong>1 hour</strong> if not used.
                 </p>
+                
+                <button
+                  onClick={() => {
+                    setInviteLink(null);
+                    setInviteError(null);
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-700 underline"
+                >
+                  Generate a new link
+                </button>
               </div>
             )}
           </div>
@@ -306,7 +347,7 @@ const DashboardPage = () => {
           {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-6">
             {/* Lease Duration Card */}
-            <div className="lg:col-span-2 rounded-lg p-6">
+            <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
                   <Home className="w-6 h-6 text-blue-600" />
