@@ -6,13 +6,13 @@ import toast from "react-hot-toast";
 interface Plan { id: number; name: string; }
 interface Feature { id: number; title: string; }
 
-export type UserRole = "SYSTEM_ADMIN" | "PROPERTY_MANAGER" | "TENANT" | "VENDOR" | "ALL";
+export type SidebarUserRole = "SYSTEM_ADMIN" | "PROPERTY_MANAGER" | "TENANT" | "VENDOR" | "ALL";
 
 interface SidebarItem {
   id?: number;
   label: string;
   path: string;
-  role?: UserRole;
+  role?: SidebarUserRole;
   icon?: string;
   section?: string;
   order?: number;

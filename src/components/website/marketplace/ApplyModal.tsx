@@ -178,7 +178,14 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
       });
 
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Failed to submit application");
+      
+      if (!res.ok) {
+        // Handle specific error for units not listed
+        if (result.code === 'UNIT_NOT_LISTED') {
+          throw new Error("This unit is not currently available for applications. Only units with active marketplace listings accept applications.");
+        }
+        throw new Error(result.error || "Failed to submit application");
+      }
 
       onSubmit(result);
       alert("Your tenant application has been submitted successfully!");

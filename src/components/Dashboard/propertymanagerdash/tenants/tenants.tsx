@@ -5,8 +5,8 @@ import {
   User, Home, FileText, Mail, DollarSign, Calendar,
   Phone, Search, Eye, Download, Check, X,
   AlertCircle, Plus, ExternalLink, TrendingUp,
-  Clock, CheckCircle, AlertTriangle,
-  Edit
+  Clock, CheckCircle, AlertTriangle, Edit,
+  RefreshCw // Added for resend icon
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -123,6 +123,7 @@ export default function EnhancedTenantDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [resendingInviteId, setResendingInviteId] = useState<string | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -147,9 +148,6 @@ export default function EnhancedTenantDashboard() {
   });
 
   const [isSaving, setIsSaving] = useState(false);
-
-
-
 
   // Fetch all data
   useEffect(() => {
@@ -391,6 +389,30 @@ export default function EnhancedTenantDashboard() {
     }
   };
 
+  // Resend invite function
+  const handleResendInvite = async (inviteId: string) => {
+    setResendingInviteId(inviteId);
+    try {
+      const res = await fetch(`/api/auth/invites/tenant/${inviteId}/resend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to resend invite");
+      }
+
+      alert("Invite resent successfully!");
+    } catch (err) {
+      console.error("Error resending invite:", err);
+      alert(err instanceof Error ? err.message : "Failed to resend invite");
+    } finally {
+      setResendingInviteId(null);
+    }
+  };
+
   const validateInviteForm = () => {
     if (!selectedLeaseId) {
       setInviteError("Please select a lease");
@@ -471,7 +493,7 @@ export default function EnhancedTenantDashboard() {
     if (activeTab === "tenants") {
       headers = ["Tenant Name", "Email", "Phone", "Property", "Unit", "Rent Amount", "Start Date", "End Date", "Status", "Balance"];
       data = filteredLeases.map(lease => [
-        lease.tenant?.firstName + " " + lease.tenant?.lastName || "N/A",
+        getTenantName(lease.tenant),
         lease.tenant?.email || "N/A",
         lease.tenant?.phone || "N/A",
         lease.property?.name || lease.property?.city || "N/A",
@@ -773,12 +795,10 @@ export default function EnhancedTenantDashboard() {
                             </div>
                             <div>
                               <p className="font-semibold text-slate-900">
-                                {lease.tenant?.firstName && lease.tenant?.lastName
-                                  ? `${lease.tenant.firstName} ${lease.tenant.lastName}`
-                                  : "Unnamed"}
+                                {getTenantName(lease.tenant)}
                               </p>                              <p className="text-sm text-slate-500">{lease.tenant?.email}</p>
                               {lease.tenant?.phone && (
-                                <p className="text-sm text-slate-500">{lease.tenant.phone}</p>
+                                <p className="text-sm text-slate-500">{lease.tenant?.phone}</p>
                               )}
                             </div>
                           </div>
@@ -1006,35 +1026,51 @@ export default function EnhancedTenantDashboard() {
                           <p className="text-sm text-slate-500">{formatDate(invite.createdAt)}</p>
                         </td>
                         <td className="px-6 py-4">
-                          {!invite.accepted && (
-                            <button
-                              disabled={!invite?.leaseId}
-                              onClick={() =>
-                                copyInviteLink(
-                                  invite.token,
-                                  invite.email,
-                                  invite.leaseId // safe now
-                                )
-                              }
-                              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors
-                              ${!invite?.leaseId
-                                  ? "bg-gray-400 cursor-not-allowed"
-                                  : "bg-blue-600 text-white hover:bg-blue-700"}
-                            `}
-                            >
-                              {copiedToken === invite.token ? (
-                                <>
-                                  <Check className="w-4 h-4" />
-                                  Copied!
-                                </>
-                              ) : (
-                                <>
-                                  <ExternalLink className="w-4 h-4" />
-                                  Copy Link
-                                </>
-                              )}
-                            </button>
-                          )}
+                          <div className="flex gap-2">
+                            {!invite.accepted && (
+                              <>
+                                <button
+                                  disabled={!invite?.leaseId}
+                                  onClick={() =>
+                                    copyInviteLink(
+                                      invite.token,
+                                      invite.email,
+                                      invite.leaseId // safe now
+                                    )
+                                  }
+                                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors
+                                  ${!invite?.leaseId
+                                      ? "bg-gray-400 cursor-not-allowed"
+                                      : "bg-blue-600 text-white hover:bg-blue-700"}
+                                `}
+                                >
+                                  {copiedToken === invite.token ? (
+                                    <>
+                                      <Check className="w-4 h-4" />
+                                      Copied!
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ExternalLink className="w-4 h-4" />
+                                      Copy Link
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleResendInvite(invite.id)}
+                                  disabled={resendingInviteId === invite.id || !invite?.leaseId}
+                                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors
+                                  ${!invite?.leaseId || resendingInviteId === invite.id
+                                      ? "bg-gray-400 cursor-not-allowed"
+                                      : "bg-amber-600 text-white hover:bg-amber-700"}
+                                `}
+                                >
+                                  <RefreshCw className={`w-4 h-4 ${resendingInviteId === invite.id ? "animate-spin" : ""}`} />
+                                  {resendingInviteId === invite.id ? "Sending..." : "Resend"}
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
 
                       </tr>
@@ -1479,4 +1515,3 @@ export default function EnhancedTenantDashboard() {
     </div>
   );
 }
-

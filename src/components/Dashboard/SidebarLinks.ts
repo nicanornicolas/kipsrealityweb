@@ -155,6 +155,7 @@ export const routeConfig = {
     ],
     properties: [
       { path: '/property-manager/view-own-property', label: 'Manage Property', icon: Building2 },
+      { path: '/property-manager/listings', label: 'Marketplace Listings', icon: Building2 },
       { path: '/property-manager/content/lease', label: 'Manage Leases', icon: Building2 },
       // { path: '/property-manager/properties/vacancy', label: 'Vacancy Tracker', icon: Building2 },
     ],

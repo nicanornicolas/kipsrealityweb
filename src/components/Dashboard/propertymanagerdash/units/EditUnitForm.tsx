@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useState, useEffect } from "react";
 import { updateUnitDetails } from "@/lib/units";
+import { ListingDecisionModal } from "@/components/Dashboard/listing/ListingDecisionModal";
+import { ListingStatus, UnitWithListingStatus } from "@/lib/listing-types";
 
 export interface ApplianceInput {
   name: string;
@@ -53,6 +55,8 @@ export default function EditUnitForm({
 
   const [loading, setLoading] = useState(false);
   const [applianceInput, setApplianceInput] = useState("");
+  const [showListingDecision, setShowListingDecision] = useState(false);
+  const [createdUnitId, setCreatedUnitId] = useState<string | null>(null);
 
   // Initialize appliance input from existing data
   useEffect(() => {
@@ -87,8 +91,15 @@ export default function EditUnitForm({
       const result = await updateUnitDetails(propertyId, unitNumber, formattedData);
 
       if (result.success) {
-        toast.success("Unit details saved successfully!");
-        setTimeout(() => router.back(), 1000);
+        // Check if this was a new unit creation
+        if (result.isNewUnit && result.unit?.id) {
+          setCreatedUnitId(result.unit.id);
+          setShowListingDecision(true);
+          toast.success("Unit created successfully! Choose listing preference.");
+        } else {
+          toast.success("Unit details saved successfully!");
+          setTimeout(() => router.back(), 1000);
+        }
       } else {
         toast.error(result.message || "Failed to save unit details.");
       }
@@ -100,8 +111,70 @@ export default function EditUnitForm({
     }
   };
 
+  const handleListingDecision = async (unitId: string, decision: 'list' | 'private') => {
+    if (!createdUnitId) return;
+    if (!unitId) {
+      toast.error("Unit ID is missing. Please try again.");
+      return;
+    }
+    
+    try {
+      if (decision === 'list') {
+        const response = await fetch("/api/listings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            unitId,
+            action: "CREATE",
+            listingData: {
+              title: watch('unitName') || `Unit ${unitNumber}`,
+              description: watch('unitName') || `Unit ${unitNumber}`,
+              price: watch('rentAmount') || 0
+            }
+          })
+        });
+
+        if (response.ok) {
+          toast.success("Unit listed on marketplace successfully!");
+        } else {
+          const payload = await response.json().catch(() => ({}));
+          toast.error(payload.error || "Failed to list unit on marketplace");
+        }
+      } else {
+        toast.success("Unit kept private as requested.");
+      }
+      
+      setShowListingDecision(false);
+      setTimeout(() => router.back(), 1000);
+    } catch (error) {
+      console.error('Error handling listing decision:', error);
+      toast.error("Error processing listing decision");
+      setShowListingDecision(false);
+      setTimeout(() => router.back(), 1000);
+    }
+  };
+
+  const getListingDecisionUnit = (): UnitWithListingStatus => ({
+    id: createdUnitId || '',
+    unitNumber,
+    propertyId,
+    rentAmount: watch('rentAmount') || undefined,
+    bedrooms: watch('bedrooms') || undefined,
+    bathrooms: watch('bathrooms') || undefined,
+    listing: {
+      id: '',
+      status: ListingStatus.PRIVATE,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      title: watch('unitName') || `Unit ${unitNumber}`,
+      description: watch('unitName') || `Unit ${unitNumber}`,
+      price: watch('rentAmount') || 0
+    }
+  });
+
   return (
-    <div className="max-w-2xl mx-auto bg-white/90 backdrop-blur-xl border border-gray-200 shadow-2xl rounded-3xl p-8 transition-all duration-300">
+    <>
+      <div className="max-w-2xl mx-auto bg-white/90 backdrop-blur-xl border border-gray-200 shadow-2xl rounded-3xl p-8 transition-all duration-300">
       <div className="text-center mb-8">
         <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
           <span className="text-white font-bold text-lg">#{unitNumber}</span>
@@ -277,5 +350,18 @@ export default function EditUnitForm({
         </div>
       </form>
     </div>
+
+    {/* Listing Decision Modal */}
+    {showListingDecision && createdUnitId && (
+      <ListingDecisionModal
+        isOpen={showListingDecision}
+        unit={getListingDecisionUnit()}
+        onDecision={handleListingDecision}
+        onClose={() => {
+          setShowListingDecision(false);
+        }}
+      />
+    )}
+    </>
   );
 }

@@ -6,11 +6,11 @@ import { Badge } from '@/components/ui/badge';
 
 interface PendingLease {
   id: string;
-  tenant: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
+  tenant?: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string | null;
+  } | null;
   unit: {
     unitNumber: string;
   };
@@ -21,6 +21,15 @@ interface PendingLease {
   startDate: string;
   leaseStatus: string | null;
 }
+
+// Helper function for safe tenant name display
+const getTenantName = (tenant?: { firstName?: string | null; lastName?: string | null } | null): string => {
+  if (!tenant) return "Unknown Tenant";
+  const firstName = tenant.firstName || "";
+  const lastName = tenant.lastName || "";
+  const name = [firstName, lastName].filter(Boolean).join(" ");
+  return name || "Unknown Tenant";
+};
 
 export function PendingLeasesCard() {
   const [leases, setLeases] = useState<PendingLease[]>([]);
@@ -126,7 +135,7 @@ export function PendingLeasesCard() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="font-semibold text-lg">
-                        {lease.tenant.firstName} {lease.tenant.lastName}
+                        {getTenantName(lease.tenant)}
                       </h3>
                       <Badge variant="secondary">{lease.leaseStatus}</Badge>
                     </div>
@@ -146,7 +155,7 @@ export function PendingLeasesCard() {
                         {new Date(lease.startDate).toLocaleDateString()}
                       </p>
                       <p>
-                        <span className="font-medium">Email:</span> {lease.tenant.email}
+                        <span className="font-medium">Email:</span> {lease.tenant?.email || 'N/A'}
                       </p>
                     </div>
                   </div>

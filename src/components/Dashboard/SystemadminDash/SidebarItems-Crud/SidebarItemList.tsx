@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import SidebarItemForm, { UserRole } from "./SidebarItemForm";
+import SidebarItemForm, { SidebarUserRole } from "./SidebarItemForm";
 
 interface SidebarItem {
   id: number;
   label: string;
   path: string;
-  role: UserRole;
+  role: SidebarUserRole;
   section?: string;
   feature?: { title: string };
   plans?: { name: string }[];
@@ -37,7 +37,7 @@ export default function SidebarItemList() {
       const data = await res.json();
       console.log("Fetched items:", data); // Debug log
       
-      setItems(data.map((i: any) => ({ ...i, role: i.role as UserRole })));
+      setItems(data.map((i: any) => ({ ...i, role: i.role as SidebarUserRole })));
     } catch (error) {
       console.error("Fetch error:", error);
       toast.error("Failed to fetch sidebar items");
