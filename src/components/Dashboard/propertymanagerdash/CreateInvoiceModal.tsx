@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Lease } from "../type";
 
 export default function CreateInvoiceModal() {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [leases, setLeases] = useState<any[]>([]);
+    const [leases, setLeases] = useState<Lease[]>([]);
 
     // Form State
     const [leaseId, setLeaseId] = useState("");
@@ -53,7 +54,9 @@ export default function CreateInvoiceModal() {
 
             toast.success("Invoice Created & Posted to GL!");
             setIsOpen(false);
-            window.location.reload(); // Refresh the list
+            setTimeout(() => {
+                window.location.reload(); // Refresh the list after showing toast
+            }, 3000);
         } catch (error) {
             toast.error("Error creating invoice");
         } finally {
@@ -86,7 +89,7 @@ export default function CreateInvoiceModal() {
                             required
                         >
                             <option value="">-- Choose Tenant --</option>
-                            {leases.map((lease: any) => (
+                            {leases.map((lease) => (
                                 <option key={lease.id} value={lease.id}>
                                     {lease.tenant?.firstName} {lease.tenant?.lastName} ({lease.unit?.unitNumber || 'No Unit'})
                                 </option>

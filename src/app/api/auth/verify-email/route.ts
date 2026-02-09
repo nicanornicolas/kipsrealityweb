@@ -5,14 +5,20 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get('token');
 
+  // Debug logging
+  console.log("🔍 Email Verification Request URL:", request.url);
+  console.log("🔍 Email Verification Token:", token ? "Present" : "Missing");
+
   // Helper for redirection
   const redirectToLogin = (params: string) => {
     // Uses the request URL origin to ensure we stay on the same domain/IP
     const loginUrl = new URL(`/login?${params}`, request.url);
+    console.log("🔍 Redirecting to:", loginUrl.toString());
     return NextResponse.redirect(loginUrl);
   };
 
   if (!token) {
+    console.error("❌ No token provided in verification request");
     return redirectToLogin('error=missing_token');
   }
 
