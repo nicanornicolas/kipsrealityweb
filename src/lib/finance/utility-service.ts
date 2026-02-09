@@ -57,7 +57,7 @@ export const utilityService = {
                 allocations = activeLeases.map(lease => ({
                     leaseId: lease.id,
                     tenantId: lease.tenantId,
-                    tenantName: lease.tenant ? `${lease.tenant.firstName} ${lease.tenant.lastName}` : 'N/A',
+                    tenantName: lease.tenant ? `${lease.tenant.firstName ?? ''} ${lease.tenant.lastName ?? ''}`.trim() || 'N/A' : 'N/A',
                     unitNumber: lease.unit.unitNumber,
                     unitId: lease.unit.id,
                     amount: equalAmount,
@@ -79,7 +79,7 @@ export const utilityService = {
                     return {
                         leaseId: lease.id,
                         tenantId: lease.tenantId,
-                        tenantName: lease.tenant ? `${lease.tenant.firstName} ${lease.tenant.lastName}` : 'N/A',
+                        tenantName: lease.tenant ? `${lease.tenant.firstName ?? ''} ${lease.tenant.lastName ?? ''}`.trim() || 'N/A' : 'N/A',
                         unitNumber: lease.unit.unitNumber,
                         unitId: lease.unit.id,
                         amount,
@@ -100,7 +100,7 @@ export const utilityService = {
                 allocations = activeLeases.map(lease => ({
                     leaseId: lease.id,
                     tenantId: lease.tenantId,
-                    tenantName: lease.tenant ? `${lease.tenant.firstName} ${lease.tenant.lastName}` : 'N/A',
+                    tenantName: lease.tenant ? `${lease.tenant.firstName ?? ''} ${lease.tenant.lastName ?? ''}`.trim() || 'N/A' : 'N/A',
                     unitNumber: lease.unit.unitNumber,
                     unitId: lease.unit.id,
                     amount: equalAmount,
