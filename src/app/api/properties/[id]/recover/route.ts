@@ -16,10 +16,10 @@ interface RecoverPropertyRequest {
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const propertyId = params.id;
+    const { id: propertyId } = await params;
     
     // Get current user
     const currentUser = await getCurrentUser();
@@ -96,10 +96,10 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const propertyId = params.id;
+    const { id: propertyId } = await params;
     
     // Get current user
     const currentUser = await getCurrentUser();

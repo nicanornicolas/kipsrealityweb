@@ -4,15 +4,14 @@ import { getCurrentUser } from '@/lib/Getcurrentuser';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: listingId } = await params;
         const user = await getCurrentUser(request);
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-
-        const listingId = params.id;
         const performance = await listingReportingService.getListingPerformance(listingId);
 
         if (!performance) {

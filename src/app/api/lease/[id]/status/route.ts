@@ -7,15 +7,14 @@ import { Lease_leaseStatus } from "@prisma/client";
 
 export async function PUT(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: leaseId } = await params;
         const user = await getCurrentUser();
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-
-        const leaseId = params.id;
         const { status, reason } = await req.json();
 
         // Validate status
@@ -131,15 +130,14 @@ export async function PUT(
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: leaseId } = await params;
         const user = await getCurrentUser();
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-
-        const leaseId = params.id;
 
         // Get lease with status history
         const lease = await prisma.lease.findUnique({

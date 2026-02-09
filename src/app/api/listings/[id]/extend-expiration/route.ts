@@ -16,10 +16,10 @@ interface ExtendExpirationRequest {
  */
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const listingId = params.id;
+        const { id: listingId } = await params;
         
         // Get current user
         const currentUser = await getCurrentUser();
