@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth';
+import { leaseListingIntegration } from '@/lib/lease-listing-integration';
 import { cookies } from 'next/headers';
 
 export async function POST(
@@ -59,6 +60,8 @@ export async function POST(
       );
     }
 
+    const previousStatus = lease.leaseStatus;
+
     // 4. Update lease status to ACTIVE
     const updatedLease = await prisma.lease.update({
       where: { id: leaseId },
@@ -74,7 +77,21 @@ export async function POST(
       data: { isOccupied: true }
     });
 
-    // 6. Generate first invoice if start date is current or past
+    // 6. Handle listing integration after successful database update
+    try {
+      await leaseListingIntegration.handleLeaseStatusChange(
+        leaseId,
+        'ACTIVE',
+        previousStatus,
+        payload.userId
+      );
+    } catch (integrationError) {
+      console.error('Lease-listing integration error:', integrationError);
+      // Don't fail the request if integration fails, but log it
+      // The lease activation was successful, integration can be retried
+    }
+
+    // 7. Generate first invoice if start date is current or past
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const startDate = new Date(lease.startDate);

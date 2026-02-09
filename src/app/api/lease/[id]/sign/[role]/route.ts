@@ -5,6 +5,8 @@
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { leaseListingIntegration } from "@/lib/lease-listing-integration";
+import { sendTenantInviteEmail } from "@/lib/mail-service";
 
 export async function POST(
   req: NextRequest,
@@ -31,7 +33,23 @@ export async function POST(
     // Fetch lease upfront
     const lease = await prisma.lease.findUnique({
       where: { id: leaseId },
-      include: { tenant: true, property: true, unit: true },
+      include: { 
+        tenant: true, 
+        property: { 
+          include: { 
+            manager: {
+              include: {
+                user: true
+              }
+            }
+          } 
+        }, 
+        unit: { 
+          include: { 
+            property: true 
+          } 
+        } 
+      },
     });
 
     if (!lease) {
@@ -45,6 +63,8 @@ export async function POST(
       landlordSigned: !!lease.landlordSignedAt,
       leaseStatus: lease.leaseStatus
     });
+
+    const previousStatus = lease.leaseStatus;
 
     // === TENANT SIGNING (may be unauthenticated) ===
     if (role === "tenant") {
@@ -103,16 +123,48 @@ export async function POST(
 
       // Sign the lease
       console.log("✍️ Signing lease as tenant...");
+      const newStatus = lease.landlordSignedAt ? "SIGNED" : "DRAFT";
       const updated = await prisma.lease.update({
         where: { id: leaseId },
         data: {
           tenantSignedAt: new Date(),
-          leaseStatus: lease.landlordSignedAt ? "SIGNED" : "DRAFT",
+          leaseStatus: newStatus,
         },
-        include: { tenant: true, property: true, unit: true },
+        include: { 
+          tenant: true, 
+          property: { 
+            include: { 
+              manager: {
+                include: {
+                  user: true
+                }
+              }
+            } 
+          }, 
+          unit: { 
+            include: { 
+              property: true 
+            } 
+          } 
+        },
       });
 
       console.log("✅ Tenant signed lease successfully. New status:", updated.leaseStatus);
+
+      // Handle listing integration if status changed to SIGNED
+      if (newStatus === "SIGNED" && previousStatus !== "SIGNED") {
+        try {
+          await leaseListingIntegration.handleLeaseStatusChange(
+            leaseId,
+            newStatus,
+            previousStatus,
+            'tenant' // Use tenant as userId for tenant signing
+          );
+        } catch (integrationError) {
+          console.error('Lease-listing integration error:', integrationError);
+          // Don't fail the request if integration fails
+        }
+      }
 
       return NextResponse.json({ 
         message: "Lease signed by tenant", 
@@ -170,16 +222,94 @@ export async function POST(
 
       // Sign the lease
       console.log("✍️ Signing lease as landlord...");
+      const newStatus = lease.tenantSignedAt ? "SIGNED" : "DRAFT";
       const updated = await prisma.lease.update({
         where: { id: leaseId },
         data: {
           landlordSignedAt: new Date(),
-          leaseStatus: lease.tenantSignedAt ? "SIGNED" : "DRAFT",
+          leaseStatus: newStatus,
         },
-        include: { tenant: true, property: true, unit: true },
+        include: { 
+          tenant: true, 
+          property: { 
+            include: { 
+              manager: {
+                include: {
+                  user: true
+                }
+              }
+            } 
+          }, 
+          unit: { 
+            include: { 
+              property: true 
+            } 
+          } 
+        },
       });
 
       console.log("✅ Landlord signed lease successfully. New status:", updated.leaseStatus);
+
+      // Handle listing integration if status changed to SIGNED
+      if (newStatus === "SIGNED" && previousStatus !== "SIGNED") {
+        try {
+          await leaseListingIntegration.handleLeaseStatusChange(
+            leaseId,
+            newStatus,
+            previousStatus,
+            user.id
+          );
+        } catch (integrationError) {
+          console.error('Lease-listing integration error:', integrationError);
+          // Don't fail the request if integration fails
+        }
+      }
+
+      // === SEND TENANT INVITE EMAIL IF TENANT HASN'T SIGNED YET ===
+      if (!lease.tenantSignedAt && updated.tenant?.email) {
+        try {
+          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+          const invite = await prisma.invite.findFirst({
+            where: {
+              leaseId: leaseId,
+              email: updated.tenant.email.toLowerCase(),
+              accepted: false,
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+
+          if (invite) {
+            const propertyName = updated.unit?.property?.name || "Unknown Property";
+            const unitNumber = updated.unit?.unitNumber || "N/A";
+            
+            // Get landlord user details from manager relationship
+            let landlordName = "Property Manager";
+            if (lease.property?.manager?.user) {
+              const user = lease.property.manager.user;
+              landlordName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Property Manager";
+            }
+            
+            const inviteLink = `${baseUrl}/invite/tenant/accept?token=${invite.token}&email=${encodeURIComponent(updated.tenant.email)}&leaseId=${leaseId}`;
+
+            console.log("📧 Sending tenant invite email after landlord signature...");
+            await sendTenantInviteEmail(
+              updated.tenant.email,
+              updated.tenant.firstName || "Tenant",
+              propertyName,
+              unitNumber,
+              landlordName,
+              inviteLink,
+              true // hasLandlordSigned = true
+            );
+            console.log("✅ Tenant invite email sent after landlord signature");
+          } else {
+            console.log("ℹ️ No active invite found for tenant, skipping email");
+          }
+        } catch (emailError) {
+          console.error("❌ Failed to send tenant invite email after landlord signing:", emailError);
+          // Don't fail the request if email fails
+        }
+      }
 
       return NextResponse.json({ 
         message: "Lease signed by landlord", 

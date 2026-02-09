@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/Getcurrentuser";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
+import { randomUUID } from "crypto";
 
 async function internalApplyRentEscalation(req: NextRequest, leaseId: string) {
   try {
@@ -68,6 +69,7 @@ async function internalApplyRentEscalation(req: NextRequest, leaseId: string) {
     // Audit
     await prisma.leaseAuditLog.create({
       data: {
+        id: randomUUID(),
         leaseId,
         action: "RENT_ESCALATED",
         performedBy: user.id,
