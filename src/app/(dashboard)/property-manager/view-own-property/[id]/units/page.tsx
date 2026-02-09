@@ -1,7 +1,8 @@
 // src/app/(dashboard)/property-manager/view-own-property/[id]/units/page.tsx
 import { fetchUnits } from "@/lib/units";
 import Link from "next/link";
-import { Building, Bed, Bath, DollarSign, Users, Home, Wifi, Utensils } from "lucide-react";
+import { Building, Bed, Bath, DollarSign, Users, Home, Wifi, Utensils, Eye } from "lucide-react";
+import { ListingStatus } from "@/lib/listing-types";
 
 export default async function ManageUnitsPage({
   params,
@@ -75,6 +76,12 @@ export default async function ManageUnitsPage({
             <tbody className="divide-y divide-gray-100">
               {units.map((unit) => {
                 const hasDetails = unit.unitName || unit.bedrooms || unit.bathrooms || unit.floorNumber || unit.rentAmount;
+                const listingStatusName = unit.listing?.status?.name as ListingStatus | undefined;
+                const isListed = !!unit.listing?.id && (
+                  listingStatusName === ListingStatus.ACTIVE ||
+                  listingStatusName === ListingStatus.COMING_SOON ||
+                  listingStatusName === undefined
+                );
                 const applianceCount = unit.appliances?.length || 0;
 
                 return (
@@ -176,12 +183,22 @@ export default async function ManageUnitsPage({
                           {hasDetails ? 'Edit Details' : 'Add Details'}
                         </Link>
                         
-                        <Link
-                          href={`/property-manager/view-own-property/${propertyId}/units/${unit.unitNumber}/list`}
-                          className="px-4 py-2 rounded-lg font-medium text-sm text-center bg-navy-700 hover:bg-navy-800 text-white transition-colors"
-                        >
-                          List Unit
-                        </Link>
+                        {isListed && unit.id ? (
+                          <Link
+                            href={`/property-manager/listings?unit=${unit.id}`}
+                            className="px-4 py-2 rounded-lg font-semibold text-sm text-center bg-emerald-700 text-white transition-colors shadow-sm ring-1 ring-emerald-800/40"
+                          >
+                            <Eye className="w-4 h-4 inline-block mr-2" />
+                            Listed
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/property-manager/view-own-property/${propertyId}/units/${unit.unitNumber}/list`}
+                            className="px-4 py-2 rounded-lg font-semibold text-sm text-center bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-sm ring-1 ring-emerald-700/30"
+                          >
+                            List Unit
+                          </Link>
+                        )}
                       </div>
                     </td>
                   </tr>

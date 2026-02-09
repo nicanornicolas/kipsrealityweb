@@ -134,7 +134,7 @@ export default function InvoiceDetailsPage() {
           <p className="text-sm font-semibold text-gray-500 uppercase">Tenant</p>
           <p className="text-gray-800">
             {invoice.Lease?.tenant
-              ? `${invoice.Lease.tenant.firstName} ${invoice.Lease.tenant.lastName}`
+              ? `${invoice.Lease.tenant?.firstName ?? ''} ${invoice.Lease.tenant?.lastName ?? ''}`.trim() || "—"
               : "—"}
           </p>
         </div>

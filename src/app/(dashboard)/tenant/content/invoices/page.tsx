@@ -29,7 +29,7 @@ interface Tenant {
   id: string;
   firstName?: string;
   lastName?: string;
-  email: string;
+  email?: string;
 }
 interface Invoice { id: string; leaseId: string; amount: number; dueDate: string; status: "PENDING" | "PAID" | "OVERDUE"; type: string; Lease: Lease; payment: Payment[]; }
 
@@ -442,7 +442,7 @@ export default function TenantInvoices() {
                           Name
                         </div>
                         <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>
-                          {viewingReceipt.payment.invoice.Lease.tenant.firstName} {viewingReceipt.payment.invoice.Lease.tenant.lastName}
+                          {viewingReceipt.payment.invoice.Lease.tenant?.firstName ?? ''} {viewingReceipt.payment.invoice.Lease.tenant?.lastName ?? ''}
                         </div>
                       </div>
                       <div style={{ marginBottom: '12px' }}>
@@ -450,7 +450,7 @@ export default function TenantInvoices() {
                           Email
                         </div>
                         <div style={{ fontSize: '14px', color: '#1e293b' }}>
-                          {viewingReceipt.payment.invoice.Lease.tenant.email}
+                          {viewingReceipt.payment.invoice.Lease.tenant?.email || 'N/A'}
                         </div>
                       </div>
                     </div>
