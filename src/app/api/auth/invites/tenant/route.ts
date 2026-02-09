@@ -3,12 +3,21 @@ import { prisma } from "@/lib/db";
 import { verifyAccessToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import crypto from "crypto";
+import { sendTenantInviteEmail } from "@/lib/mail-service";
 
 type TokenPayload = {
   userId: string;
   role: string;
   organizationId: string;
 };
+
+interface InviteRequestBody {
+  email: string;
+  firstName: string;
+  lastName?: string;
+  phone?: string;
+  leaseId: string;
+}
 
 export async function POST(request: Request) {
   try {
@@ -34,9 +43,9 @@ export async function POST(request: Request) {
     }
 
     // --- 2. Parse request body ---
-    let body: any;
+    let body: InviteRequestBody;
     try {
-      body = await request.json();
+      body = await request.json() as InviteRequestBody;
     } catch (err) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
@@ -56,7 +65,7 @@ export async function POST(request: Request) {
 
     const lease = await prisma.lease.findUnique({
       where: { id: leaseId },
-      include: { unit: true },
+      include: { unit: { include: { property: true } } },
     });
 
     if (!lease) return NextResponse.json({ error: "Lease not found" }, { status: 404 });
@@ -73,7 +82,7 @@ export async function POST(request: Request) {
           lastName: lastName || null,
           phone: phone || null,
           status: "INACTIVE",
-          emailVerified: null, // ✅ FIXED: Must be null (DateTime?), not false
+          emailVerified: null,
         },
       });
 
@@ -102,15 +111,43 @@ export async function POST(request: Request) {
         },
       });
 
-      return { user, invite };
+      return { user, invite, lease };
     });
 
-    // --- 5. Response Construction ---
-    const inviteLink = `${process.env.NEXT_PUBLIC_BASE_URL}/invite/tenant/accept?token=${result.invite.token}&email=${encodeURIComponent(normalizedEmail)}&leaseId=${lease.id}`;
+    // --- 5. Get landlord info for email ---
+    const landlord = await prisma.user.findUnique({
+      where: { id: payload.userId },
+    });
 
+    // --- 6. Construct invite link ---
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const inviteLink = `${baseUrl}/invite/tenant/accept?token=${result.invite.token}&email=${encodeURIComponent(normalizedEmail)}&leaseId=${lease.id}`;
+
+    // --- 7. Send email to tenant ---
+    try {
+      const propertyName = result.lease.unit?.property?.name || "Unknown Property";
+      const unitNumber = result.lease.unit?.unitNumber || "N/A";
+      const landlordName = landlord?.firstName ? `${landlord.firstName} ${landlord.lastName || ""}`.trim() : "Property Manager";
+      const hasLandlordSigned = !!result.lease.landlordSignedAt; // Check if landlord has signed
+
+      await sendTenantInviteEmail(
+        normalizedEmail,
+        firstName,
+        propertyName,
+        unitNumber,
+        landlordName,
+        inviteLink,
+        hasLandlordSigned
+      );
+    } catch (emailError) {
+      console.error("Failed to send tenant invite email:", emailError);
+      // Don't fail the request if email fails, just log it
+    }
+
+    // --- 8. Response Construction ---
     return NextResponse.json({
       success: true,
-      message: "Tenant invited successfully",
+      message: "Tenant invited successfully. Email sent.",
       tenant: {
         id: result.user.id,
         token: result.invite.token,
