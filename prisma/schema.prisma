@@ -1420,15 +1420,17 @@ model PropertyType {
 }
 
 model AgentInvite {
-  id              String    @id
-  inviteTokenHash String    @unique
+  id              String   @id @default(uuid())
+  inviteTokenHash String   @unique
   expiresAt       DateTime
   usedAt          DateTime?
-  isUsed          Boolean   @default(false)
+  isUsed          Boolean  @default(false)
+
   tenantId        String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime
-  users           User      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant          User     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([expiresAt])
   @@index([tenantId])
