@@ -44,7 +44,7 @@ export function MarketplaceClientPage({ listings: initialListings }: Marketplace
 
 
 
-  const handleApply = (listing: MarketplaceItem) => {
+  const handleApply = async (listing: MarketplaceItem) => {
     const unitId = listing.unitId ?? listing.unit?.id;
     const propertyId = listing.propertyId ?? listing.unit?.property?.id ?? listing.property?.id;
 
@@ -53,15 +53,33 @@ export function MarketplaceClientPage({ listings: initialListings }: Marketplace
       return;
     }
 
-    setSelectedListing({
-      ...listing,
-      unitId,
-      propertyId,
-      unit: listing.unit || { id: unitId, property: { id: propertyId, name: listing.property?.name || "" } },
-      property: listing.property || { id: propertyId, name: listing.unit?.property?.name || "" },
-    });
+    // Check application eligibility before opening modal
+    try {
+      const response = await fetch(`/api/units/by-id/${unitId}/application-eligibility`);
+      if (!response.ok) {
+        alert("Unable to check unit availability. Please try again later.");
+        return;
+      }
+      const eligibility = await response.json();
 
-    setShowModal(true);
+      if (!eligibility.isEligible) {
+        alert(eligibility.reason || "This unit is not currently available for applications.");
+        return;
+      }
+
+      setSelectedListing({
+        ...listing,
+        unitId,
+        propertyId,
+        unit: listing.unit || { id: unitId, property: { id: propertyId, name: listing.property?.name || "" } },
+        property: listing.property || { id: propertyId, name: listing.unit?.property?.name || "" },
+      });
+
+      setShowModal(true);
+    } catch (error) {
+      console.error('Error checking application eligibility:', error);
+      alert("Unable to check unit availability. Please try again later.");
+    }
   };
 
   const handleCloseModal = () => {

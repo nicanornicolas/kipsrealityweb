@@ -22,6 +22,39 @@ export async function GET(req: Request) {
     const organizationId = user.organizationId;
     const { searchParams } = new URL(req.url);
     const propertyId = searchParams.get("propertyId");
+    const include = searchParams.get("include")?.split(",") || [];
+
+    // Build include options based on query parameters
+    const includeOptions: any = {
+      property: { select: { id: true, name: true, address: true, city: true } }
+    };
+
+    if (include.includes("listing")) {
+      includeOptions.listing = {
+        include: {
+          status: true
+        }
+      };
+    }
+
+    if (include.includes("lease")) {
+      includeOptions.leases = {
+        where: { leaseStatus: "ACTIVE" },
+        orderBy: { createdAt: "desc" },
+        take: 1
+      };
+    }
+
+    if (include.includes("applications")) {
+      includeOptions.tenantApplications = {
+        include: {
+          user: {
+            select: { id: true, firstName: true, lastName: true, email: true }
+          }
+        },
+        orderBy: { createdAt: "desc" }
+      };
+    }
 
     // Fetch all units for the organization if no propertyId
     if (!propertyId) {
@@ -29,7 +62,7 @@ export async function GET(req: Request) {
         where: {
           property: { organizationId },
         },
-        include: { property: { select: { city: true } } },
+        include: includeOptions,
         orderBy: { unitNumber: "asc" },
       });
       return NextResponse.json(units);

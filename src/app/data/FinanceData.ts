@@ -44,6 +44,11 @@ export interface Invoice {
       name?: string;
       address?: string;
     };
+    unit?: {
+      id?: string;
+      unitNumber?: string;
+      unitName?: string;
+    };
     leaseUtility?: {
       utility: {
         id: string;

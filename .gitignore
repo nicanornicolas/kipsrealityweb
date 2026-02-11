@@ -74,3 +74,7 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+.kiro
+financial_testing_guide.md
+RENTFLOW360_PAYMENT_INFRASTRUCTURE_ANALYSIS.md

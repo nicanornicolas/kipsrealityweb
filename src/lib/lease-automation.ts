@@ -1,6 +1,7 @@
 // lib/lease-automation.ts
 import { prisma } from "@/lib/db";
 import { sendEmail } from "@/lib/mail";
+import { leaseListingIntegration } from "@/lib/lease-listing-integration";
 import { randomUUID } from "crypto";
 
 interface NotificationConfig {
@@ -303,20 +304,69 @@ async function checkComplianceDates() {
 async function updateLeaseStatuses() {
   const today = new Date();
 
-  await prisma.lease.updateMany({
-    where: { endDate: { lt: today }, leaseStatus: { in: ["ACTIVE", "EXPIRING_SOON"] } },
-    data: { leaseStatus: "EXPIRED" },
+  // Find leases that should be expired
+  const leasesToExpire = await prisma.lease.findMany({
+    where: { 
+      endDate: { lt: today }, 
+      leaseStatus: { in: ["ACTIVE", "EXPIRING_SOON"] } 
+    },
+    select: { id: true, leaseStatus: true }
   });
 
-  await prisma.lease.updateMany({
+  // Update expired leases and handle listing integration
+  for (const lease of leasesToExpire) {
+    const previousStatus = lease.leaseStatus;
+    
+    await prisma.lease.update({
+      where: { id: lease.id },
+      data: { leaseStatus: "EXPIRED" }
+    });
+
+    // Handle listing integration for expired leases
+    try {
+      await leaseListingIntegration.handleLeaseStatusChange(
+        lease.id,
+        "EXPIRED",
+        previousStatus,
+        'system'
+      );
+    } catch (error) {
+      console.error(`Error handling listing integration for expired lease ${lease.id}:`, error);
+    }
+  }
+
+  // Find leases that should be activated
+  const leasesToActivate = await prisma.lease.findMany({
     where: {
       startDate: { lte: today },
       leaseStatus: "SIGNED",
       landlordSignedAt: { not: null },
       tenantSignedAt: { not: null },
     },
-    data: { leaseStatus: "ACTIVE" },
+    select: { id: true, leaseStatus: true }
   });
 
-  console.log("📊 Updated lease statuses");
+  // Update and activate signed leases
+  for (const lease of leasesToActivate) {
+    const previousStatus = lease.leaseStatus;
+    
+    await prisma.lease.update({
+      where: { id: lease.id },
+      data: { leaseStatus: "ACTIVE" }
+    });
+
+    // Handle listing integration for activated leases
+    try {
+      await leaseListingIntegration.handleLeaseStatusChange(
+        lease.id,
+        "ACTIVE",
+        previousStatus,
+        'system'
+      );
+    } catch (error) {
+      console.error(`Error handling listing integration for activated lease ${lease.id}:`, error);
+    }
+  }
+
+  console.log(`📊 Updated lease statuses: ${leasesToExpire.length} expired, ${leasesToActivate.length} activated`);
 }

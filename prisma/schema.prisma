@@ -62,6 +62,7 @@ model User {
   dssParticipants      DssParticipant[]
   organizationUsers    OrganizationUser[]
   vendors              Vendor[]
+  listingAuditEntries  ListingAuditEntry[]
 
   @@map("users")
 }
@@ -528,6 +529,7 @@ model Unit {
   journalLines        JournalLine[]
   utilityAllocations  UtilityAllocation[]
   appliances          Appliance[]          @relation("UnitAppliances")
+  listingAuditEntries ListingAuditEntry[]
 
   @@index([propertyId])
 }
@@ -923,6 +925,8 @@ model Listing {
   title              String
   description        String
   price              Float
+  availabilityDate   DateTime?           @map("availability_date")
+  expirationDate     DateTime?           @map("expiration_date")
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   propertyId         String?
@@ -936,6 +940,7 @@ model Listing {
   property           Property?           @relation("PropertyListing")
   serviceMarketplace ServiceMarketplace?
   unit               Unit?               @relation("UnitListing")
+  auditEntries       ListingAuditEntry[]
 
   @@index([createdBy])
   @@index([locationId])
@@ -1734,4 +1739,47 @@ enum SidebarItem_role {
   AGENT
   VENDOR
   ALL
+}
+
+enum ListingStatus_enum {
+  PRIVATE
+  ACTIVE
+  SUSPENDED
+  PENDING
+  EXPIRED
+}
+
+enum ListingAction_enum {
+  CREATE
+  REMOVE
+  SUSPEND
+  ACTIVATE
+  UPDATE
+  EXPIRE
+}
+
+model ListingAuditEntry {
+  id             String              @id @default(uuid())
+  unitId         String              @map("unit_id")
+  listingId      String?             @map("listing_id")
+  action         ListingAction_enum
+  previousStatus ListingStatus_enum? @map("previous_status")
+  newStatus      ListingStatus_enum  @map("new_status")
+  userId         String              @map("user_id")
+  timestamp      DateTime            @default(now())
+  reason         String?
+  metadata       Json?
+  createdAt      DateTime            @default(now()) @map("created_at")
+
+  // Relations
+  unit    Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  listing Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  user    User     @relation(fields: [userId], references: [id])
+
+  @@index([unitId])
+  @@index([listingId])
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+  @@map("listing_audit_entries")
 }

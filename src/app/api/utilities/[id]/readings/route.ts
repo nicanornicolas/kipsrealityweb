@@ -61,7 +61,7 @@ export async function GET(
             },
             tenant: {
                 name: r.lease_utility.Lease?.tenant
-                    ? `${r.lease_utility.Lease.tenant.firstName ?? ""} ${r.lease_utility.Lease.tenant.lastName ?? ""}`.trim() || "Unknown"
+                    ? `${r.lease_utility.Lease.tenant?.firstName ?? ""} ${r.lease_utility.Lease.tenant?.lastName ?? ""}`.trim() || "Unknown"
                     : "Unknown",
             },
             property: {

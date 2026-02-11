@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/Getcurrentuser";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
+import { randomUUID } from "crypto";
 
 async function internalRenewLease(req: NextRequest, leaseId: string) {
   try {
@@ -52,6 +53,7 @@ async function internalRenewLease(req: NextRequest, leaseId: string) {
     // Audit log
     await prisma.leaseAuditLog.create({
       data: {
+        id: randomUUID(),
         leaseId,
         action: "RENEWAL_INITIATED",
         performedBy: user.id,

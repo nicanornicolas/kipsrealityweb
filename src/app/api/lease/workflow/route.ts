@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { leaseListingIntegration } from "@/lib/lease-listing-integration";
 import { Prisma } from "@prisma/client";
+import { randomUUID } from "crypto";
 
 // Utility: Calculate next escalation date
 function calculateNextEscalation(startDate: Date, frequency: string): Date {
@@ -50,6 +52,7 @@ export async function POST(req: NextRequest) {
 
     let updatedLease;
     let auditAction = "";
+    const previousStatus = lease.leaseStatus;
 
     switch (action) {
       case "APPROVE":
@@ -86,15 +89,41 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
+    const newStatus = updatedLease.leaseStatus;
+    if (!newStatus) {
+      return NextResponse.json(
+        { error: "Lease status update failed" },
+        { status: 500 }
+      );
+    }
+
     // Create audit log
     await prisma.leaseAuditLog.create({
       data: {
+        id: randomUUID(),
         leaseId,
         action: auditAction,
         performedBy: user.id,
-        changes: { leaseStatus: updatedLease.leaseStatus } as Prisma.InputJsonValue, // ✅ cast as InputJsonValue
+        changes: { 
+          previousStatus,
+          newStatus
+        } as Prisma.InputJsonValue, // cast as InputJsonValue
       } as Prisma.LeaseAuditLogUncheckedCreateInput,
     });
+
+    // Handle listing integration after successful database update
+    try {
+      await leaseListingIntegration.handleLeaseStatusChange(
+        leaseId,
+        newStatus,
+        previousStatus,
+        user.id
+      );
+    } catch (integrationError) {
+      console.error('Lease-listing integration error:', integrationError);
+      // Don't fail the request if integration fails, but log it
+      // The lease status update was successful, integration can be retried
+    }
 
     return NextResponse.json(updatedLease);
   } catch (error: any) {

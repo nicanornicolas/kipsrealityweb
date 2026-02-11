@@ -75,6 +75,13 @@ export async function PUT(
       },
       include: { appliances: true },
     });
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "Unit created successfully", 
+      unit,
+      isNewUnit: true 
+    });
   } else {
     // --- UPDATE ---
     // Create new appliance entries for this unit (duplicates allowed)
@@ -105,5 +112,10 @@ export async function PUT(
     });
   }
 
-  return NextResponse.json({ success: true, message: "Unit saved", unit });
+  return NextResponse.json({ 
+    success: true, 
+    message: "Unit updated successfully", 
+    unit,
+    isNewUnit: false 
+  });
 }

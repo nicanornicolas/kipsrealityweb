@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-
+import { getCurrentUser } from "@/lib/Getcurrentuser";
 import { maintenanceService } from "@/lib/finance/maintenance-service";
+import { maintenanceListingIntegration } from "@/lib/maintenance-listing-integration";
 import { MaintenanceRequest_status } from "@prisma/client";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -13,6 +14,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   try {
+    const user = await getCurrentUser(req);
+    if (!user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get current status before update for comparison
+    const currentRequest = await prisma.maintenanceRequest.findUnique({
+      where: { id },
+      select: { status: true }
+    });
+
     const updated = await prisma.maintenanceRequest.update({
       where: { id },
       data: {
@@ -25,6 +37,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     // If status updated to COMPLETED, trigger financial billing
     if (status === MaintenanceRequest_status.COMPLETED && updated.cost && Number(updated.cost) > 0) {
       await maintenanceService.postMaintenanceBill(id);
+    }
+
+    // Handle listing integration if status changed
+    if (status && currentRequest && currentRequest.status !== status) {
+      await maintenanceListingIntegration.handleMaintenanceStatusChange(
+        id,
+        status,
+        user.id
+      );
     }
 
     return NextResponse.json(updated);

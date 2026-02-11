@@ -3,14 +3,15 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { api } from '@/lib/api-client';
 
 interface PendingLease {
   id: string;
-  tenant: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
+  tenant?: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string | null;
+  } | null;
   unit: {
     unitNumber: string;
   };
@@ -21,6 +22,15 @@ interface PendingLease {
   startDate: string;
   leaseStatus: string | null;
 }
+
+// Helper function for safe tenant name display
+const getTenantName = (tenant?: { firstName?: string | null; lastName?: string | null } | null): string => {
+  if (!tenant) return "Unknown Tenant";
+  const firstName = tenant.firstName || "";
+  const lastName = tenant.lastName || "";
+  const name = [firstName, lastName].filter(Boolean).join(" ");
+  return name || "Unknown Tenant";
+};
 
 export function PendingLeasesCard() {
   const [leases, setLeases] = useState<PendingLease[]>([]);
@@ -34,17 +44,30 @@ export function PendingLeasesCard() {
   async function fetchPendingLeases() {
     try {
       setLoading(true);
-      const response = await fetch('/api/lease/pending');
+      setError(null);
       
-      if (!response.ok) {
+      const result = await api.get<{ success: boolean; leases: PendingLease[] }>('/api/lease/pending');
+
+      if (result.error) {
+        // Handle API client errors (including 401 redirects)
+        if (result.status === 401) {
+          // The api client already handled redirect, but we can set error message
+          setError('Session expired. Please log in again.');
+          return;
+        }
+        throw new Error(result.error);
+      }
+
+      if (!result.data?.success) {
         throw new Error('Failed to fetch pending leases');
       }
 
-      const data = await response.json();
-      setLeases(data.leases || []);
-      setError(null);
+      setLeases(result.data.leases || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      // Only set error if it's not a 401 (which already redirected)
+      if (err instanceof Error && !err.message.includes('Session expired')) {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -56,20 +79,33 @@ export function PendingLeasesCard() {
     }
 
     try {
-      const response = await fetch(`/api/lease/${leaseId}/sign/landlord`, {
-        method: 'POST'
-      });
+      const result = await api.post<{ success: boolean; error?: string }>(
+        `/api/lease/${leaseId}/sign/landlord`,
+        {}
+      );
 
-      const result = await response.json();
-
-      if (result.success) {
-        alert('Lease activated successfully!');
-        fetchPendingLeases(); // Refresh the list
-      } else {
+      if (result.error) {
+        // Handle API client errors (including 401 redirects)
+        if (result.status === 401) {
+          alert('Session expired. Please log in again.');
+          return;
+        }
         alert(`Activation failed: ${result.error}`);
+        return;
       }
+
+      if (!result.data?.success) {
+        alert('Activation failed: Unknown error');
+        return;
+      }
+
+      alert('Lease activated successfully!');
+      fetchPendingLeases(); // Refresh the list
     } catch (err) {
-      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      // Only show alert if it's not a 401 (which already redirected)
+      if (err instanceof Error && !err.message.includes('Session expired')) {
+        alert(`Error: ${err.message}`);
+      }
     }
   }
 
@@ -126,7 +162,7 @@ export function PendingLeasesCard() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="font-semibold text-lg">
-                        {lease.tenant.firstName} {lease.tenant.lastName}
+                        {getTenantName(lease.tenant)}
                       </h3>
                       <Badge variant="secondary">{lease.leaseStatus}</Badge>
                     </div>
@@ -146,7 +182,7 @@ export function PendingLeasesCard() {
                         {new Date(lease.startDate).toLocaleDateString()}
                       </p>
                       <p>
-                        <span className="font-medium">Email:</span> {lease.tenant.email}
+                        <span className="font-medium">Email:</span> {lease.tenant?.email || 'N/A'}
                       </p>
                     </div>
                   </div>

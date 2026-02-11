@@ -40,6 +40,7 @@ export default function ListUnitForm({ propertyId, unitNumber }: { propertyId: s
     e.preventDefault();
 
     if (!user) return alert("Not logged in");
+    if (!unitId) return alert("Unit ID is missing. Please refresh and try again.");
 
     setLoading(true);
 
@@ -47,14 +48,17 @@ export default function ListUnitForm({ propertyId, unitNumber }: { propertyId: s
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        organizationId: user.organization?.id,
-        createdBy: user.id,
-        categoryId: "housing",
-        propertyId,
         unitId,
-        title,
-        description,
-        price: Number(price),
+        action: "CREATE",
+        listingData: {
+          organizationId: user.organization?.id,
+          createdBy: user.id,
+          categoryId: "housing",
+          propertyId,
+          title,
+          description,
+          price: Number(price),
+        },
       }),
     });
 

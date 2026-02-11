@@ -76,6 +76,8 @@ export async function PATCH(
             Lease: {
               include: {
                 property: true,
+                unit: true,
+                tenant: true,
               },
             },
           },

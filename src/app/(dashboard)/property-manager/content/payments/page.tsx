@@ -22,7 +22,7 @@ interface Tenant {
   id: string;
   firstName?: string;
   lastName?: string;
-  email: string;
+  email?: string;
 }
 
 interface Lease {
@@ -78,6 +78,25 @@ export default function PaymentsPage() {
   const [selectedUnit, setSelectedUnit] = useState<string>("");
   const [generatingReceipt, setGeneratingReceipt] = useState<string | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<FullReceipt | null>(null);
+
+  // Helper function to safely get tenant name from invoice
+  const getTenantName = (invoice: Invoice): string => {
+    if (!invoice?.Lease?.tenant) return 'Unknown Tenant';
+    const firstName = invoice.Lease.tenant.firstName ?? '';
+    const lastName = invoice.Lease.tenant.lastName ?? '';
+    const name = `${firstName} ${lastName}`.trim();
+    return name || invoice.Lease.tenant.email || 'Unknown Tenant';
+  };
+
+  // Helper function to safely get tenant info from payment
+  const getTenantInfo = (payment: Payment) => {
+    const tenant = payment?.invoice?.Lease?.tenant;
+    if (!tenant) return { firstName: '', lastName: '', email: '', fullName: 'Unknown Tenant' };
+    const firstName = tenant.firstName ?? '';
+    const lastName = tenant.lastName ?? '';
+    const fullName = `${firstName} ${lastName}`.trim() || tenant.email || 'Unknown Tenant';
+    return { firstName, lastName, email: tenant.email || '', fullName };
+  };
 
   // Recording payment modal
   const [showRecordPaymentModal, setShowRecordPaymentModal] = useState(false);
@@ -317,9 +336,10 @@ export default function PaymentsPage() {
       closeReverseModal();
       await fetchPayments(); // This will refresh the payments list
 
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || "Failed to reverse payment");
+      const errorMessage = err instanceof Error ? err.message : "Failed to reverse payment";
+      toast.error(errorMessage);
     }
   }
 
@@ -551,9 +571,12 @@ export default function PaymentsPage() {
                         const validPayments = inv.payment?.filter(p => !p.isReversed) || [];
                         const paid = validPayments.reduce((sum, p) => sum + p.amount, 0);
                         const remaining = inv.amount - paid;
+                        const tenantFirstName = inv.Lease.tenant?.firstName ?? '';
+                        const tenantLastName = inv.Lease.tenant?.lastName ?? '';
+                        const tenantName = tenantFirstName || tenantLastName ? `${tenantFirstName} ${tenantLastName}`.trim() : 'Unknown';
                         return (
                           <option key={inv.id} value={inv.id}>
-                            #{inv.id.slice(0, 8)} - {inv.type} - {inv.Lease.property.city} Unit {inv.Lease.unit.unitNumber} - Tenant: {inv.Lease.tenant.firstName} {inv.Lease.tenant.lastName} - USD {remaining.toFixed(2)} remaining
+                            #{inv.id.slice(0, 8)} - {inv.type} - {inv.Lease.property.city} Unit {inv.Lease.unit.unitNumber} - Tenant: {tenantName} - USD {remaining.toFixed(2)} remaining
                           </option>
                         );
                       })}
@@ -824,7 +847,7 @@ export default function PaymentsPage() {
                           Name
                         </div>
                         <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>
-                          {viewingReceipt.payment.invoice.Lease.tenant.firstName} {viewingReceipt.payment.invoice.Lease.tenant.lastName}
+                          {viewingReceipt.payment.invoice.Lease.tenant?.firstName ?? ''} {viewingReceipt.payment.invoice.Lease.tenant?.lastName ?? ''}
                         </div>
                       </div>
                       <div style={{ marginBottom: '12px' }}>
@@ -832,7 +855,7 @@ export default function PaymentsPage() {
                           Email
                         </div>
                         <div style={{ fontSize: '14px', color: '#1e293b' }}>
-                          {viewingReceipt.payment.invoice.Lease.tenant.email}
+                          {viewingReceipt.payment.invoice.Lease.tenant?.email || 'N/A'}
                         </div>
                       </div>
                     </div>

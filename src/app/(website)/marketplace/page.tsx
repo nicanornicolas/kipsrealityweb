@@ -33,28 +33,37 @@ export default async function MarketplacePage() {
   let listings: MarketplaceItem[] = [];
 
   try {
-    // Fetch listings with unitId
+    // Fetch ALL listings (both property and unit listings)
     const listingsData = await prisma.listing.findMany({
       where: {
-        unitId: { not: null },
+        AND: [
+          {
+            OR: [
+              { unit: { isNot: null } },
+              { property: { isNot: null } }
+            ]
+          },
+          {
+            OR: [
+              { status: { name: { in: ["ACTIVE", "COMING_SOON"] } } },
+              { statusId: null }
+            ]
+          }
+        ]
       },
       include: {
         images: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    console.log(`Found ${listingsData.length} listings with unitId`);
-
-    // Get all unique unitIds and propertyIds
-    const unitIds = [...new Set(listingsData.map(l => l.unitId).filter(Boolean))] as string[];
-    
-    // Fetch all units with their properties in one query
-    const units = await prisma.unit.findMany({
-      where: {
-        id: { in: unitIds },
-      },
-      include: {
+        status: true,
+        unit: {
+          include: {
+            property: {
+              include: {
+                location: true,
+                propertyType: true,
+              },
+            },
+          },
+        },
         property: {
           include: {
             location: true,
@@ -62,35 +71,31 @@ export default async function MarketplacePage() {
           },
         },
       },
+      orderBy: { createdAt: "desc" },
     });
 
-    console.log(`Found ${units.length} units for those listings`);
-
-    // Create a map for quick lookup
-    const unitMap = new Map(units.map(u => [u.id, u]));
+    console.log(`Found ${listingsData.length} total listings (property + unit)`);
 
     // Map listings to MarketplaceItems
     const mappedListings = listingsData
       .map((listing) => {
-        if (!listing.unitId) {
-          console.warn(`Listing ${listing.id} has no unitId, skipping`);
-          return null;
-        }
-
-        const unit = unitMap.get(listing.unitId);
+        // Determine if this is a unit listing or property listing
+        const isUnitListing = !!listing.unitId;
+        const targetEntity = isUnitListing ? listing.unit : listing.property;
         
-        if (!unit) {
-          console.warn(`Listing ${listing.id} references unitId ${listing.unitId} but unit not found in database`);
+        if (!targetEntity) {
           return null;
         }
 
-        const property = unit.property;
-
+        const property = isUnitListing ? listing.unit?.property : listing.property;
+        
         if (!property) {
-          console.warn(`Unit ${unit.id} has no property relation`);
           return null;
         }
 
+        const unitNumber = isUnitListing ? listing.unit?.unitNumber : undefined;
+        const unitId = isUnitListing ? listing.unitId : undefined;
+        
         return {
           id: listing.id,
           title: listing.title || "Untitled Listing",
@@ -98,16 +103,16 @@ export default async function MarketplacePage() {
           price: listing.price || 0,
           location: property.city || property.location?.name || "Unknown Location",
           image: listing.images?.[0]?.imageUrl || `https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop`,
-          unitId: unit.id,
+          unitId: unitId || undefined,
           propertyId: property.id,
-          unit: {
-            id: unit.id,
-            unitNumber: unit.unitNumber || undefined,
+          unit: unitId ? {
+            id: unitId,
+            unitNumber: unitNumber || undefined,
             property: {
               id: property.id,
               name: property.name || undefined,
             },
-          },
+          } : undefined,
           property: {
             id: property.id,
             name: property.name || undefined,

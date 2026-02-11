@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getCurrentUser } from '@/lib/Getcurrentuser'
 
 export async function GET(req: NextRequest) {
   try {
+    const user = await getCurrentUser(req);
     const url = new URL(req.url);
-    const organizationId = url.searchParams.get('organizationId');
+    const organizationId = user?.organizationId || url.searchParams.get('organizationId');
 
     if (!organizationId) {
       return NextResponse.json({ error: 'organizationId is required' }, { status: 400 });

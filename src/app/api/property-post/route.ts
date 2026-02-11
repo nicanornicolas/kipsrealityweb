@@ -58,9 +58,19 @@ export async function POST(req: Request) {
           },
         },
       },
+      include: {
+        listing: true,
+        propertyType: true,
+        location: true,
+      },
     });
 
-    return NextResponse.json(newProperty, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      property: newProperty,
+      listing: newProperty.listing,
+      message: "Property and listing created successfully"
+    }, { status: 201 });
   } catch (error: unknown) {
     console.error("Error creating property listing:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
