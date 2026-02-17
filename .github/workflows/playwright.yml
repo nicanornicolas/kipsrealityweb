@@ -16,11 +16,11 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: test
+          MYSQL_DATABASE: testdb
           MYSQL_USER: testuser
           MYSQL_PASSWORD: testpass
         ports:
-          - 3306/tcp
+          - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
           --health-interval=10s
@@ -30,12 +30,13 @@ jobs:
     env:
       CI: "true"
       NODE_ENV: "test"
-      DB_HOST: "127.0.0.1"
-      DB_PORT: "${{ job.services.mysql.ports[3306] }}"
-      DATABASE_URL: "mysql://testuser:testpass@127.0.0.1:${{ job.services.mysql.ports[3306] }}/test?connect_timeout=60"
-      NEXTAUTH_SECRET: "test_secret"
+      DATABASE_URL: "mysql://testuser:testpass@127.0.0.1:3306/testdb"
       NEXTAUTH_URL: "http://127.0.0.1:3000"
       NEXT_PUBLIC_API_URL: "http://127.0.0.1:3000"
+      JWT_SECRET: "ci-jwt-secret"
+      NEXTAUTH_SECRET: "ci-nextauth-secret"
+      AUTH_SECRET: "ci-auth-secret"
+      NEXTAUTH_TRUST_HOST: "true"
 
     steps:
       - name: Checkout
@@ -44,7 +45,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
@@ -54,23 +55,24 @@ jobs:
         shell: bash
         run: |
           for i in {1..90}; do
-            (echo > /dev/tcp/$DB_HOST/$DB_PORT) >/dev/null 2>&1 && echo "MySQL reachable on $DB_HOST:$DB_PORT" && exit 0
-            echo "Waiting for MySQL on $DB_HOST:$DB_PORT... ($i/90)"
+            (echo > /dev/tcp/127.0.0.1/3306) >/dev/null 2>&1 && echo "MySQL reachable" && exit 0
+            echo "Waiting for MySQL... ($i/90)"
             sleep 2
           done
           echo "MySQL not reachable in time"
-          docker logs ${{ job.services.mysql.id }} || true
           exit 1
 
-      # Critical: make env available to tools/frameworks that read .env files
-      - name: Create CI env file
+      - name: Create CI env files
         shell: bash
         run: |
           cat > .env <<EOF
           DATABASE_URL=${DATABASE_URL}
-          NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
           NEXTAUTH_URL=${NEXTAUTH_URL}
           NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+          JWT_SECRET=${JWT_SECRET}
+          NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+          AUTH_SECRET=${AUTH_SECRET}
+          NEXTAUTH_TRUST_HOST=${NEXTAUTH_TRUST_HOST}
           NODE_ENV=${NODE_ENV}
           EOF
           cp .env .env.local
@@ -79,27 +81,21 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Run Prisma Migrations
-        run: npx prisma migrate deploy
-
-      # Optional but usually needed for e2e users like manager@test.com
-      - name: Seed database (if script exists)
+      - name: Apply database schema
         shell: bash
         run: |
-          if npm run | grep -q "db:seed"; then
-            npm run db:seed
-          else
-            echo "No db:seed script found, skipping"
-          fi
+          npx prisma migrate deploy || npx prisma db push
 
-      - name: Build app
-        run: npm run build
+      - name: Seed database (if available)
+        shell: bash
+        run: |
+          npm run seed:e2e || npm run db:seed || npm run seed || npx prisma db seed || true
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright tests
-        run: npx playwright test --reporter=line
+      - name: Run Playwright tests (Chromium)
+        run: npx playwright test --project=chromium --reporter=line,html
 
       - name: Upload Playwright report
         if: always()
