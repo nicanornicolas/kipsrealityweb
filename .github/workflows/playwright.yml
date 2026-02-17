@@ -6,8 +6,12 @@ on:
   pull_request:
     branches: [main, master]
 
+concurrency:
+  group: playwright-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -17,11 +21,10 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: test
-          MYSQL_ROOT_HOST: "%"
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=30
@@ -29,73 +32,151 @@ jobs:
     env:
       CI: true
       NODE_ENV: test
-      DB_HOST: 127.0.0.1
-      DB_PORT: 3306
       DATABASE_URL: mysql://root:root@127.0.0.1:3306/test
-      NEXTAUTH_SECRET: test_secret
+
       NEXTAUTH_URL: http://127.0.0.1:3000
+      NEXTAUTH_SECRET: test_nextauth_secret_1234567890
+
       NEXT_PUBLIC_API_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+
+      JWT_SECRET: test_jwt_secret_1234567890
+      JWT_REFRESH_SECRET: test_jwt_refresh_secret_1234567890
+      CRON_SECRET: test_cron_secret_1234567890
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Wait for MySQL TCP
-        shell: bash
+      - name: Write .env for Prisma/Next runtime
         run: |
-          for i in {1..90}; do
-            (echo > /dev/tcp/$DB_HOST/$DB_PORT) >/dev/null 2>&1 && echo "MySQL is reachable" && exit 0
-            echo "Waiting for MySQL... ($i/90)"
-            sleep 2
-          done
-          echo "MySQL not reachable in time"
-          exit 1
-
-      - name: Create CI env file for Next runtime
-        shell: bash
-        run: |
-          cat > .env.local <<EOF
+          cat > .env <<EOF
           DATABASE_URL=${DATABASE_URL}
-          NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
           NEXTAUTH_URL=${NEXTAUTH_URL}
+          NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
           NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+          NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+          JWT_SECRET=${JWT_SECRET}
+          JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+          CRON_SECRET=${CRON_SECRET}
           NODE_ENV=${NODE_ENV}
           EOF
 
-      - name: Generate Prisma Client
-        run: npx prisma generate
+      - name: Prisma generate + migrate
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
 
-      - name: Run Prisma Migrations
-        run: npx prisma migrate deploy
-
-      - name: Seed database (if script exists)
+      - name: Seed database (if seed script exists)
         run: npm run db:seed --if-present
 
-      - name: Install Playwright Browsers
+      - name: Ensure manager test user is verified
+        run: |
+          node --input-type=module <<'NODE'
+          import { PrismaClient } from '@prisma/client';
+          import bcrypt from 'bcryptjs';
+
+          const prisma = new PrismaClient();
+          const email = 'manager@test.com';
+          const passwordHash = await bcrypt.hash('password123', 10);
+
+          // If user exists, make sure verification gate is open
+          await prisma.user.updateMany({
+            where: { email },
+            data: { emailVerified: new Date(), verificationToken: null },
+          });
+
+          // If user doesn't exist, try to create with progressively minimal fields
+          const existing = await prisma.user.findUnique({
+            where: { email },
+            select: { id: true },
+          });
+
+          if (!existing) {
+            const candidates = [
+              {
+                email,
+                password: passwordHash,
+                emailVerified: new Date(),
+                verificationToken: null,
+                role: 'MANAGER',
+                name: 'E2E Manager',
+              },
+              {
+                email,
+                password: passwordHash,
+                emailVerified: new Date(),
+                verificationToken: null,
+                role: 'MANAGER',
+              },
+              {
+                email,
+                password: passwordHash,
+                emailVerified: new Date(),
+                verificationToken: null,
+                name: 'E2E Manager',
+              },
+              {
+                email,
+                password: passwordHash,
+                emailVerified: new Date(),
+                verificationToken: null,
+              },
+              {
+                email,
+                emailVerified: new Date(),
+                verificationToken: null,
+              },
+            ];
+
+            let created = false;
+            for (const data of candidates) {
+              try {
+                await prisma.user.create({ data });
+                created = true;
+                break;
+              } catch {}
+            }
+
+            if (!created) {
+              throw new Error(
+                'Could not create manager@test.com. Check required User fields in schema and seed.'
+              );
+            }
+          }
+
+          await prisma.$disconnect();
+          NODE
+
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=line
+        run: npx playwright test --reporter=line,html
 
-      - name: Upload Playwright report
+      - name: Upload playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: playwright-report/
+          path: playwright-report
+          if-no-files-found: ignore
           retention-days: 30
 
-      - name: Upload Playwright test results
+      - name: Upload raw test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: test-results/
+          path: test-results
+          if-no-files-found: ignore
           retention-days: 30
