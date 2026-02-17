@@ -12,24 +12,24 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      postgres:
-        image: postgres:16
+      mysql:
+        image: mysql:8.0
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test
+          MYSQL_ROOT_HOST: "%"
         ports:
-          - 5432:5432
+          - 3303:3306
         options: >-
-          --health-cmd="pg_isready -U postgres -d test"
+         --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=10
+          --health-retries=30
 
     env:
       CI: true
-      DATABASE_URL: mysql://root:root@127.0.0.1:3306/test
       NODE_ENV: test
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/test?connect_timeout=60
       NEXTAUTH_SECRET: test_secret
       NEXTAUTH_URL: http://127.0.0.1:3000
       NEXT_PUBLIC_API_URL: http://127.0.0.1:3000
@@ -44,6 +44,16 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Wait for MySQL TCP
+        run: |
+          for i in {1..90}; do
+            (echo > /dev/tcp/127.0.0.1/3306) >/dev/null 2>&1 && echo "MySQL reachable" && exit 0
+            echo "Waiting for MySQL... ($i/90)"
+            sleep 2
+          done
+          echo "MySQL not reachable in time"
+          exit 1
 
       - name: Generate Prisma Client
         run: npx prisma generate
