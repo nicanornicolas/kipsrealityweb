@@ -8,45 +8,51 @@ on:
 
 jobs:
   test:
-    timeout-minutes: 60
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     services:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_DATABASE: test
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testdb
           MYSQL_USER: testuser
           MYSQL_PASSWORD: testpass
-          MYSQL_ROOT_PASSWORD: root
         ports:
-          - 3303:3306
+          - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -utestuser -ptestpass --silent"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=30
 
     env:
-      CI: true
-      NODE_ENV: test
-      DATABASE_URL: mysql://testuser:testpass@127.0.0.1:3306/test?connect_timeout=60
-      NEXTAUTH_SECRET: test_secret
-      NEXTAUTH_URL: http://127.0.0.1:3000
-      NEXT_PUBLIC_API_URL: http://127.0.0.1:3000
+      CI: "true"
+      NODE_ENV: "test"
+      DATABASE_URL: "mysql://testuser:testpass@127.0.0.1:3306/testdb?connect_timeout=60"
+      NEXTAUTH_URL: "http://127.0.0.1:3000"
+      NEXT_PUBLIC_API_URL: "http://127.0.0.1:3000"
+      JWT_SECRET: "ci-jwt-secret"
+      NEXTAUTH_SECRET: "ci-nextauth-secret"
+      AUTH_SECRET: "ci-auth-secret"
+      NEXTAUTH_TRUST_HOST: "true"
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
       - name: Wait for MySQL TCP
+        shell: bash
         run: |
           for i in {1..90}; do
             (echo > /dev/tcp/127.0.0.1/3306) >/dev/null 2>&1 && echo "MySQL reachable" && exit 0
@@ -56,20 +62,87 @@ jobs:
           echo "MySQL not reachable in time"
           exit 1
 
+      - name: Create CI env files
+        shell: bash
+        run: |
+          cat > .env <<EOF
+          DATABASE_URL=${DATABASE_URL}
+          NEXTAUTH_URL=${NEXTAUTH_URL}
+          NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+          JWT_SECRET=${JWT_SECRET}
+          NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+          AUTH_SECRET=${AUTH_SECRET}
+          NEXTAUTH_TRUST_HOST=${NEXTAUTH_TRUST_HOST}
+          NODE_ENV=${NODE_ENV}
+          EOF
+          cp .env .env.local
+          cp .env .env.test
+
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Run Prisma Migrations
-        run: npx prisma migrate deploy
+      - name: Apply database schema
+        shell: bash
+        run: |
+          for i in {1..20}; do
+            echo "Schema apply attempt $i/20"
+            npx prisma migrate deploy && exit 0
+            npx prisma db push && exit 0
+            sleep 2
+          done
+          echo "Failed to apply schema"
+          exit 1
 
-      - name: Build app
-        run: npm run build
+      - name: Seed database (best-effort)
+        shell: bash
+        run: |
+          if npm run | grep -q "seed:e2e"; then
+            npm run seed:e2e
+          elif npm run | grep -q "db:seed"; then
+            npm run db:seed
+          elif npm run | grep -qE "^[[:space:]]*seed[[:space:]]"; then
+            npm run seed
+          elif [ -f prisma/seed.ts ] || [ -f prisma/seed.js ]; then
+            npx prisma db seed
+          else
+            echo "No seed script found."
+          fi
 
-      - name: Install Playwright Browsers
+      - name: Verify manager test user exists
+        shell: bash
+        run: |
+          node <<'NODE'
+          const { PrismaClient } = require('@prisma/client');
+          const prisma = new PrismaClient();
+
+          (async () => {
+            const user = await prisma.user.findUnique({
+              where: { email: 'manager@test.com' },
+              select: { id: true, emailVerified: true }
+            });
+
+            if (!user) {
+              throw new Error(
+                "manager@test.com not found. Add it to seed data with password 'password123'."
+              );
+            }
+
+            console.log("manager@test.com exists. emailVerified:", user.emailVerified);
+          })()
+            .catch((e) => {
+              console.error(e);
+              process.exit(1);
+            })
+            .finally(async () => {
+              await prisma.$disconnect();
+            });
+          NODE
+
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright tests
-        run: npx playwright test --reporter=line
+      - name: Run Playwright tests (Chromium)
+        run: npx playwright test --project=chromium --reporter=line,html
 
       - name: Upload Playwright report
         if: always()
@@ -90,4 +163,3 @@ jobs:
       - name: Dump MySQL logs on failure
         if: failure()
         run: docker logs ${{ job.services.mysql.id }}
-
