@@ -184,6 +184,7 @@ export const routeConfig = {
 
 
     settings: [
+      { path: '/property-manager/settings', label: 'Settings', icon: Settings },
       { path: '/property-manager/settings/integrations', label: 'Integrations', icon: Settings },
       { path: '/property-manager/settings/roles', label: 'Role Management', icon: Settings },
     ],
@@ -223,6 +224,7 @@ export const routeConfig = {
       { path: '/dashboard/tenant/lease-alerts', label: 'Lease Alerts', icon: Zap },
     ],
     profile: [
+      { path: '/tenant/settings', label: 'Settings', icon: Settings },
       { path: '/dashboard/tenant/update-info', label: 'Update Info', icon: Settings },
       { path: '/dashboard/tenant/security', label: 'MFA / Password Change', icon: Settings },
     ],

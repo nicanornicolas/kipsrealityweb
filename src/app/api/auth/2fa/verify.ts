@@ -1,63 +1,41 @@
-import { NextResponse } from 'next/server';
-import { generateAccessToken, generateRefreshToken } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import bcrypt from 'bcryptjs';
+import { NextResponse } from "next/server";
+import { verifyOtp } from "@/lib/auth/otp";
+import { generateAccessToken, generateRefreshToken } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { email, password } = await request.json();
+    const { userId, code } = await req.json();
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    if (!userId || !code) {
+      return NextResponse.json({ error: "User ID and code are required" }, { status: 400 });
     }
 
+    const isValid = await verifyOtp(userId, code, 'TWO_FACTOR');
+
+    if (!isValid) {
+      return NextResponse.json({ error: "Invalid or expired code" }, { status: 401 });
+    }
+
+    // ✅ Code is valid! Fetch user data and issue tokens
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { id: userId },
       include: { organizationUsers: { include: { organization: true } } }
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User does not exist. Please create an account to continue.' }, { status: 404 });
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     if (user.status !== 'ACTIVE') {
       return NextResponse.json({ error: 'Account is suspended. Please contact support.' }, { status: 403 });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isPasswordValid) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
-    }
-
-    // SECURITY CHECK: Is Email Verified?
-    if (!user.emailVerified) {
-      return NextResponse.json(
-        {
-          error: 'Please verify your email address before logging in.',
-          requiresVerification: true
-        },
-        { status: 403 }
-      );
-    }
-
-    // 2FA CHECK: Is Two-Factor Authentication Enabled?
-    if (user.twoFactorEnabled) {
-      // User has 2FA enabled - require OTP verification
-      return NextResponse.json(
-        {
-          require2FA: true,
-          userId: user.id,
-          message: 'Two-factor authentication required. Please enter the code sent to your phone.'
-        },
-        { status: 200 }
-      );
-    }
-
     const primaryOrgUser = user.organizationUsers[0];
     let role = primaryOrgUser?.role || 'TENANT';
 
     // Force system admin role for platform admin account
-    if (email === process.env.ADMIN_EMAIL) {
+    if (user.email === process.env.ADMIN_EMAIL) {
       role = 'SYSTEM_ADMIN';
     }
 
@@ -77,15 +55,13 @@ export async function POST(request: Request) {
       data: { lastLoginAt: new Date() }
     });
 
-    // Updated user response to include phone, phoneVerified, and twoFactorEnabled
+    // User response matching login route format
     const userResponse = {
       id: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
       phone: user.phone,
-      phoneVerified: user.phoneVerified,
-      twoFactorEnabled: user.twoFactorEnabled,
       avatarUrl: user.avatarUrl,
       role: role,
       organizationUserId: primaryOrgUser?.id,
@@ -101,14 +77,15 @@ export async function POST(request: Request) {
     const response = NextResponse.json(
       {
         user: userResponse,
-        tokens: { accessToken, refreshToken, expiresAt }
+        tokens: { accessToken, refreshToken, expiresAt },
+        success: true
       },
       { status: 200 }
     );
 
     // Detect if we are in production BUT running on a local IP/HTTP
     const isProduction = process.env.NODE_ENV === 'production';
-    const isLocalNetwork = request.url.includes("192.168.") || request.url.includes("localhost");
+    const isLocalNetwork = req.url.includes("192.168.") || req.url.includes("localhost");
 
     response.cookies.set('token', accessToken, {
       httpOnly: true,
@@ -130,7 +107,7 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('2FA verification error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
