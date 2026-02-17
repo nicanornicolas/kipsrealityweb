@@ -7,9 +7,9 @@ on:
     branches: [main, master]
 
 jobs:
-  e2e:
-    timeout-minutes: 60
+  test:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     services:
       mysql:
@@ -22,21 +22,21 @@ jobs:
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=20
+          --health-retries=30
 
     env:
-      DATABASE_URL: mysql://testuser:testpass@127.0.0.1:3306/testdb
-      NEXT_PUBLIC_API_URL: http://127.0.0.1:3000
-      NEXTAUTH_URL: http://127.0.0.1:3000
-      JWT_SECRET: ci-jwt-secret
-      NEXTAUTH_SECRET: ci-nextauth-secret
-      AUTH_SECRET: ci-auth-secret
-      NEXTAUTH_TRUST_HOST: "true"
-      NODE_ENV: test
       CI: "true"
+      NODE_ENV: "test"
+      DATABASE_URL: "mysql://testuser:testpass@127.0.0.1:3306/testdb"
+      NEXTAUTH_URL: "http://127.0.0.1:3000"
+      NEXT_PUBLIC_API_URL: "http://127.0.0.1:3000"
+      JWT_SECRET: "ci-jwt-secret"
+      NEXTAUTH_SECRET: "ci-nextauth-secret"
+      AUTH_SECRET: "ci-auth-secret"
+      NEXTAUTH_TRUST_HOST: "true"
 
     steps:
       - name: Checkout
@@ -51,81 +51,47 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Wait for MySQL TCP
+        shell: bash
+        run: |
+          for i in {1..90}; do
+            (echo > /dev/tcp/127.0.0.1/3306) >/dev/null 2>&1 && echo "MySQL reachable" && exit 0
+            echo "Waiting for MySQL... ($i/90)"
+            sleep 2
+          done
+          echo "MySQL not reachable in time"
+          exit 1
+
+      - name: Create CI env files
+        shell: bash
+        run: |
+          cat > .env <<EOF
+          DATABASE_URL=${DATABASE_URL}
+          NEXTAUTH_URL=${NEXTAUTH_URL}
+          NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+          JWT_SECRET=${JWT_SECRET}
+          NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+          AUTH_SECRET=${AUTH_SECRET}
+          NEXTAUTH_TRUST_HOST=${NEXTAUTH_TRUST_HOST}
+          NODE_ENV=${NODE_ENV}
+          EOF
+          cp .env .env.local
+          cp .env .env.test
+
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Apply DB schema (migrate deploy or db push)
+      - name: Apply database schema
         shell: bash
         run: |
-          for i in {1..30}; do
-            echo "DB setup attempt $i/30"
-            if npx prisma migrate deploy; then
-              echo "migrate deploy succeeded"
-              exit 0
-            fi
-            if npx prisma db push; then
-              echo "db push succeeded"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Database setup failed after retries"
-          exit 1
+          npx prisma migrate deploy || npx prisma db push
 
-      - name: Seed database
+      - name: Seed database (if available)
         shell: bash
         run: |
           npm run seed:e2e || npm run db:seed || npm run seed || npx prisma db seed || true
 
-      - name: Ensure manager test user exists and is verified
-        run: |
-          node <<'NODE'
-          const { PrismaClient } = require('@prisma/client');
-          const prisma = new PrismaClient();
-
-          async function main() {
-            const email = 'manager@test.com';
-
-            const user = await prisma.user.findUnique({
-              where: { email },
-              select: { id: true, emailVerified: true }
-            });
-
-            if (!user) {
-              throw new Error(
-                'manager@test.com not found after seed. Add it in your seed file (with password password123).'
-              );
-            }
-
-            if (!user.emailVerified) {
-              try {
-                await prisma.user.update({
-                  where: { email },
-                  data: { emailVerified: new Date() }
-                });
-              } catch {
-                await prisma.user.update({
-                  where: { email },
-                  data: { emailVerified: true }
-                });
-              }
-              console.log('manager@test.com marked as verified');
-            } else {
-              console.log('manager@test.com already verified');
-            }
-          }
-
-          main()
-            .catch((e) => {
-              console.error(e);
-              process.exit(1);
-            })
-            .finally(async () => {
-              await prisma.$disconnect();
-            });
-          NODE
-
-      - name: Install Playwright browsers
+      - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests (Chromium)
@@ -139,11 +105,10 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
-      - name: Upload Playwright raw test results
+      - name: Upload Playwright test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: test-results/
           retention-days: 30
-
