@@ -30,7 +30,7 @@ jobs:
     env:
       CI: "true"
       NODE_ENV: "test"
-      DATABASE_URL: "mysql://testuser:testpass@127.0.0.1:3306/testdb"
+      DATABASE_URL: "mysql://testuser:testpass@127.0.0.1:3306/testdb?connect_timeout=60"
       NEXTAUTH_URL: "http://127.0.0.1:3000"
       NEXT_PUBLIC_API_URL: "http://127.0.0.1:3000"
       JWT_SECRET: "ci-jwt-secret"
@@ -84,14 +84,61 @@ jobs:
       - name: Apply database schema
         shell: bash
         run: |
-          npx prisma migrate deploy || npx prisma db push
+          for i in {1..20}; do
+            echo "Schema apply attempt $i/20"
+            npx prisma migrate deploy && exit 0
+            npx prisma db push && exit 0
+            sleep 2
+          done
+          echo "Failed to apply schema"
+          exit 1
 
-      - name: Seed database (if available)
+      - name: Seed database (best-effort)
         shell: bash
         run: |
-          npm run seed:e2e || npm run db:seed || npm run seed || npx prisma db seed || true
+          if npm run | grep -q "seed:e2e"; then
+            npm run seed:e2e
+          elif npm run | grep -q "db:seed"; then
+            npm run db:seed
+          elif npm run | grep -qE "^[[:space:]]*seed[[:space:]]"; then
+            npm run seed
+          elif [ -f prisma/seed.ts ] || [ -f prisma/seed.js ]; then
+            npx prisma db seed
+          else
+            echo "No seed script found."
+          fi
 
-      - name: Install Playwright Browsers
+      - name: Verify manager test user exists
+        shell: bash
+        run: |
+          node <<'NODE'
+          const { PrismaClient } = require('@prisma/client');
+          const prisma = new PrismaClient();
+
+          (async () => {
+            const user = await prisma.user.findUnique({
+              where: { email: 'manager@test.com' },
+              select: { id: true, emailVerified: true }
+            });
+
+            if (!user) {
+              throw new Error(
+                "manager@test.com not found. Add it to seed data with password 'password123'."
+              );
+            }
+
+            console.log("manager@test.com exists. emailVerified:", user.emailVerified);
+          })()
+            .catch((e) => {
+              console.error(e);
+              process.exit(1);
+            })
+            .finally(async () => {
+              await prisma.$disconnect();
+            });
+          NODE
+
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests (Chromium)
@@ -112,3 +159,7 @@ jobs:
           name: test-results
           path: test-results/
           retention-days: 30
+
+      - name: Dump MySQL logs on failure
+        if: failure()
+        run: docker logs ${{ job.services.mysql.id }}
