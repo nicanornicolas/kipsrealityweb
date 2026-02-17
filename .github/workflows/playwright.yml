@@ -7,29 +7,36 @@ on:
     branches: [main, master]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  e2e:
     timeout-minutes: 60
+    runs-on: ubuntu-latest
 
     services:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-          MYSQL_DATABASE: test
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testdb
+          MYSQL_USER: testuser
+          MYSQL_PASSWORD: testpass
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot --silent"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=30
+          --health-retries=20
 
     env:
-      CI: "true"
-      NODE_ENV: test
-      DATABASE_URL: mysql://root@127.0.0.1:3306/test
+      DATABASE_URL: mysql://testuser:testpass@127.0.0.1:3306/testdb
       NEXT_PUBLIC_API_URL: http://127.0.0.1:3000
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      JWT_SECRET: ci-jwt-secret
+      NEXTAUTH_SECRET: ci-nextauth-secret
+      AUTH_SECRET: ci-auth-secret
+      NEXTAUTH_TRUST_HOST: "true"
+      NODE_ENV: test
+      CI: "true"
 
     steps:
       - name: Checkout
@@ -47,160 +54,96 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Push Prisma schema
-        run: npx prisma db push --accept-data-loss
+      - name: Apply DB schema (migrate deploy or db push)
+        shell: bash
+        run: |
+          for i in {1..30}; do
+            echo "DB setup attempt $i/30"
+            if npx prisma migrate deploy; then
+              echo "migrate deploy succeeded"
+              exit 0
+            fi
+            if npx prisma db push; then
+              echo "db push succeeded"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Database setup failed after retries"
+          exit 1
 
-      - name: Seed DB (if configured)
-        run: npx prisma db seed || echo "No prisma seed configured"
+      - name: Seed database
+        shell: bash
+        run: |
+          npm run seed:e2e || npm run db:seed || npm run seed || npx prisma db seed || true
 
       - name: Ensure manager test user exists and is verified
         run: |
-          node --input-type=module <<'NODE'
-          import { PrismaClient, Prisma } from '@prisma/client';
-          import bcrypt from 'bcryptjs';
-
+          node <<'NODE'
+          const { PrismaClient } = require('@prisma/client');
           const prisma = new PrismaClient();
-          const email = 'manager@test.com';
-          const plainPassword = 'password123';
-          const hashed = await bcrypt.hash(plainPassword, 10);
 
-          const userModel = Prisma.dmmf.datamodel.models.find((m) => m.name === 'User');
-          if (!userModel) {
-            console.log('User model not found. Skipping manager bootstrap.');
-            await prisma.$disconnect();
-            process.exit(0);
-          }
+          async function main() {
+            const email = 'manager@test.com';
 
-          const fields = Object.fromEntries(userModel.fields.map((f) => [f.name, f]));
+            const user = await prisma.user.findUnique({
+              where: { email },
+              select: { id: true, emailVerified: true }
+            });
 
-          const enumMap = new Map(
-            Prisma.dmmf.datamodel.enums.map((e) => [
-              e.name,
-              e.values.map((v) => (typeof v === 'string' ? v : v.name)),
-            ])
-          );
-
-          const pickEnum = (enumName) => {
-            const vals = enumMap.get(enumName) ?? [];
-            const preferred = ['MANAGER', 'PROPERTY_MANAGER', 'ADMIN', 'LANDLORD', 'USER', 'TENANT'];
-            return preferred.find((v) => vals.includes(v)) ?? vals[0] ?? null;
-          };
-
-          const scalarDefault = (f) => {
-            if (f.name === 'email') return email;
-            if (/password|hash/i.test(f.name)) return hashed;
-            if (f.name === 'emailVerified') return f.type === 'Boolean' ? true : new Date();
-            if (/verificationtoken/i.test(f.name)) return 'ci-verified';
-            if (f.name === 'isVerified' || f.name === 'verified') return true;
-
-            if (f.kind === 'enum') return pickEnum(f.type);
-
-            switch (f.type) {
-              case 'String': return `${f.name}_ci`;
-              case 'Boolean': return true;
-              case 'Int': return 1;
-              case 'BigInt': return BigInt(1);
-              case 'Float': return 1;
-              case 'Decimal': return 1;
-              case 'DateTime': return new Date();
-              case 'Json': return {};
-              case 'Bytes': return Buffer.from('ci');
-              default: return null;
-            }
-          };
-
-          let user = await prisma.user.findFirst({ where: { email } });
-
-          if (!user) {
-            const requiredFields = userModel.fields.filter(
-              (f) =>
-                (f.kind === 'scalar' || f.kind === 'enum') &&
-                f.isRequired &&
-                !f.hasDefaultValue &&
-                !f.isList
-            );
-
-            const data = {};
-            for (const f of requiredFields) {
-              if (f.name === 'id') continue;
-              data[f.name] = scalarDefault(f);
-            }
-
-            if (fields.email) data.email = email;
-            if (fields.password) data.password = hashed;
-            if (fields.passwordHash) data.passwordHash = hashed;
-            if (fields.hashedPassword) data.hashedPassword = hashed;
-
-            if (fields.emailVerified) {
-              data.emailVerified = fields.emailVerified.type === 'Boolean' ? true : new Date();
-            }
-            if (fields.isVerified) data.isVerified = true;
-            if (fields.verified) data.verified = true;
-
-            if (fields.role && fields.role.kind === 'enum' && !data.role) {
-              data.role = pickEnum(fields.role.type);
-            }
-
-            try {
-              user = await prisma.user.create({ data });
-              console.log('Created manager@test.com');
-            } catch (err) {
-              console.error('Failed to auto-create manager@test.com');
-              console.error(
-                'Required User scalar/enum fields:',
-                requiredFields.map((f) => `${f.name}:${f.type}`).join(', ')
+            if (!user) {
+              throw new Error(
+                'manager@test.com not found after seed. Add it in your seed file (with password password123).'
               );
-              throw err;
-            }
-          } else {
-            const update = {};
-
-            if (fields.emailVerified) {
-              update.emailVerified = fields.emailVerified.type === 'Boolean' ? true : new Date();
-            }
-            if (fields.isVerified) update.isVerified = true;
-            if (fields.verified) update.verified = true;
-
-            if (fields.verificationToken && !fields.verificationToken.isRequired) {
-              update.verificationToken = null;
             }
 
-            if (fields.password && !user.password) update.password = hashed;
-            if (fields.passwordHash && !user.passwordHash) update.passwordHash = hashed;
-            if (fields.hashedPassword && !user.hashedPassword) update.hashedPassword = hashed;
-
-            if (Object.keys(update).length > 0) {
-              await prisma.user.updateMany({ where: { email }, data: update });
+            if (!user.emailVerified) {
+              try {
+                await prisma.user.update({
+                  where: { email },
+                  data: { emailVerified: new Date() }
+                });
+              } catch {
+                await prisma.user.update({
+                  where: { email },
+                  data: { emailVerified: true }
+                });
+              }
+              console.log('manager@test.com marked as verified');
+            } else {
+              console.log('manager@test.com already verified');
             }
-
-            console.log('Updated manager@test.com');
           }
 
-          await prisma.$disconnect();
+          main()
+            .catch((e) => {
+              console.error(e);
+              process.exit(1);
+            })
+            .finally(async () => {
+              await prisma.$disconnect();
+            });
           NODE
 
-      - name: Install Playwright Browsers
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      # Temporarily Chromium-only until cross-browser is green
-      - name: Run Playwright tests
-        run: npx playwright test --project=chromium --reporter=line
+      - name: Run Playwright tests (Chromium)
+        run: npx playwright test --project=chromium --reporter=line,html
 
-      - name: Upload playwright-report
+      - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/
-          if-no-files-found: ignore
           retention-days: 30
 
-      - name: Upload test-results
+      - name: Upload Playwright raw test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: test-results/
-          if-no-files-found: ignore
           retention-days: 30
 
