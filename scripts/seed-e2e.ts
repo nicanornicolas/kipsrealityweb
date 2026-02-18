@@ -4,6 +4,13 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl || !dbUrl.includes('rentflow360_test')) {
+        console.error('DANGER: Attempting to seed E2E data into a non-test database!');
+        console.error(`Current URL: ${dbUrl}`);
+        process.exit(1);
+    }
+
     const passwordHash = await bcrypt.hash('password123', 10);
     const email = 'manager@test.com';
 
@@ -27,7 +34,7 @@ async function main() {
             id: 'test-entity',
             organizationId: org.id,
             name: 'Test Financial Entity',
-        }
+        },
     });
 
     const accounts = [
@@ -41,8 +48,8 @@ async function main() {
             where: {
                 entityId_code: {
                     entityId: entity.id,
-                    code: acc.code
-                }
+                    code: acc.code,
+                },
             },
             update: {
                 name: acc.name,
@@ -55,7 +62,7 @@ async function main() {
                 name: acc.name,
                 type: acc.type,
                 isSystem: acc.isSystem,
-            }
+            },
         });
     }
 

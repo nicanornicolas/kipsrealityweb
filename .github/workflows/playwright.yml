@@ -11,31 +11,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: testdb
-          MYSQL_USER: testuser
-          MYSQL_PASSWORD: testpass
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=30
-
     env:
       CI: "true"
       NODE_ENV: "test"
-      DATABASE_URL: "mysql://testuser:testpass@127.0.0.1:3306/testdb?connect_timeout=60"
-      NEXTAUTH_URL: "http://127.0.0.1:3000"
-      NEXT_PUBLIC_API_URL: "http://127.0.0.1:3000"
-      JWT_SECRET: "ci-jwt-secret"
-      NEXTAUTH_SECRET: "ci-nextauth-secret"
-      AUTH_SECRET: "ci-auth-secret"
+      #  CRITICAL: Pointing to Remote IP, but specifically the TEST database
+      DATABASE_URL: "mysql://rentflow_dev:DevPassword123!@184.168.21.114:3306/rentflow360_test?connect_timeout=60"
+
+      # Using Localhost for the app execution within the CI runner
+      NEXTAUTH_URL: "http://localhost:3000"
+      NEXT_PUBLIC_API_URL: "http://localhost:3000"
+      NEXT_PUBLIC_BASE_URL: "http://localhost:3000"
+
+      # Secrets
+      JWT_SECRET: "ci-jwt-secret-secure-enough"
+      NEXTAUTH_SECRET: "ci-nextauth-secret-secure-enough"
+      AUTH_SECRET: "ci-auth-secret-secure-enough"
       NEXTAUTH_TRUST_HOST: "true"
 
     steps:
@@ -51,115 +41,63 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Wait for MySQL TCP
+      # ✅ NEW: Check connectivity to Remote VPS (184...) instead of localhost
+      - name: Check Remote Database Connectivity
         shell: bash
         run: |
-          for i in {1..90}; do
-            (echo > /dev/tcp/127.0.0.1/3306) >/dev/null 2>&1 && echo "MySQL reachable" && exit 0
-            echo "Waiting for MySQL... ($i/90)"
+          for i in {1..10}; do
+            # nc -z checks if port is open
+            if nc -z 184.168.21.114 3306; then
+              echo "Remote MySQL is reachable."
+              exit 0
+            fi
+            echo "Waiting for Remote MySQL... ($i/10)"
             sleep 2
           done
-          echo "MySQL not reachable in time"
+          echo "Could not connect to Remote MySQL."
           exit 1
 
-      - name: Create CI env files
-        shell: bash
+      - name: Create .env.test
         run: |
-          cat > .env <<EOF
-          DATABASE_URL=${DATABASE_URL}
-          NEXTAUTH_URL=${NEXTAUTH_URL}
-          NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-          JWT_SECRET=${JWT_SECRET}
-          NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-          AUTH_SECRET=${AUTH_SECRET}
-          NEXTAUTH_TRUST_HOST=${NEXTAUTH_TRUST_HOST}
-          NODE_ENV=${NODE_ENV}
+          cat > .env.test <<EOF
+          NODE_ENV=test
+          DATABASE_URL="${DATABASE_URL}"
+          NEXTAUTH_URL="${NEXTAUTH_URL}"
+          NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL}"
+          NEXT_PUBLIC_BASE_URL="${NEXT_PUBLIC_BASE_URL}"
+          JWT_SECRET="${JWT_SECRET}"
+          NEXTAUTH_SECRET="${NEXTAUTH_SECRET}"
+          AUTH_SECRET="${AUTH_SECRET}"
+          NEXTAUTH_TRUST_HOST="true"
           EOF
-          cp .env .env.local
-          cp .env .env.test
+          # Copy to .env so standard commands pick it up if they forget to use dotenv
+          cp .env.test .env
 
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Apply database schema
-        shell: bash
+      #  DANGER ZONE: This wipes the remote rentflow360_test DB
+      - name: Reset & Seed Remote Test DB
         run: |
-          for i in {1..20}; do
-            echo "Schema apply attempt $i/20"
-            npx prisma migrate deploy && exit 0
-            npx prisma db push && exit 0
-            sleep 2
-          done
-          echo "Failed to apply schema"
-          exit 1
+          echo "Resetting Remote Test DB..."
+          # --force skips interactive prompts
+          # --skip-seed prevents auto-seeding if you want to run a specific seed command manually
+          npx prisma migrate reset --force --skip-seed 
 
-      - name: Seed database (best-effort)
-        shell: bash
-        run: |
-          if npm run | grep -q "seed:e2e"; then
-            npm run seed:e2e
-          elif npm run | grep -q "db:seed"; then
-            npm run db:seed
-          elif npm run | grep -qE "^[[:space:]]*seed[[:space:]]"; then
-            npm run seed
-          elif [ -f prisma/seed.ts ] || [ -f prisma/seed.js ]; then
-            npx prisma db seed
-          else
-            echo "No seed script found."
-          fi
-
-      - name: Verify manager test user exists
-        shell: bash
-        run: |
-          node <<'NODE'
-          const { PrismaClient } = require('@prisma/client');
-          const prisma = new PrismaClient();
-
-          (async () => {
-            const user = await prisma.user.findUnique({
-              where: { email: 'manager@test.com' },
-              select: { id: true, emailVerified: true }
-            });
-
-            if (!user) {
-              throw new Error(
-                "manager@test.com not found. Add it to seed data with password 'password123'."
-              );
-            }
-
-            console.log("manager@test.com exists. emailVerified:", user.emailVerified);
-          })()
-            .catch((e) => {
-              console.error(e);
-              process.exit(1);
-            })
-            .finally(async () => {
-              await prisma.$disconnect();
-            });
-          NODE
+          echo "Seeding E2E Data..."
+          # Ensure you are running the specific E2E seed
+          npx tsx prisma/seed.e2e.ts
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright tests (Chromium)
-        run: npx playwright test --project=chromium --reporter=line,html
+      - name: Run Playwright tests
+        run: npx playwright test --project=chromium --reporter=line
 
-      - name: Upload Playwright report
+      - name: Upload Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 30
-
-      - name: Upload Playwright test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: test-results/
-          retention-days: 30
-
-      - name: Dump MySQL logs on failure
-        if: failure()
-        run: docker logs ${{ job.services.mysql.id }}
+          retention-days: 7
