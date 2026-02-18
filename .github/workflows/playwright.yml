@@ -24,6 +24,7 @@ jobs:
 
       # Secrets
       JWT_SECRET: "ci-jwt-secret-secure-enough"
+      JWT_REFRESH_SECRET: "ci-refresh-secret-secure-enough"
       NEXTAUTH_SECRET: "ci-nextauth-secret-secure-enough"
       AUTH_SECRET: "ci-auth-secret-secure-enough"
       NEXTAUTH_TRUST_HOST: "true"
