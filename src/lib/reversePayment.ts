@@ -1,5 +1,6 @@
 import { prisma } from "./db";
 import crypto from "crypto";
+import { toNumber } from "./decimal-utils";
 
 export async function reversePayment(paymentId: string, userId: string, reason: string) {
   return await prisma.$transaction(async (tx) => {
@@ -18,7 +19,7 @@ export async function reversePayment(paymentId: string, userId: string, reason: 
         id: crypto.randomUUID(), // PaymentReversal has no default @id in schema
         payment_id: payment.id,
         invoice_id: payment.invoiceId,
-        amount: payment.amount,
+        amount: toNumber(payment.amount),
         reason,
         reversed_by: userId,
       }
