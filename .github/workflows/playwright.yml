@@ -40,23 +40,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # ✅ NEW: Check connectivity to Remote VPS (184...) instead of localhost
-      - name: Check Remote Database Connectivity
+      - name: Wait for MySQL
         shell: bash
         run: |
-          for i in {1..10}; do
-            # nc -z checks if port is open
-            if nc -z 184.168.21.114 3306; then
-              echo "Remote MySQL is reachable."
-              exit 0
-            fi
-            echo "Waiting for Remote MySQL... ($i/10)"
+          for i in {1..60}; do
+            mysqladmin ping -h 127.0.0.1 -uroot -proot --silent && echo "MySQL ready" && exit 0
+            echo "Waiting for MySQL... ($i/60)"
             sleep 2
           done
-          echo "Could not connect to Remote MySQL."
           exit 1
 
-      - name: Create .env.test
+      - name: Create CI env files
         run: |
           cat > .env.test <<EOF
           NODE_ENV=test
@@ -91,9 +85,9 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests
-        run: npx playwright test --project=chromium --reporter=line
+        run: npx playwright test --project=chromium --reporter=line,html
 
-      - name: Upload Report
+      - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
         with:
