@@ -3,9 +3,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentUser } from '@/lib/Getcurrentuser';
 import { toNumber } from '@/lib/decimal-utils';
 
-export async function GET(
-  request: Request
-) {
+export async function GET(request: Request) {
   try {
     // Get current authenticated user
     const user = await getCurrentUser(request);
