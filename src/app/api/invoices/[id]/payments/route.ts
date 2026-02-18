@@ -46,7 +46,7 @@ export async function POST(
 
     // ✅ Filter out reversed payments (same as frontend)
     const validPayments = invoice.payments?.filter(p => !p.isReversed) || [];
-    const paidAmount = validPayments.reduce((sum, p) => sum + p.amount, 0);
+    const paidAmount = validPayments.reduce((sum, p) => sum + Number(p.amount), 0);
     const remaining = invoice.totalAmount - paidAmount;
 
     console.log("Invoice details:", {
