@@ -149,50 +149,6 @@ export function DashboardNavbar({ toggleSidebar }: { toggleSidebar: () => void }
             )}
           </div>
         </div>
-<<<<<<< HEAD
-
-        {/* Desktop Right Section */}
-        {!isMobile && (
-          <div className="flex items-center gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:border-blue-500 w-64"
-              />
-            </div>
-
-            <button className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-lg transition">
-              <Bell className="w-5 h-5" />
-            </button>
-
-            <button className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-lg transition">
-              <Settings className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-sm font-medium text-white">{user.firstName}</p>
-                <p className="text-xs text-neutral-400">{user.email}</p>
-              </div>
-
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                {user.firstName.charAt(0).toUpperCase()}
-              </div>
-
-              <button
-                onClick={handleLogout}
-                className="px-3 py-2 text-sm text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-lg border border-neutral-700 transition"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        )}
-=======
->>>>>>> 0130896422d922358e96da4c2b9e5a7a9dd0c317
       </div>
     </header>
   );
