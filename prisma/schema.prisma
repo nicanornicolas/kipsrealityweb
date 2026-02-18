@@ -32,6 +32,15 @@ model Organization {
   plan                 Plan?                    @relation(fields: [planId], references: [id])
   vendors              Vendor[]
 
+  // --- Payment Settlement (Landlord) ---
+  region Region? @default(KEN)
+
+  // Africa (Split Logic)
+  paystackSubaccountCode String? @map("paystack_subaccount_code")
+
+  // USA (Payout Logic)
+  stripeConnectId String? @map("stripe_connect_id")
+
   @@index([planId], map: "organizations_planId_fkey")
   @@map("organizations")
 }
@@ -64,7 +73,38 @@ model User {
   vendors              Vendor[]
   listingAuditEntries  ListingAuditEntry[]
 
+  // --- Payment Profile (Tenant) ---
+  region    Region?   @default(KEN) // Defaulting to KEN for our pilot
+  KycStatus KycStatus @default(PENDING) @map("kyc_status")
+
+  // USA Identifiers
+  stripeCustomerId          String? @map("stripe_customer_id")
+  plaidAccessTokenEncrypted String? @map("plaid_access_token") // App must encrypt/decrypt this
+
+  // Africa Identifiers
+  paystackCustomerCode String? @map("paystack_customer_code")
+
+  // Payment methods
+  paymentMethods TenantPaymentMethod[]
+
   @@map("users")
+}
+
+model TenantPaymentMethod {
+  id                    String   @id @default(uuid())
+  userId                String   @map("user_id")
+  type                  String // 'ACH', 'CARD'
+  plaidAccessToken      String?  @map("plaid_access_token") // Encrypted
+  plaidAccountId        String?  @map("plaid_account_id")
+  stripePaymentMethodId String   @map("stripe_payment_method_id")
+  isDefault             Boolean  @default(false) @map("is_default")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("tenant_payment_methods")
 }
 
 model OrganizationUser {
@@ -693,8 +733,8 @@ model InvoiceItem {
 model Payment {
   id               String            @id @default(uuid())
   invoiceId        String            @map("invoice_id")
-  amount           Float
-  method           payment_method
+  amount           Decimal           @db.Decimal(10, 2) // Display Amount
+  method           payment_method // Legacy Enum (CASH, BANK)
   reference        String?           @db.VarChar(100)
   paidOn           DateTime?         @default(now()) @db.DateTime(0)
   postingStatus    PostingStatus     @default(PENDING) @map("posting_status")
@@ -710,6 +750,20 @@ model Payment {
   paymentReversals PaymentReversal[]
   receipts         Receipt[]
 
+  amountSubunits BigInt? @map("amount_subunits") // Cents(Integer math)
+  currency       String  @default("KES") @db.VarChar(3)
+
+  gateway          PaymentGateway @default(MANUAL)
+  gatewayReference String?        @map("gateway_reference") //Stripe ID / Paystack Ref
+  riskScore        Int?           @map("risk_score") // Plaid Signal Score
+  metadata         Json? // Additional payment details (phone number, M-Pesa transaction details, etc.)
+
+  // Status State Machine
+  status TransactionStatus @default(PENDING)
+  type   TransactionType   @default(RENT)
+
+  @@index([gatewayReference])
+  @@index([status])
   @@index([invoiceId])
   @@map("payment")
 }
@@ -1485,6 +1539,11 @@ enum payment_method {
   CASH
   BANK
   CREDIT_CARD
+  MPESA
+  PAYPAL
+  STRIPE
+  PAYSTACK
+  MANUAL
 }
 
 enum invoice_status {
@@ -1782,4 +1841,41 @@ model ListingAuditEntry {
   @@index([timestamp])
   @@index([action])
   @@map("listing_audit_entries")
+}
+
+// -------PAYMENT INFRASTRUCTURE ENUMS--------
+
+enum Region {
+  USA
+  KEN
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum PaymentGateway {
+  STRIPE
+  PLAID
+  PAYSTACK
+  MPESA_DIRECT
+  MANUAL // for existing cash/bank logic
+}
+
+enum TransactionStatus {
+  PENDING
+  AUTHORIZED
+  SETTLED
+  FAILED
+  DISPUTED
+  REVERSED
+}
+
+enum TransactionType {
+  RENT
+  DEPOSIT
+  SAAS_FEE
+  MAINTENANCE
 }
