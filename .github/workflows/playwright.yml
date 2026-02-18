@@ -79,10 +79,10 @@ jobs:
       #  DANGER ZONE: This wipes the remote rentflow360_test DB
       - name: Reset & Seed Remote Test DB
         run: |
-          echo "Resetting Remote Test DB..."
-          # --force skips interactive prompts
-          # --skip-seed prevents auto-seeding if you want to run a specific seed command manually
-          npx prisma migrate reset --force --skip-seed 
+          echo "Syncing Remote Test DB to current Schema..."
+          # ✅ Use db push. It ignores migration history and forces the DB 
+          # to match your current schema.prisma file exactly.
+          npx prisma db push --accept-data-loss --force-reset
 
           echo "Seeding E2E Data..."
           # Ensure you are running the specific E2E seed
