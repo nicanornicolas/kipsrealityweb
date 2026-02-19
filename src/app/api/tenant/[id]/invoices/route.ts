@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUser } from '@/lib/Getcurrentuser';
+import { toNumber } from '@/lib/decimal-utils';
 
 export async function GET(
   request: Request
@@ -53,13 +54,13 @@ export async function GET(
 
     // Transform invoices to match the expected interface
     const transformedInvoices = invoices.map(invoice => {
-      const totalPaid = invoice.payments.reduce((sum, payment) => sum + payment.amount, 0);
-      const balance = invoice.totalAmount - totalPaid;
+      const totalPaid = invoice.payments.reduce((sum, payment) => sum + toNumber(payment.amount), 0);
+      const balance = toNumber(invoice.totalAmount) - totalPaid;
       
       return {
         id: invoice.id,
         type: invoice.type,
-        totalAmount: invoice.totalAmount,
+        totalAmount: toNumber(invoice.totalAmount),
         balance: balance,
         amountPaid: totalPaid,
         status: invoice.status || 'PENDING',
