@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { toNumber } from "@/lib/decimal-utils";
 
 async function getTenantBalance(leaseId: string) {
   try {
@@ -20,12 +21,12 @@ async function getTenantBalance(leaseId: string) {
 
     // Calculate totals
     const totalInvoiced = leaseWithInvoices.invoices.reduce(
-      (sum, inv) => sum + inv.totalAmount,
+      (sum, inv) => sum + toNumber(inv.totalAmount),
       0
     );
 
     const totalPaid = leaseWithInvoices.invoices.reduce(
-      (sum, inv) => sum + inv.payments.reduce((pSum, p) => pSum + p.amount, 0),
+      (sum, inv) => sum + inv.payments.reduce((pSum, p) => pSum + toNumber(p.amount), 0),
       0
     );
 
