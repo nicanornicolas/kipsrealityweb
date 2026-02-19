@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { toNumber } from "@/lib/decimal-utils";
 
 export async function GET(req: Request) {
   try {
@@ -74,8 +75,8 @@ export async function GET(req: Request) {
 
     // Add financial calculations and building name
     const invoicesWithFinancials = invoices.map((invoice) => {
-      const totalPaid = invoice.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
-      const balance = invoice.totalAmount - totalPaid;
+      const totalPaid = invoice.payments?.reduce((sum, payment) => sum + toNumber(payment.amount), 0) || 0;
+      const balance = toNumber(invoice.totalAmount) - totalPaid;
 
       // Get building name from property details
       const buildingName =

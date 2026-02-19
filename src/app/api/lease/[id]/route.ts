@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { toNumber } from "@/lib/decimal-utils";
 
 export async function PATCH(
   req: NextRequest,
@@ -105,9 +106,9 @@ export async function GET(
     }
 
     // 🧮 Balance calculation
-    const totalInvoiced = lease.invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+    const totalInvoiced = lease.invoices.reduce((sum, inv) => sum + toNumber(inv.totalAmount), 0);
     const totalPaid = lease.invoices.reduce(
-      (sum, inv) => sum + inv.payments.reduce((pSum, p) => pSum + p.amount, 0),
+      (sum, inv) => sum + inv.payments.reduce((pSum, p) => pSum + toNumber(p.amount), 0),
       0
     );
     const balance = totalInvoiced - totalPaid;

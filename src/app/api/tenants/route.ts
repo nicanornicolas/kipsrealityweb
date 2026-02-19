@@ -1,6 +1,7 @@
 // src/app/api/tenants/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db"; // your existing prisma helper
+import { toNumber } from "@/lib/decimal-utils";
 
 // GET /api/tenants
 export async function GET(req: Request) {
@@ -22,9 +23,9 @@ export async function GET(req: Request) {
 
     // Compute financial summary per lease
     const result = leases.map((l) => {
-      const totalInvoiced = (l.invoices || []).reduce((s, inv) => s + (inv.totalAmount ?? 0), 0);
+      const totalInvoiced = (l.invoices || []).reduce((s, inv) => s + toNumber(inv.totalAmount ?? 0), 0);
       const totalPaid = (l.invoices || []).reduce(
-        (s, inv) => s + ((inv.payments || []).reduce((ps, p) => ps + (p.amount ?? 0), 0)),
+        (s, inv) => s + ((inv.payments || []).reduce((ps, p) => ps + toNumber(p.amount ?? 0), 0)),
         0
       );
       const balance = totalInvoiced - totalPaid;
