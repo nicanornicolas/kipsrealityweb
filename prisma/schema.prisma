@@ -1946,3 +1946,40 @@ enum TransactionType {
   SAAS_FEE
   MAINTENANCE
 }
+
+// -------PAYMENT INFRASTRUCTURE ENUMS--------
+
+enum Region {
+  USA
+  KEN
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum PaymentGateway {
+  STRIPE
+  PLAID
+  PAYSTACK
+  MPESA_DIRECT
+  MANUAL // for existing cash/bank logic
+}
+
+enum TransactionStatus {
+  PENDING
+  AUTHORIZED
+  SETTLED
+  FAILED
+  DISPUTED
+  REVERSED
+}
+
+enum TransactionType {
+  RENT
+  DEPOSIT
+  SAAS_FEE
+  MAINTENANCE
+}
