@@ -41,6 +41,15 @@ model Organization {
   // USA (Payout Logic)
   stripeConnectId String? @map("stripe_connect_id")
 
+  // --- Payment Settlement (Landlord) ---
+  region Region? @default(KEN)
+
+  // Africa (Split Logic)
+  paystackSubaccountCode String? @map("paystack_subaccount_code")
+
+  // USA (Payout Logic)
+  stripeConnectId String? @map("stripe_connect_id")
+
   @@index([planId], map: "organizations_planId_fkey")
   @@map("organizations")
 }
@@ -78,6 +87,20 @@ model User {
 
   // Relation to OTPs
   otps Otp[]
+
+  // --- Payment Profile (Tenant) ---
+  region    Region?   @default(KEN) // Defaulting to KEN for our pilot
+  KycStatus KycStatus @default(PENDING) @map("kyc_status")
+
+  // USA Identifiers
+  stripeCustomerId          String? @map("stripe_customer_id")
+  plaidAccessTokenEncrypted String? @map("plaid_access_token") // App must encrypt/decrypt this
+
+  // Africa Identifiers
+  paystackCustomerCode String? @map("paystack_customer_code")
+
+  // Payment methods
+  paymentMethods TenantPaymentMethod[]
 
   // --- Payment Profile (Tenant) ---
   region    Region?   @default(KEN) // Defaulting to KEN for our pilot
@@ -1812,6 +1835,43 @@ enum ListingAction_enum {
   EXPIRE
 }
 
+
+// -------PAYMENT INFRASTRUCTURE ENUMS--------
+
+enum Region {
+  USA
+  KEN
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum PaymentGateway {
+  STRIPE
+  PLAID
+  PAYSTACK
+  MPESA_DIRECT
+  MANUAL // for existing cash/bank logic
+}
+
+enum TransactionStatus {
+  PENDING
+  AUTHORIZED
+  SETTLED
+  FAILED
+  DISPUTED
+  REVERSED
+}
+
+enum TransactionType {
+  RENT
+  DEPOSIT
+  SAAS_FEE
+  MAINTENANCE
+}
 
 // -------PAYMENT INFRASTRUCTURE ENUMS--------
 
