@@ -728,24 +728,32 @@ model InvoiceItem {
 }
 
 model Payment {
-  id               String            @id @default(uuid())
-  invoiceId        String            @map("invoice_id")
-  amount           Decimal           @db.Decimal(10, 2) // Display Amount
-  method           payment_method // Legacy Enum (CASH, BANK)
-  reference        String?           @db.VarChar(100)
-  paidOn           DateTime?         @default(now()) @db.DateTime(0)
-  postingStatus    PostingStatus     @default(PENDING) @map("posting_status")
-  journalEntryId   String?           @unique @map("journal_entry_id")
-  createdAt        DateTime?         @default(now()) @db.DateTime(0)
-  updatedAt        DateTime?         @default(now()) @db.DateTime(0)
-  isReversed       Boolean           @default(false) @map("is_reversed")
-  reversedAt       DateTime?         @map("reversed_at") @db.DateTime(0)
-  reversalReason   String?           @map("reversal_reason") @db.VarChar(255)
-  reversedBy       String?           @map("reversed_by") @db.VarChar(100)
-  invoice          Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  journalEntry     JournalEntry?     @relation(fields: [journalEntryId], references: [id])
-  paymentReversals PaymentReversal[]
-  receipts         Receipt[]
+  id                String            @id @default(uuid())
+  invoiceId         String            @map("invoice_id")
+  amount            Decimal           @db.Decimal(10, 2)
+  method            payment_method
+  reference         String?           @db.VarChar(100)
+  paidOn            DateTime?         @default(now()) @db.DateTime(0)
+  postingStatus     PostingStatus     @default(PENDING) @map("posting_status")
+  journalEntryId    String?           @unique @map("journal_entry_id")
+  createdAt         DateTime?         @default(now()) @db.DateTime(0)
+  updatedAt         DateTime?         @default(now()) @db.DateTime(0)
+  isReversed        Boolean           @default(false) @map("is_reversed")
+  reversedAt        DateTime?         @map("reversed_at") @db.DateTime(0)
+  reversalReason    String?           @map("reversal_reason") @db.VarChar(255)
+  reversedBy        String?           @map("reversed_by") @db.VarChar(100)
+  amount_subunits   BigInt?
+  currency          String            @default("KES") @db.VarChar(3)
+  gateway           payment_gateway   @default(MANUAL)
+  gateway_reference String?
+  risk_score        Int?
+  status            payment_status    @default(PENDING)
+  type              payment_type      @default(RENT)
+  metadata          Json?
+  invoice           Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  journalEntry      JournalEntry?     @relation(fields: [journalEntryId], references: [id])
+  paymentReversals  PaymentReversal[]
+  receipts          Receipt[]
 
   amountSubunits BigInt? @map("amount_subunits") // Cents(Integer math)
   currency       String  @default("KES") @db.VarChar(3)
@@ -762,6 +770,8 @@ model Payment {
   @@index([gatewayReference])
   @@index([status])
   @@index([invoiceId])
+  @@index([gateway_reference])
+  @@index([status])
   @@map("payment")
 }
 
