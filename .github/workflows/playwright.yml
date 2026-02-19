@@ -83,7 +83,8 @@ jobs:
           echo "Syncing Remote Test DB to current Schema..."
           # ✅ Use db push. It ignores migration history and forces the DB 
           # to match your current schema.prisma file exactly.
-          npx prisma db push --accept-data-loss
+          # ✅ FIX: Added --force-reset to drop existing tables before creation
+          npx prisma db push --force-reset --accept-data-loss
 
           echo "Seeding E2E Data..."
           # Ensure you are running the specific E2E seed (corrected path)
