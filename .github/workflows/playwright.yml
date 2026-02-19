@@ -83,11 +83,11 @@ jobs:
           echo "Syncing Remote Test DB to current Schema..."
           # ✅ Use db push. It ignores migration history and forces the DB 
           # to match your current schema.prisma file exactly.
-          npx prisma db push --accept-data-loss --force-reset
+          npx prisma db push --accept-data-loss
 
           echo "Seeding E2E Data..."
           # Ensure you are running the specific E2E seed (corrected path)
-          npx tsx scripts/seed-e2e.ts
+          npx tsx prisma/seed.e2e.ts
           
           echo "Debug: Verifying seeded data..."
           npx tsx -e "
@@ -135,6 +135,23 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
+
+      - name: Debug DB Content
+        shell: bash
+        run: |
+          echo "Checking if manager@test.com exists in DB..."
+          npx tsx -e "
+            import { PrismaClient } from '@prisma/client';
+            const prisma = new PrismaClient();
+            async function main() {
+              const count = await prisma.user.count();
+              const manager = await prisma.user.findUnique({ where: { email: 'manager@test.com' } });
+              console.log('Total Users:', count);
+              console.log('Manager User:', manager ? 'FOUND' : 'MISSING');
+              if (manager) console.log('Manager Verified:', manager.emailVerified);
+            }
+            main().finally(() => prisma.\$disconnect());
+          "
 
       - name: Run Playwright tests
         run: npx playwright test --project=chromium --reporter=line
