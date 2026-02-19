@@ -93,36 +93,44 @@ jobs:
           npx tsx -e "
           import { PrismaClient } from '@prisma/client';
           const prisma = new PrismaClient();
-          
-          console.log('=== CI DEBUG AFTER SEEDING ===');
-          console.log('Users:', await prisma.user.count());
-          console.log('Properties:', await prisma.property.count());
-          console.log('Leases:', await prisma.lease.count());
-          
-          const leases = await prisma.lease.findMany({
-            include: {
-              property: {
-                include: { manager: { include: { user: true } } }
-              },
-              tenant: true,
-              unit: true
+
+          (async () => {
+            try {
+              console.log('=== CI DEBUG AFTER SEEDING ===');
+              console.log('Users:', await prisma.user.count());
+              console.log('Properties:', await prisma.property.count());
+              console.log('Leases:', await prisma.lease.count());
+
+              const leases = await prisma.lease.findMany({
+                include: {
+                  property: {
+                    include: { manager: { include: { user: true } } }
+                  },
+                  tenant: true,
+                  unit: true
+                }
+              });
+
+              leases.forEach((lease, i) => {
+                console.log(\`Lease \${i}: \${lease.id}\`);
+                console.log(\`  Property Manager User ID: \${lease.property?.manager?.user?.id}\`);
+                console.log(\`  Tenant: \${lease.tenant?.email}\`);
+                console.log(\`  Unit: \${lease.unit?.unitNumber}\`);
+              });
+
+              // Verify manager user is email verified
+              const manager = await prisma.user.findUnique({
+                where: { email: 'manager@test.com' }
+              });
+              console.log(\`Manager emailVerified: \${manager?.emailVerified}\`);
+              
+            } catch (err) {
+              console.error('Debug script error:', err);
+              process.exit(1);
+            } finally {
+              await prisma.\$disconnect();
             }
-          });
-          
-          leases.forEach((lease, i) => {
-            console.log(\`Lease \${i}: \${lease.id}\`);
-            console.log(\`  Property Manager User ID: \${lease.property?.manager?.user?.id}\`);
-            console.log(\`  Tenant: \${lease.tenant?.email}\`);
-            console.log(\`  Unit: \${lease.unit?.unitNumber}\`);
-          });
-          
-          // Verify manager user is email verified
-          const manager = await prisma.user.findUnique({
-            where: { email: 'manager@test.com' }
-          });
-          console.log(\`Manager emailVerified: \${manager?.emailVerified}\`);
-          
-          process.exit(0);
+          })();
           "
 
       - name: Install Playwright browsers
