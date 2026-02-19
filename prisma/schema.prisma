@@ -41,15 +41,6 @@ model Organization {
   // USA (Payout Logic)
   stripeConnectId String? @map("stripe_connect_id")
 
-  // --- Payment Settlement (Landlord) ---
-  region Region? @default(KEN)
-
-  // Africa (Split Logic)
-  paystackSubaccountCode String? @map("paystack_subaccount_code")
-
-  // USA (Payout Logic)
-  stripeConnectId String? @map("stripe_connect_id")
-
   @@index([planId], map: "organizations_planId_fkey")
   @@map("organizations")
 }
@@ -87,20 +78,6 @@ model User {
 
   // Relation to OTPs
   otps Otp[]
-
-  // --- Payment Profile (Tenant) ---
-  region    Region?   @default(KEN) // Defaulting to KEN for our pilot
-  KycStatus KycStatus @default(PENDING) @map("kyc_status")
-
-  // USA Identifiers
-  stripeCustomerId          String? @map("stripe_customer_id")
-  plaidAccessTokenEncrypted String? @map("plaid_access_token") // App must encrypt/decrypt this
-
-  // Africa Identifiers
-  paystackCustomerCode String? @map("paystack_customer_code")
-
-  // Payment methods
-  paymentMethods TenantPaymentMethod[]
 
   // --- Payment Profile (Tenant) ---
   region    Region?   @default(KEN) // Defaulting to KEN for our pilot
@@ -742,39 +719,24 @@ model Payment {
   reversedAt        DateTime?         @map("reversed_at") @db.DateTime(0)
   reversalReason    String?           @map("reversal_reason") @db.VarChar(255)
   reversedBy        String?           @map("reversed_by") @db.VarChar(100)
-  amount_subunits   BigInt?
+  amountSubunits    BigInt?           @map("amount_subunits") // Cents(Integer math)
   currency          String            @default("KES") @db.VarChar(3)
-  gateway           payment_gateway   @default(MANUAL)
-  gateway_reference String?
-  risk_score        Int?
-  status            payment_status    @default(PENDING)
-  type              payment_type      @default(RENT)
-  metadata          Json?
+  gateway           PaymentGateway    @default(MANUAL)
+  gatewayReference  String?           @map("gateway_reference") //Stripe ID / Paystack Ref
+  riskScore         Int?              @map("risk_score") // Plaid Signal Score
+  status            TransactionStatus @default(PENDING)
+  type              TransactionType   @default(RENT)
+  metadata          Json? // Additional payment details (phone number, M-Pesa transaction details, etc.)
   invoice           Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   journalEntry      JournalEntry?     @relation(fields: [journalEntryId], references: [id])
   paymentReversals  PaymentReversal[]
   receipts          Receipt[]
 
-  amountSubunits BigInt? @map("amount_subunits") // Cents(Integer math)
-  currency       String  @default("KES") @db.VarChar(3)
-
-  gateway          PaymentGateway @default(MANUAL)
-  gatewayReference String?        @map("gateway_reference") //Stripe ID / Paystack Ref
-  riskScore        Int?           @map("risk_score") // Plaid Signal Score
-  metadata         Json? // Additional payment details (phone number, M-Pesa transaction details, etc.)
-
-  // Status State Machine
-  status TransactionStatus @default(PENDING)
-  type   TransactionType   @default(RENT)
-
   @@index([gatewayReference])
   @@index([status])
   @@index([invoiceId])
-  @@index([gateway_reference])
-  @@index([status])
   @@map("payment")
 }
-
 model PaymentReversal {
   id          String   @id @db.Char(36)
   payment_id  String   @db.Char(36)
@@ -1883,113 +1845,4 @@ enum TransactionType {
   MAINTENANCE
 }
 
-// -------PAYMENT INFRASTRUCTURE ENUMS--------
 
-enum Region {
-  USA
-  KEN
-}
-
-enum KycStatus {
-  PENDING
-  VERIFIED
-  FAILED
-}
-
-enum PaymentGateway {
-  STRIPE
-  PLAID
-  PAYSTACK
-  MPESA_DIRECT
-  MANUAL // for existing cash/bank logic
-}
-
-enum TransactionStatus {
-  PENDING
-  AUTHORIZED
-  SETTLED
-  FAILED
-  DISPUTED
-  REVERSED
-}
-
-enum TransactionType {
-  RENT
-  DEPOSIT
-  SAAS_FEE
-  MAINTENANCE
-}
-
-// -------PAYMENT INFRASTRUCTURE ENUMS--------
-
-enum Region {
-  USA
-  KEN
-}
-
-enum KycStatus {
-  PENDING
-  VERIFIED
-  FAILED
-}
-
-enum PaymentGateway {
-  STRIPE
-  PLAID
-  PAYSTACK
-  MPESA_DIRECT
-  MANUAL // for existing cash/bank logic
-}
-
-enum TransactionStatus {
-  PENDING
-  AUTHORIZED
-  SETTLED
-  FAILED
-  DISPUTED
-  REVERSED
-}
-
-enum TransactionType {
-  RENT
-  DEPOSIT
-  SAAS_FEE
-  MAINTENANCE
-}
-
-// -------PAYMENT INFRASTRUCTURE ENUMS--------
-
-enum Region {
-  USA
-  KEN
-}
-
-enum KycStatus {
-  PENDING
-  VERIFIED
-  FAILED
-}
-
-enum PaymentGateway {
-  STRIPE
-  PLAID
-  PAYSTACK
-  MPESA_DIRECT
-  MANUAL // for existing cash/bank logic
-}
-
-enum TransactionStatus {
-  PENDING
-  AUTHORIZED
-  SETTLED
-  FAILED
-  DISPUTED
-  REVERSED
-}
-
-enum TransactionType {
-  RENT
-  DEPOSIT
-  SAAS_FEE
-  MAINTENANCE
-}
