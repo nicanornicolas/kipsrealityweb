@@ -7,99 +7,91 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// =====================================================================
+// 1. AUTHENTICATION & IDENTITY
+// =====================================================================
+
 model Organization {
-  id                       String                   @id @default(uuid())
-  name                     String
-  slug                     String                   @unique
-  logoUrl                  String?                  @map("logo_url")
-  website                  String?
-  phone                    String?
-  address                  String?
-  isActive                 Boolean                  @default(true) @map("is_active")
-  createdAt                DateTime                 @default(now()) @map("created_at")
-  updatedAt                DateTime                 @updatedAt @map("updated_at")
-  planId                   Int?
-  paystack_subaccount_code String?
-  region                   organizations_region?    @default(KEN)
-  stripe_connect_id        String?
-  invites                  Invite[]
-  listings                 Listing[]
-  maintenanceRequests      MaintenanceRequest[]
-  properties               Property[]               @relation("OrganizationToProperty")
-  notaryRecords            BlockchainNotaryRecord[]
-  dssDocuments             DssDocument[]
-  dssParticipants          DssParticipant[]
-  dssWorkflowTemplates     DssWorkflowTemplate[]
-  financialEntities        FinancialEntity[]
-  users                    OrganizationUser[]
-  plan                     Plan?                    @relation(fields: [planId], references: [id])
-  vendors                  Vendor[]
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  logoUrl   String?  @map("logo_url")
+  website   String?
+  phone     String?
+  address   String?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  planId    Int?
 
-  // --- Payment Settlement (Landlord) ---
-  region Region? @default(KEN)
-
-  // Africa (Split Logic)
+  // Payment Settlement (Landlord)
+  region                 Region? @default(KEN)
   paystackSubaccountCode String? @map("paystack_subaccount_code")
+  stripeConnectId        String? @map("stripe_connect_id")
 
-  // USA (Payout Logic)
-  stripeConnectId String? @map("stripe_connect_id")
+  // Relations
+  invites              Invite[]
+  listings             Listing[]
+  maintenanceRequests  MaintenanceRequest[]
+  properties           Property[]               @relation("OrganizationToProperty")
+  notaryRecords        BlockchainNotaryRecord[]
+  dssDocuments         DssDocument[]
+  dssParticipants      DssParticipant[]
+  dssWorkflowTemplates DssWorkflowTemplate[]
+  financialEntities    FinancialEntity[]
+  users                OrganizationUser[]
+  plan                 Plan?                    @relation(fields: [planId], references: [id])
+  vendors              Vendor[]
 
   @@index([planId], map: "organizations_planId_fkey")
   @@map("organizations")
 }
 
 model User {
-  id                     String                   @id @default(uuid())
-  email                  String                   @unique
-  passwordHash           String                   @map("password_hash")
-  firstName              String?                  @map("first_name")
-  lastName               String?                  @map("last_name")
-  phone                  String?                  @unique // E.164 format (e.g. +2547...)
-  phoneVerified          DateTime? // Null = not verified
-  avatarUrl              String?                  @map("avatar_url")
-  status                 UserStatus               @default(ACTIVE)
-  lastLoginAt            DateTime?                @map("last_login_at")
-  createdAt              DateTime                 @default(now()) @map("created_at")
-  updatedAt              DateTime                 @updatedAt @map("updated_at")
-  emailVerified          DateTime?                @map("email_verified")
-  verificationToken      String?                  @unique
-  consentMarketing       Boolean                  @default(false) @map("consent_marketing")
-  consentNotifications   Boolean                  @default(true) @map("consent_notifications")
-  consentTransactional   Boolean                  @default(true) @map("consent_transactional")
-  kyc_status             users_kyc_status         @default(PENDING)
-  paystack_customer_code String?
-  plaid_access_token     String?
-  region                 users_region?            @default(KEN)
-  stripe_customer_id     String?
-  AgentInvite            AgentInvite[]
-  sentInvites            Invite[]                 @relation("UserInvites")
-  leases                 Lease[]
-  listings               Listing[]
-  passwordResetTokens    PasswordResetToken[]
-  tenantApplications     Tenantapplication[]
-  twoFactorEnabled       Boolean                  @default(false)
-  dssParticipants        DssParticipant[]
-  listingAuditEntries    ListingAuditEntry[]
-  organizationUsers      OrganizationUser[]
-  tenant_payment_methods tenant_payment_methods[]
-  vendors                Vendor[]
+  id            String     @id @default(uuid())
+  email         String     @unique
+  passwordHash  String     @map("password_hash")
+  firstName     String?    @map("first_name")
+  lastName      String?    @map("last_name")
+  phone         String?    @unique // E.164 format
+  phoneVerified DateTime?
+  avatarUrl     String?    @map("avatar_url")
+  status        UserStatus @default(ACTIVE)
+  lastLoginAt   DateTime?  @map("last_login_at")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
 
-  // Relation to OTPs
-  otps Otp[]
+  // Auth & Verification
+  emailVerified     DateTime? @map("email_verified")
+  verificationToken String?   @unique
+  twoFactorEnabled  Boolean   @default(false)
 
-  // --- Payment Profile (Tenant) ---
-  region    Region?   @default(KEN) // Defaulting to KEN for our pilot
-  KycStatus KycStatus @default(PENDING) @map("kyc_status")
+  // Consents
+  consentMarketing     Boolean @default(false) @map("consent_marketing")
+  consentNotifications Boolean @default(true) @map("consent_notifications")
+  consentTransactional Boolean @default(true) @map("consent_transactional")
 
-  // USA Identifiers
-  stripeCustomerId          String? @map("stripe_customer_id")
-  plaidAccessTokenEncrypted String? @map("plaid_access_token") // App must encrypt/decrypt this
+  // Payment Profile (Tenant)
+  region                    Region?   @default(KEN)
+  kycStatus                 KycStatus @default(PENDING) @map("kyc_status")
+  stripeCustomerId          String?   @map("stripe_customer_id")
+  plaidAccessTokenEncrypted String?   @map("plaid_access_token")
+  paystackCustomerCode      String?   @map("paystack_customer_code")
 
-  // Africa Identifiers
-  paystackCustomerCode String? @map("paystack_customer_code")
-
-  // Payment methods
-  paymentMethods TenantPaymentMethod[]
+  // Relations
+  otps                Otp[]
+  paymentMethods      TenantPaymentMethod[]
+  AgentInvite         AgentInvite[]
+  sentInvites         Invite[]              @relation("UserInvites")
+  leases              Lease[]
+  listings            Listing[]
+  passwordResetTokens PasswordResetToken[]
+  tenantApplications  Tenantapplication[]
+  dssParticipants     DssParticipant[]
+  listingAuditEntries ListingAuditEntry[]
+  organizationUsers   OrganizationUser[]
+  vendors             Vendor[]
+  // Note: tenant_payment_methods is handled by paymentMethods relation above
 
   @@map("users")
 }
@@ -108,7 +100,7 @@ model TenantPaymentMethod {
   id                    String   @id @default(uuid())
   userId                String   @map("user_id")
   type                  String // 'ACH', 'CARD'
-  plaidAccessToken      String?  @map("plaid_access_token") // Encrypted
+  plaidAccessToken      String?  @map("plaid_access_token")
   plaidAccountId        String?  @map("plaid_account_id")
   stripePaymentMethodId String   @map("stripe_payment_method_id")
   isDefault             Boolean  @default(false) @map("is_default")
@@ -122,29 +114,29 @@ model TenantPaymentMethod {
 }
 
 model OrganizationUser {
-  id                String                  @id @default(uuid())
-  userId            String                  @map("user_id")
-  organizationId    String                  @map("organization_id")
-  role              organization_users_role
-  createdAt         DateTime                @default(now()) @map("created_at")
-  adminActions      AdminAction[]           @relation("AdminActionsByAdmin")
-  targetActions     AdminAction[]           @relation("AdminActionsTarget")
-  createdRequests   MaintenanceRequest[]    @relation("RequestCreator")
+  id             String                  @id @default(uuid())
+  userId         String                  @map("user_id")
+  organizationId String                  @map("organization_id")
+  role           organization_users_role
+  createdAt      DateTime                @default(now()) @map("created_at")
+
+  adminActions      AdminAction[]        @relation("AdminActionsByAdmin")
+  targetActions     AdminAction[]        @relation("AdminActionsTarget")
+  createdRequests   MaintenanceRequest[] @relation("RequestCreator")
   managedProperties Property[]
   postedServices    ServiceMarketplace[]
-  organization      Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user              User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, organizationId])
   @@index([organizationId], map: "organization_users_organization_id_fkey")
   @@map("organization_users")
 }
 
-// New Table for 2FA Codes
 model Otp {
   id        String   @id @default(uuid())
-  code      String // The 6-digit code
-  phone     String // The destination
+  code      String
+  phone     String
   userId    String
   expiresAt DateTime
   type      OtpType  @default(TWO_FACTOR)
@@ -156,16 +148,17 @@ model Otp {
 }
 
 model Vendor {
-  id                 String               @id @default(uuid())
-  organizationId     String               @map("organization_id")
-  userId             String               @map("user_id")
-  companyName        String               @map("company_name")
-  serviceType        String               @map("service_type")
-  phone              String?
-  email              String?
-  isActive           Boolean              @default(true) @map("is_active")
-  createdAt          DateTime             @default(now()) @map("created_at")
-  updatedAt          DateTime             @updatedAt @map("updated_at")
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  userId         String   @map("user_id")
+  companyName    String   @map("company_name")
+  serviceType    String   @map("service_type")
+  phone          String?
+  email          String?
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
   MaintenanceRequest MaintenanceRequest[]
   organization       Organization         @relation(fields: [organizationId], references: [id])
   user               User                 @relation(fields: [userId], references: [id])
@@ -176,19 +169,20 @@ model Vendor {
 }
 
 model Invite {
-  id             String       @id @default(cuid())
+  id             String      @id @default(cuid())
   email          String
-  token          String       @unique
+  token          String      @unique
   role           Invite_role
   organizationId String
   invitedById    String?
   expiresAt      DateTime
-  accepted       Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  leaseId        String?      @db.VarChar(255)
-  lease          Lease?       @relation("LeaseInvites", fields: [leaseId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Invite_Lease")
-  invitedBy      User?        @relation("UserInvites", fields: [invitedById], references: [id])
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  accepted       Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+
+  leaseId      String?      @db.VarChar(255)
+  lease        Lease?       @relation("LeaseInvites", fields: [leaseId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Invite_Lease")
+  invitedBy    User?        @relation("UserInvites", fields: [invitedById], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
   @@index([email])
@@ -206,6 +200,26 @@ model PasswordResetToken {
 
   @@index([userId])
 }
+
+model AgentInvite {
+  id              String    @id
+  inviteTokenHash String    @unique
+  expiresAt       DateTime
+  usedAt          DateTime?
+  isUsed          Boolean   @default(false)
+  tenantId        String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+
+  users User @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([tenantId])
+}
+
+// =====================================================================
+// 2. FINANCIAL CORE (General Ledger)
+// =====================================================================
 
 model FinancialEntity {
   id             String         @id @default(uuid())
@@ -235,19 +249,21 @@ model Account {
 }
 
 model JournalEntry {
-  id                 String              @id @default(uuid())
-  entityId           String              @map("entity_id")
-  transactionDate    DateTime            @map("transaction_date")
-  postedAt           DateTime?           @map("posted_at")
-  description        String
-  reference          String?
-  isLocked           Boolean             @default(false)
-  maintenanceRequest MaintenanceRequest?
-  entity             FinancialEntity     @relation(fields: [entityId], references: [id])
-  lines              JournalLine[]
-  invoice            Invoice?
-  payment            Payment?
-  utilityBill        UtilityBill?
+  id              String    @id @default(uuid())
+  entityId        String    @map("entity_id")
+  transactionDate DateTime  @map("transaction_date")
+  postedAt        DateTime? @map("posted_at")
+  description     String
+  reference       String?
+  isLocked        Boolean   @default(false)
+
+  entity               FinancialEntity     @relation(fields: [entityId], references: [id])
+  lines                JournalLine[]
+  invoice              Invoice?
+  payment              Payment?
+  utilityBill          UtilityBill?
+  maintenanceRequest   MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id]) // One-to-one relation if needed
+  maintenanceRequestId String?
 
   @@index([transactionDate])
   @@index([entityId], map: "gl_journal_entries_entity_id_fkey")
@@ -255,22 +271,24 @@ model JournalEntry {
 }
 
 model JournalLine {
-  id             String       @id @default(uuid())
-  journalEntryId String       @map("journal_entry_id")
-  accountId      String       @map("account_id")
+  id             String  @id @default(uuid())
+  journalEntryId String  @map("journal_entry_id")
+  accountId      String  @map("account_id")
   description    String?
-  debit          Decimal      @default(0.0000) @db.Decimal(20, 4)
-  credit         Decimal      @default(0.0000) @db.Decimal(20, 4)
-  propertyId     String?      @map("property_id")
-  unitId         String?      @map("unit_id")
-  leaseId        String?      @map("lease_id")
-  tenantId       String?      @map("tenant_id")
-  vendorId       String?      @map("vendor_id")
-  account        Account      @relation(fields: [accountId], references: [id])
-  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  lease          Lease?       @relation(fields: [leaseId], references: [id])
-  property       Property?    @relation(fields: [propertyId], references: [id])
-  unit           Unit?        @relation(fields: [unitId], references: [id])
+  debit          Decimal @default(0.0000) @db.Decimal(20, 4)
+  credit         Decimal @default(0.0000) @db.Decimal(20, 4)
+
+  propertyId String? @map("property_id")
+  unitId     String? @map("unit_id")
+  leaseId    String? @map("lease_id")
+  tenantId   String? @map("tenant_id")
+  vendorId   String? @map("vendor_id")
+
+  account      Account      @relation(fields: [accountId], references: [id])
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  lease        Lease?       @relation(fields: [leaseId], references: [id])
+  property     Property?    @relation(fields: [propertyId], references: [id])
+  unit         Unit?        @relation(fields: [unitId], references: [id])
 
   @@index([accountId])
   @@index([propertyId])
@@ -295,35 +313,48 @@ model FinancialSnapshot {
   @@map("gl_financial_snapshots")
 }
 
+// =====================================================================
+// 3. UTILITY MODULE
+// =====================================================================
+
 model UtilityBill {
-  id             String              @id @default(uuid())
-  propertyId     String              @map("property_id")
-  providerName   String              @map("provider_name")
-  totalAmount    Decimal             @db.Decimal(10, 2)
-  billDate       DateTime            @map("bill_date")
-  dueDate        DateTime            @map("due_date")
-  importMethod   UtilityImportMethod @default(MANUAL_ENTRY) @map("import_method")
-  ocrConfidence  Decimal?            @map("ocr_confidence") @db.Decimal(5, 2)
-  status         UtilityBillStatus   @default(DRAFT)
-  journalEntryId String?             @unique @map("journal_entry_id")
-  blockchainHash String?             @map("blockchain_hash")
-  createdAt      DateTime            @default(now()) @map("created_at")
-  fileUrl        String?             @map("file_url")
-  splitMethod    UtilitySplitMethod  @default(EQUAL) @map("split_method")
-  updatedAt      DateTime            @updatedAt @map("updated_at")
-  consumption    Float?              @db.Float
-  periodEnd      DateTime?           @map("period_end")
-  periodStart    DateTime?           @map("period_start")
-  rate           Float?              @db.Float
-  utilityId      String?             @map("utility_id") @db.Char(36)
-  approvedAt     DateTime?           @map("approved_at")
-  approvedBy     String?             @map("approved_by")
-  rawOcrData     Json?               @map("raw_ocr_data")
-  childInvoices  Invoice[]
-  allocations    UtilityAllocation[]
-  journalEntry   JournalEntry?       @relation(fields: [journalEntryId], references: [id])
-  property       Property            @relation(fields: [propertyId], references: [id])
-  utility        utility?            @relation(fields: [utilityId], references: [id])
+  id           String   @id @default(uuid())
+  propertyId   String   @map("property_id")
+  providerName String   @map("provider_name")
+  totalAmount  Decimal  @db.Decimal(10, 2)
+  billDate     DateTime @map("bill_date")
+  dueDate      DateTime @map("due_date")
+
+  splitMethod UtilitySplitMethod @default(EQUAL) @map("split_method")
+  status      UtilityBillStatus  @default(DRAFT)
+
+  importMethod  UtilityImportMethod @default(MANUAL_ENTRY) @map("import_method")
+  ocrConfidence Decimal?            @map("ocr_confidence") @db.Decimal(5, 2)
+  fileUrl       String?             @map("file_url")
+  rawOcrData    Json?               @map("raw_ocr_data")
+
+  consumption Float?    @db.Float
+  rate        Float?    @db.Float
+  periodStart DateTime? @map("period_start")
+  periodEnd   DateTime? @map("period_end")
+
+  approvedAt DateTime? @map("approved_at")
+  approvedBy String?   @map("approved_by")
+
+  journalEntryId String?       @unique @map("journal_entry_id")
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
+
+  blockchainHash String?  @map("blockchain_hash")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  property      Property            @relation(fields: [propertyId], references: [id])
+  allocations   UtilityAllocation[]
+  childInvoices Invoice[]
+
+  // Legacy Link
+  utilityId String?  @map("utility_id") @db.Char(36)
+  utility   utility? @relation(fields: [utilityId], references: [id])
 
   @@index([propertyId])
   @@index([utilityId])
@@ -342,14 +373,17 @@ model UtilityAllocation {
   createdAt      DateTime                @default(now())
   paidAmount     Decimal                 @default(0.00) @db.Decimal(10, 2)
   status         UtilityAllocationStatus @default(PENDING)
-  tenantId       String?                 @map("tenant_id")
-  leaseId        String?                 @map("lease_id")
-  invoice        Invoice?                @relation(fields: [invoiceId], references: [id])
-  lease          Lease?                  @relation(fields: [leaseId], references: [id])
-  unit           Unit                    @relation(fields: [unitId], references: [id])
-  utilityBill    UtilityBill             @relation(fields: [utilityBillId], references: [id], onDelete: Cascade)
-  disputes       UtilityDispute[]
-  payments       UtilityPayment[]
+
+  tenantId String? @map("tenant_id")
+  leaseId  String? @map("lease_id")
+
+  invoice     Invoice?    @relation(fields: [invoiceId], references: [id])
+  lease       Lease?      @relation(fields: [leaseId], references: [id])
+  unit        Unit        @relation(fields: [unitId], references: [id])
+  utilityBill UtilityBill @relation(fields: [utilityBillId], references: [id], onDelete: Cascade)
+
+  disputes UtilityDispute[]
+  payments UtilityPayment[]
 
   @@index([utilityBillId])
   @@index([tenantId])
@@ -391,51 +425,65 @@ model UtilityDispute {
   @@map("utility_disputes")
 }
 
+// =====================================================================
+// 4. PROPERTY, UNITS & LEASES
+// =====================================================================
+
 model Property {
-  id                     String                  @id @default(uuid())
-  listingId              String?                 @unique
-  managerId              String?
-  organizationId         String?
-  propertyTypeId         String?
-  locationId             String?
-  city                   String
-  address                String
-  amenities              String?
-  isFurnished            Boolean                 @default(false)
-  availabilityStatus     String?
-  createdAt              DateTime                @default(now())
-  name                   String?
-  contactEmail           String?
-  contactPhone           String?
-  country                String?
-  zipCode                String?
-  latitude               Float?
-  longitude              Float?
+  id                 String   @id @default(uuid())
+  listingId          String?  @unique
+  managerId          String?
+  organizationId     String?
+  propertyTypeId     String?
+  locationId         String?
+  city               String
+  address            String
+  amenities          String?
+  isFurnished        Boolean  @default(false)
+  availabilityStatus String?
+  createdAt          DateTime @default(now())
+  name               String?
+  contactEmail       String?
+  contactPhone       String?
+  country            String?
+  zipCode            String?
+  latitude           Float?
+  longitude          Float?
+
   apartmentComplexDetail ApartmentComplexDetail?
   CondoDetail            CondoDetail?
   houseDetail            HouseDetail?
   LandDetail             LandDetail?
-  leases                 Lease[]
-  maintenanceRequests    MaintenanceRequest[]    @relation("PropertyMaintenanceRequests")
-  OccupancyHistory       OccupancyHistory[]
-  listing                Listing?                @relation("PropertyListing", fields: [listingId], references: [id])
-  location               Location?               @relation(fields: [locationId], references: [id])
-  manager                OrganizationUser?       @relation(fields: [managerId], references: [id])
-  organization           Organization?           @relation("OrganizationToProperty", fields: [organizationId], references: [id])
-  propertyType           PropertyType?           @relation(fields: [propertyTypeId], references: [id])
-  images                 PropertyImage[]
-  tenantapplications     Tenantapplication[]
   townhouseDetail        TownhouseDetail?
-  units                  Unit[]
-  DssDocument            DssDocument[]
-  DssWorkflowTemplate    DssWorkflowTemplate[]
-  journalLines           JournalLine[]
-  utilityBills           UtilityBill[]
+
+  leases              Lease[]
+  maintenanceRequests MaintenanceRequest[]  @relation("PropertyMaintenanceRequests")
+  OccupancyHistory    OccupancyHistory[]
+  listing             Listing?              @relation("PropertyListing", fields: [listingId], references: [id])
+  location            Location?             @relation(fields: [locationId], references: [id])
+  manager             OrganizationUser?     @relation(fields: [managerId], references: [id])
+  organization        Organization?         @relation("OrganizationToProperty", fields: [organizationId], references: [id])
+  propertyType        PropertyType?         @relation(fields: [propertyTypeId], references: [id])
+  images              PropertyImage[]
+  tenantapplications  Tenantapplication[]
+  units               Unit[]
+  DssDocument         DssDocument[]
+  DssWorkflowTemplate DssWorkflowTemplate[]
+  journalLines        JournalLine[]
+  utilityBills        UtilityBill[]
 
   @@index([locationId])
   @@index([managerId])
   @@index([organizationId])
   @@index([propertyTypeId], map: "Property_propertyTypeId_fkey")
+}
+
+model PropertyType {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  properties  Property[]
 }
 
 model PropertyImage {
@@ -672,28 +720,31 @@ model Lease {
   @@index([endDate])
 }
 
+// =====================================================================
+// 5. INVOICING & PAYMENTS
+// =====================================================================
+
 model Invoice {
-  id                 String              @id @default(uuid())
-  leaseId            String              @map("lease_id")
-  type               invoice_type
-  totalAmount        Float               @map("amount")
-  amountPaid         Float               @default(0) @map("amount_paid")
-  balance            Float               @default(0)
-  dueDate            DateTime            @db.DateTime(0)
-  status             invoice_status?     @default(PENDING)
-  postingStatus      PostingStatus       @default(PENDING) @map("posting_status")
-  journalEntryId     String?             @unique @map("journal_entry_id")
-  utilityBillId      String?             @map("utility_bill_id")
-  createdAt          DateTime?           @default(now()) @db.DateTime(0)
-  updatedAt          DateTime?           @default(now()) @db.DateTime(0)
-  InvoiceItem        InvoiceItem[]
-  maintenanceRequest MaintenanceRequest?
-  journalEntry       JournalEntry?       @relation(fields: [journalEntryId], references: [id])
-  Lease              Lease               @relation(fields: [leaseId], references: [id], onDelete: Cascade)
-  utilityBill        UtilityBill?        @relation(fields: [utilityBillId], references: [id])
-  payments           Payment[]
-  receipts           Receipt[]
-  utilityAllocation  UtilityAllocation?
+  id                String             @id @default(uuid())
+  leaseId           String             @map("lease_id")
+  type              invoice_type
+  totalAmount       Float              @map("amount")
+  amountPaid        Float              @default(0) @map("amount_paid")
+  balance           Float              @default(0)
+  dueDate           DateTime           @db.DateTime(0)
+  status            invoice_status?    @default(PENDING)
+  postingStatus     PostingStatus      @default(PENDING) @map("posting_status")
+  journalEntryId    String?            @unique @map("journal_entry_id")
+  utilityBillId     String?            @map("utility_bill_id")
+  createdAt         DateTime?          @default(now()) @db.DateTime(0)
+  updatedAt         DateTime?          @default(now()) @db.DateTime(0)
+  InvoiceItem       InvoiceItem[]
+  journalEntry      JournalEntry?      @relation(fields: [journalEntryId], references: [id])
+  Lease             Lease              @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  utilityBill       UtilityBill?       @relation(fields: [utilityBillId], references: [id])
+  payments          Payment[]
+  receipts          Receipt[]
+  utilityAllocation UtilityAllocation?
 
   @@index([leaseId], map: "invoice_lease_id_fkey")
   @@index([utilityBillId], map: "invoice_utility_bill_id_fkey")
@@ -713,81 +764,96 @@ model InvoiceItem {
 }
 
 model Payment {
-  id                String            @id @default(uuid())
-  invoiceId         String            @map("invoice_id")
-  amount            Decimal           @db.Decimal(10, 2)
-  method            payment_method
-  reference         String?           @db.VarChar(100)
-  paidOn            DateTime?         @default(now()) @db.DateTime(0)
-  postingStatus     PostingStatus     @default(PENDING) @map("posting_status")
-  journalEntryId    String?           @unique @map("journal_entry_id")
-  createdAt         DateTime?         @default(now()) @db.DateTime(0)
-  updatedAt         DateTime?         @default(now()) @db.DateTime(0)
-  isReversed        Boolean           @default(false) @map("is_reversed")
-  reversedAt        DateTime?         @map("reversed_at") @db.DateTime(0)
-  reversalReason    String?           @map("reversal_reason") @db.VarChar(255)
-  reversedBy        String?           @map("reversed_by") @db.VarChar(100)
-  amount_subunits   BigInt?
-  currency          String            @default("KES") @db.VarChar(3)
-  gateway           payment_gateway   @default(MANUAL)
-  gateway_reference String?
-  risk_score        Int?
-  status            payment_status    @default(PENDING)
-  type              payment_type      @default(RENT)
-  metadata          Json?
-  invoice           Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  journalEntry      JournalEntry?     @relation(fields: [journalEntryId], references: [id])
-  paymentReversals  PaymentReversal[]
-  receipts          Receipt[]
+  id        String @id @default(uuid())
+  invoiceId String @map("invoice_id")
 
-  amountSubunits BigInt? @map("amount_subunits") // Cents(Integer math)
-  currency       String  @default("KES") @db.VarChar(3)
+  // --- Financial Precision ---
+  amount         Decimal  @db.Decimal(10, 2) // Human readable (e.g. 100.50)
+  amountSubunits BigInt?  @map("amount_subunits") // API precise (e.g. 10050 cents)
+  currency       String   @default("USD") @db.VarChar(3)
+  exchangeRate   Decimal? @map("exchange_rate") @db.Decimal(10, 6) // For FX support
 
-  gateway          PaymentGateway @default(MANUAL)
-  gatewayReference String?        @map("gateway_reference") //Stripe ID / Paystack Ref
-  riskScore        Int?           @map("risk_score") // Plaid Signal Score
-  metadata         Json? // Additional payment details (phone number, M-Pesa transaction details, etc.)
-
-  // Status State Machine
-  status TransactionStatus @default(PENDING)
+  // --- Classification ---
+  method PaymentMethod // e.g. CREDIT_CARD
   type   TransactionType   @default(RENT)
+  status TransactionStatus @default(PENDING)
 
-  @@index([gatewayReference])
-  @@index([status])
+  // --- Gateway Integration ---
+  processor       PaymentProcessor? @default(MANUAL)
+  processorId     String?           @unique @map("processor_id") // Stripe PaymentIntent ID
+  processorStatus String?           @map("processor_status") // "succeeded", "requires_capture"
+  paymentMethodId String?           @map("payment_method_id") // Tokenized Card ID
+  reference       String?           @db.VarChar(100) // External Ref / Check #
+
+  // --- Security & Compliance ---
+  last4         String? @map("last_4")
+  bankName      String? @map("bank_name")
+  routingNumber String? @map("routing_number")
+  countryCode   String? @db.Char(2)
+  ipAddress     String? @map("ip_address")
+
+  // --- Failure Handling ---
+  failureReason String?   @map("failure_reason")
+  retryCount    Int       @default(0) @map("retry_count")
+  nextRetryAt   DateTime? @map("next_retry_at")
+
+  // --- Meta ---
+  metadata  Json? // Store full webhook payload here
+  paidOn    DateTime? @default(now()) @map("paid_on") @db.DateTime(0)
+  createdAt DateTime? @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.DateTime(0)
+
+  // --- Financial Core Link ---
+  postingStatus  PostingStatus @default(PENDING) @map("posting_status")
+  journalEntryId String?       @unique @map("journal_entry_id")
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
+
+  // Relations
+  invoice          Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  paymentReversals PaymentReversal[]
+  receipts         Receipt[]
+
   @@index([invoiceId])
-  @@index([gateway_reference])
+  @@index([processorId])
   @@index([status])
+  @@index([method])
   @@map("payment")
 }
 
 model PaymentReversal {
-  id          String   @id @db.Char(36)
-  payment_id  String   @db.Char(36)
-  invoice_id  String   @db.Char(36)
-  amount      Float    @db.Float
-  reason      String?  @db.VarChar(255)
-  created_at  DateTime @default(now()) @db.DateTime(0)
-  reversed_by String?  @db.VarChar(100)
-  metadata    Json?
-  payment     Payment  @relation(fields: [payment_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reversal_payment")
+  id        String  @id @default(uuid())
+  paymentId String  @map("payment_id")
+  invoiceId String  @map("invoice_id") // Snapshot of where it applied
+  amount    Decimal @db.Decimal(10, 2)
 
-  @@index([payment_id], map: "idx_payment_id")
+  reason     String?  @db.VarChar(255)
+  reversedBy String?  @map("reversed_by") @db.VarChar(100)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  metadata Json?
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
   @@map("payment_reversal")
 }
 
 model Receipt {
-  id        String    @id @default(dbgenerated("(uuid())")) @db.Char(36)
-  invoiceId String    @map("invoice_id") @db.Char(36)
-  paymentId String    @map("payment_id") @db.Char(36)
-  receiptNo String    @unique(map: "receiptNo") @db.VarChar(100)
-  issuedOn  DateTime? @default(now()) @db.DateTime(0)
-  createdAt DateTime? @default(now()) @db.DateTime(0)
-  updatedAt DateTime? @default(now()) @db.DateTime(0)
-  invoice   Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "receipt_ibfk_1")
-  payment   Payment   @relation(fields: [paymentId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "receipt_ibfk_2")
+  id        String @id @default(uuid())
+  invoiceId String @map("invoice_id")
+  paymentId String @map("payment_id")
 
-  @@index([invoiceId], map: "invoice_id")
-  @@index([paymentId], map: "payment_id")
+  receiptNo String @unique(map: "receiptNo") @db.VarChar(100)
+
+  issuedOn  DateTime? @default(now()) @map("issued_on")
+  createdAt DateTime? @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([paymentId])
   @@map("receipt")
 }
 
@@ -834,6 +900,10 @@ model utility_reading {
   @@index([lease_utility_id])
   @@map("utility_reading")
 }
+
+// =====================================================================
+// 6. DSS & BLOCKCHAIN
+// =====================================================================
 
 model DssDocument {
   id                   String                  @id @default(uuid())
@@ -902,8 +972,6 @@ model DssSignature {
   participantId String         @map("participant_id")
   signatureHash String         @map("signature_hash")
   signedAt      DateTime       @default(now()) @map("signed_at")
-  isProxy       Boolean        @default(false) @map("is_proxy")
-  onBehalfOf    String?        @map("on_behalf_of")
   document      DssDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
   participant   DssParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
@@ -962,6 +1030,8 @@ model DssWorkflowStep {
   @@map("dss_workflow_steps")
 }
 
+// ---------------- MARKETPLACE ----------------
+
 model Listing {
   id                 String              @id @default(uuid())
   organizationId     String
@@ -975,8 +1045,6 @@ model Listing {
   updatedAt          DateTime            @updatedAt
   propertyId         String?
   unitId             String?
-  availabilityDate   DateTime?           @map("availability_date")
-  expirationDate     DateTime?           @map("expiration_date")
   adminActions       AdminAction[]
   createdByUser      User                @relation(fields: [createdBy], references: [id])
   location           Location?           @relation(fields: [locationId], references: [id])
@@ -986,7 +1054,6 @@ model Listing {
   property           Property?           @relation("PropertyListing")
   serviceMarketplace ServiceMarketplace?
   unit               Unit?               @relation("UnitListing")
-  auditEntries       ListingAuditEntry[]
 
   @@index([createdBy])
   @@index([locationId])
@@ -1027,16 +1094,12 @@ model MaintenanceRequest {
   assigned_vendor_id String?
   cost               Decimal?                  @db.Decimal(10, 2)
   assigned_at        DateTime?                 @db.DateTime(0)
-  invoiceId          String?                   @unique @map("invoice_id")
-  isTenantChargeable Boolean                   @default(false) @map("is_tenant_chargeable")
-  journalEntryId     String?                   @unique @map("journal_entry_id")
-  invoice            Invoice?                  @relation(fields: [invoiceId], references: [id])
-  journalEntry       JournalEntry?             @relation(fields: [journalEntryId], references: [id])
   organization       Organization              @relation(fields: [organizationId], references: [id])
   property           Property                  @relation("PropertyMaintenanceRequests", fields: [propertyId], references: [id])
   requestedBy        OrganizationUser          @relation("RequestCreator", fields: [requestedById], references: [id])
   unit               Unit?                     @relation(fields: [unitId], references: [id])
   vendors            Vendor?                   @relation(fields: [assigned_vendor_id], references: [id], onUpdate: NoAction, map: "fk_MaintenanceRequest_assignedVendorId")
+  journalEntries     JournalEntry[]
 
   @@index([organizationId])
   @@index([propertyId])
@@ -1450,69 +1513,31 @@ model RentEscalation {
   appliedBy       String
   Lease           Lease                         @relation(fields: [leaseId], references: [id], onDelete: Cascade)
 
+  @@index([effectiveDate])
   @@index([leaseId])
 }
 
-model PropertyType {
-  id          String     @id @default(uuid())
-  name        String     @unique
-  description String?
-  createdAt   DateTime   @default(now())
-  properties  Property[]
-}
-
-model AgentInvite {
-  id              String    @id @default(uuid())
-  inviteTokenHash String    @unique
-  expiresAt       DateTime
-  usedAt          DateTime?
-  isUsed          Boolean   @default(false)
-  tenantId        String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  tenant          User      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([expiresAt])
-  @@index([tenantId])
-}
-
 model ListingAuditEntry {
-  id             String              @id @default(uuid())
-  unitId         String              @map("unit_id")
-  listingId      String?             @map("listing_id")
-  action         ListingAction_enum
-  previousStatus ListingStatus_enum? @map("previous_status")
-  newStatus      ListingStatus_enum  @map("new_status")
-  userId         String              @map("user_id")
-  timestamp      DateTime            @default(now())
-  reason         String?
-  metadata       Json?
-  createdAt      DateTime            @default(now()) @map("created_at")
-  listing        Listing?            @relation(fields: [listingId], references: [id])
-  unit           Unit                @relation(fields: [unitId], references: [id], onDelete: Cascade)
-  user           User                @relation(fields: [userId], references: [id])
+  id        String   @id @default(uuid())
+  listingId String
+  action    String
+  changes   Json?
+  userId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  unit      Unit?    @relation(fields: [unitId], references: [id])
+  unitId    String?
 
-  @@index([unitId])
   @@index([listingId])
   @@index([userId])
-  @@index([timestamp])
-  @@index([action])
-  @@map("listing_audit_entries")
 }
 
-model tenant_payment_methods {
-  id                       String   @id
-  user_id                  String
-  type                     String
-  plaid_access_token       String?
-  plaid_account_id         String?
-  stripe_payment_method_id String
-  is_default               Boolean  @default(false)
-  created_at               DateTime @default(now())
-  updated_at               DateTime
-  users                    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@index([user_id])
+enum UserRole {
+  SYSTEM_ADMIN
+  PROPERTY_MANAGER
+  TENANT
+  VENDOR
+  ALL
 }
 
 enum Priority {
@@ -1547,6 +1572,8 @@ enum invoice_type {
   UTILITY
   MAINTENANCE
   DAMAGE
+  LATE_FEE
+  DEPOSIT
 }
 
 enum utility_type {
@@ -1554,15 +1581,56 @@ enum utility_type {
   METERED
 }
 
-enum payment_method {
+enum PaymentMethod {
   CASH
-  BANK
+  CHECK
+  BANK_TRANSFER_MANUAL
+  BANK_TRANSFER_ACH
   CREDIT_CARD
-  MPESA
-  PAYPAL
-  STRIPE
-  PAYSTACK
+  DEBIT_CARD
+
+  // Africa Specific
+  MOBILE_MONEY_MPESA
+  MOBILE_MONEY_AIRTEL
+  MOBILE_MONEY_OTHER
+  USSD
+
+  // Digital
+  DIGITAL_WALLET_APPLE
+  DIGITAL_WALLET_GOOGLE
+  P2P_ZELLE
+  P2P_VENMO
+  CRYPTO
+
+  OTHER
+}
+
+enum PaymentProcessor {
   MANUAL
+  STRIPE
+  PAYPAL
+  PAYSTACK
+  MPESA
+  PESAPAL
+  FLUTTERWAVE
+  PLAID
+  OTHER
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum TransactionType {
+  RENT
+  UTILITY
+  MAINTENANCE
+  DEPOSIT
+  OTHER
 }
 
 enum invoice_status {
@@ -1712,6 +1780,13 @@ enum DssSigningMode {
   PARALLEL
 }
 
+enum DssSignatureType {
+  ESIGN
+  DRAW
+  TYPED
+  UPLOAD
+}
+
 enum BlockchainNotaryStatus {
   PENDING
   SUBMITTED
@@ -1726,6 +1801,7 @@ enum UtilitySplitMethod {
   SUB_METERED
   CUSTOM_RATIO
   AI_OPTIMIZED
+  FIXED
 }
 
 enum UtilityBillStatus {
@@ -1738,10 +1814,10 @@ enum UtilityBillStatus {
 }
 
 enum UtilityImportMethod {
-  CSV
-  API
-  PDF_OCR
   MANUAL_ENTRY
+  CSV_UPLOAD
+  API_SYNC
+  PDF_OCR
   IMAGE_SCAN
 }
 
@@ -1810,11 +1886,6 @@ enum organization_users_role {
   ALL
 }
 
-enum OtpType {
-  TWO_FACTOR
-  PHONE_VERIFICATION
-}
-
 enum SidebarItem_role {
   SYSTEM_ADMIN
   PROPERTY_MANAGER
@@ -1824,107 +1895,53 @@ enum SidebarItem_role {
   ALL
 }
 
-enum ListingStatus_enum {
-  PRIVATE
-  ACTIVE
-  SUSPENDED
-  PENDING
-  EXPIRED
-}
-
-enum ListingAction_enum {
-  CREATE
-  REMOVE
-  SUSPEND
-  ACTIVATE
-  UPDATE
-  EXPIRE
-}
-
 enum organizations_region {
-  USA
   KEN
-}
-
-enum payment_gateway {
-  STRIPE
-  PLAID
-  PAYSTACK
-  MPESA_DIRECT
-  MANUAL
-}
-
-enum users_kyc_status {
-  PENDING
-  VERIFIED
-  FAILED
-}
-
-enum payment_status {
-  PENDING
-  AUTHORIZED
-  SETTLED
-  FAILED
-  DISPUTED
-  REVERSED
-}
-
-enum users_region {
   USA
-  KEN
+  NG
+  SA
+  RW
+  UG
+  TZ
 }
-
-enum payment_type {
-  RENT
-  DEPOSIT
-  SAAS_FEE
-  MAINTENANCE
-}
-
-enum payment_method {
-  CASH
-  BANK
-  CREDIT_CARD
-  MPESA
-  PAYPAL
-  STRIPE
-  PAYSTACK
-  MANUAL
-}
-
-// -------PAYMENT INFRASTRUCTURE ENUMS--------
 
 enum Region {
-  USA
   KEN
+  USA
+  NG
+  SA
+  RW
+  UG
+  TZ
 }
 
 enum KycStatus {
   PENDING
   VERIFIED
-  FAILED
+  REJECTED
+  MANUAL_REVIEW
 }
 
-enum PaymentGateway {
-  STRIPE
-  PLAID
-  PAYSTACK
-  MPESA_DIRECT
-  MANUAL // for existing cash/bank logic
-}
-
-enum TransactionStatus {
+enum users_kyc_status {
   PENDING
-  AUTHORIZED
-  SETTLED
+  VERIFIED
+  REJECTED
   FAILED
-  DISPUTED
-  REVERSED
 }
 
-enum TransactionType {
-  RENT
-  DEPOSIT
-  SAAS_FEE
-  MAINTENANCE
+enum users_region {
+  KEN
+  USA
+  NG
+  SA
+  RW
+  UG
+  TZ
+}
+
+enum OtpType {
+  TWO_FACTOR
+  VERIFICATION
+  PASSWORD_RESET
+  PHONE_VERIFICATION
 }
