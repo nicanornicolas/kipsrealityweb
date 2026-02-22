@@ -1815,8 +1815,8 @@ enum UtilityBillStatus {
 
 enum UtilityImportMethod {
   MANUAL_ENTRY
-  CSV_UPLOAD
-  API_SYNC
+  CSV
+  API
   PDF_OCR
   IMAGE_SCAN
 }
