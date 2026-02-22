@@ -262,7 +262,7 @@ model JournalEntry {
   invoice              Invoice?
   payment              Payment?
   utilityBill          UtilityBill?
-  maintenanceRequest   MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id]) // One-to-one relation if needed
+  maintenanceRequest   MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id]) // Many-to-one: a maintenance request can have multiple journal entries
   maintenanceRequestId String?
 
   @@index([transactionDate])
