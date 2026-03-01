@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Calendar,
   Home,
@@ -10,6 +11,7 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
+  Plus,
 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -38,9 +40,19 @@ const mockMaintenanceRequests = [
 const DashboardPage = () => {
   const [isLoading] = useState(false);
   const { user } = useAuth();
+  const router = useRouter();
 
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showNewRequestModal, setShowNewRequestModal] = useState(false);
+
+  // Maintenance request form state
+  const [newRequestTitle, setNewRequestTitle] = useState("");
+  const [newRequestDescription, setNewRequestDescription] = useState("");
+  const [newRequestPriority, setNewRequestPriority] = useState<"LOW" | "NORMAL" | "HIGH" | "URGENT">("NORMAL");
 
   // Leases hook
   const {
@@ -61,24 +73,103 @@ const DashboardPage = () => {
 
   const generateInviteLink = async () => {
     setIsGeneratingInvite(true);
+    setInviteError(null);
+    try {
+      const response = await fetch("/api/auth/invites/agent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-    // TODO: Replace with API call
-    setTimeout(() => {
-      const fakeToken = Math.random().toString(36).substring(2, 10);
-      setInviteLink(`${window.location.origin}/agent/invite/${fakeToken}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to generate invite link");
+      }
+
+      if (!data?.inviteLink || typeof data.inviteLink !== "string") {
+        throw new Error("Invite link was not returned by the server");
+      }
+
+      setInviteLink(data.inviteLink);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to generate invite link";
+      setInviteError(message);
+      setInviteLink(null);
+    } finally {
       setIsGeneratingInvite(false);
-    }, 1000);
+    }
   };
 
-  //TODO: Wee mzee, replace na API call ama Weekend refu
   const copyInviteLink = async () => {
     if (!inviteLink) return;
-    await navigator.clipboard.writeText(inviteLink);
-    alert("Invite link copied to clipboard");
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(inviteLink);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = inviteLink;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+
+      setInviteError(null);
+      setCopyFeedback("Invite link copied to clipboard.");
+      window.setTimeout(() => setCopyFeedback(null), 2500);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      setCopyFeedback(null);
+      setInviteError("Failed to copy link. Please copy it manually.");
+    }
   };
 
   const refetchAll = async () => {
     await Promise.all([refetchLeases(), refetchInvoices()]);
+  };
+
+  // Create maintenance request function
+  const createRequest = async (data: { title: string; description: string; priority: "LOW" | "NORMAL" | "HIGH" | "URGENT" }) => {
+    try {
+      if (!user?.id || !user?.organization?.id || !activeLease?.property?.id || !activeLease?.unit?.id) {
+        return { success: false, error: "Missing tenant or lease information" };
+      }
+
+      const response = await fetch("/api/maintenance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          organizationId: user.organization.id,
+          propertyId: activeLease.property.id,
+          unitId: activeLease.unit.id,
+          userId: user.id,
+          title: data.title,
+          description: data.description,
+          priority: data.priority,
+          category: "STANDARD",
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: result?.error || "Failed to create maintenance request" };
+      }
+
+      return { success: true, data: result };
+    } catch (error) {
+      console.error("Failed to create request:", error);
+      return { success: false, error: "Failed to create maintenance request" };
+    }
   };
 
   // Calculate days remaining in lease
@@ -143,10 +234,10 @@ const DashboardPage = () => {
   // Calculate lease duration in days
   const leaseDurationDays = activeLease
     ? Math.ceil(
-        (new Date(activeLease.endDate).getTime() -
-          new Date(activeLease.startDate).getTime()) /
-          (1000 * 60 * 60 * 24)
-      )
+      (new Date(activeLease.endDate).getTime() -
+        new Date(activeLease.startDate).getTime()) /
+      (1000 * 60 * 60 * 24)
+    )
     : 365;
 
   const leasePercentComplete =
@@ -198,8 +289,8 @@ const DashboardPage = () => {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Data</h2>
           <p className="text-gray-600 mb-4">{leasesError || invoiceError}</p>
-          <button 
-            onClick={refetchLeases}
+          <button
+            onClick={refetchAll}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
           >
             Retry
@@ -299,6 +390,22 @@ const DashboardPage = () => {
                 <p className="text-xs text-gray-500">
                   This link will expire in <strong>1 hour</strong> if not used.
                 </p>
+                {copyFeedback && (
+                  <p className="text-xs text-green-600">{copyFeedback}</p>
+                )}
+                {inviteError && (
+                  <p className="text-xs text-red-600">{inviteError}</p>
+                )}
+
+                <button
+                  onClick={() => {
+                    setInviteLink(null);
+                    setInviteError(null);
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-700 underline"
+                >
+                  Generate a new link
+                </button>
               </div>
             )}
           </div>
@@ -334,7 +441,7 @@ const DashboardPage = () => {
                     <span className="font-bold text-2xl text-blue-600">{daysRemaining}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div 
+                    <div
                       className="bg-blue-600 h-3 rounded-full transition-all duration-500"
                       style={{ width: `${Math.min(Math.max(leasePercentComplete, 0), 100)}%` }}
                     ></div>
@@ -374,14 +481,14 @@ const DashboardPage = () => {
                     <p className="font-semibold text-gray-900">
                       {new Date(paymentInfo.nextPaymentDue).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
-                    
+
                     {paymentInfo.paymentStatus === 'upcoming' && paymentInfo.daysUntilPayment > 0 && (
                       <div className="flex items-center gap-2 mt-2 text-sm text-blue-600">
                         <Clock className="w-4 h-4" />
                         <span>{paymentInfo.daysUntilPayment} days remaining</span>
                       </div>
                     )}
-                    
+
                     {paymentInfo.paymentStatus === 'overdue' && (
                       <div className="flex items-center gap-2 mt-2 text-sm text-red-600">
                         <AlertCircle className="w-4 h-4" />
@@ -404,7 +511,10 @@ const DashboardPage = () => {
                   </div>
                 )}
 
-                <button className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
                   <DollarSign className="w-5 h-5" />
                   Pay Rent Now
                 </button>
@@ -420,7 +530,11 @@ const DashboardPage = () => {
                   </div>
                   <h2 className="text-xl font-semibold text-gray-900 truncate">Maintenance Requests</h2>
                 </div>
-                <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0">
+                <button
+                  onClick={() => setShowNewRequestModal(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
                   New Request
                 </button>
               </div>
@@ -438,11 +552,10 @@ const DashboardPage = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 mb-2 flex-wrap">
                             <h3 className="font-semibold text-gray-900 truncate">{request.title}</h3>
-                            <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap flex-shrink-0 ${
-                              request.priority === 'high' ? 'bg-red-100 text-red-700' :
-                              request.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
+                            <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap flex-shrink-0 ${request.priority === 'high' || request.priority === 'URGENT' ? 'bg-red-100 text-red-700' :
+                                request.priority === 'medium' || request.priority === 'NORMAL' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-gray-100 text-gray-700'
+                              }`}>
                               {request.priority}
                             </span>
                           </div>
@@ -477,17 +590,26 @@ const DashboardPage = () => {
             <div className="lg:col-span-3 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button className="p-4 border-2 border-gray-200 hover:border-blue-400 rounded-lg text-left transition-colors group min-w-0">
+                <button
+                  onClick={() => router.push('/tenant/content/invoices')}
+                  className="p-4 border-2 border-gray-200 hover:border-blue-400 rounded-lg text-left transition-colors group min-w-0"
+                >
                   <CreditCard className="w-8 h-8 text-gray-600 group-hover:text-blue-600 mb-2 flex-shrink-0" />
                   <h3 className="font-semibold text-gray-900 truncate">Payment History</h3>
                   <p className="text-sm text-gray-600 truncate">View all transactions</p>
                 </button>
-                <button className="p-4 border-2 border-gray-200 hover:border-blue-400 rounded-lg text-left transition-colors group min-w-0">
+                <button
+                  onClick={() => router.push('/tenant/content/lease')}
+                  className="p-4 border-2 border-gray-200 hover:border-blue-400 rounded-lg text-left transition-colors group min-w-0"
+                >
                   <Home className="w-8 h-8 text-gray-600 group-hover:text-blue-600 mb-2 flex-shrink-0" />
                   <h3 className="font-semibold text-gray-900 truncate">Lease Documents</h3>
                   <p className="text-sm text-gray-600 truncate">Access your lease</p>
                 </button>
-                <button className="p-4 border-2 border-gray-200 hover:border-blue-400 rounded-lg text-left transition-colors group min-w-0">
+                <button
+                  onClick={() => setShowNewRequestModal(true)}
+                  className="p-4 border-2 border-gray-200 hover:border-blue-400 rounded-lg text-left transition-colors group min-w-0"
+                >
                   <Wrench className="w-8 h-8 text-gray-600 group-hover:text-blue-600 mb-2 flex-shrink-0" />
                   <h3 className="font-semibold text-gray-900 truncate">Request Service</h3>
                   <p className="text-sm text-gray-600 truncate">Report an issue</p>
@@ -497,6 +619,171 @@ const DashboardPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && paymentInfo.nextPaymentDue && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Make Payment</h2>
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="bg-slate-50 rounded-lg p-4 mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-slate-600">Amount Due</span>
+                  <span className="text-2xl font-bold text-blue-600">$ {paymentInfo.amount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-600">Due Date</span>
+                  <span className="font-medium text-slate-900">{new Date(paymentInfo.nextPaymentDue).toLocaleDateString()}</span>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-blue-800">
+                  For online payments, please use the Payment History section to make a payment.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    router.push('/tenant/content/invoices');
+                    setShowPaymentModal(false);
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+                >
+                  Go to Payments
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Maintenance Request Modal */}
+      {showNewRequestModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">New Maintenance Request</h2>
+                <button
+                  onClick={() => setShowNewRequestModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={newRequestTitle}
+                    onChange={(e) => setNewRequestTitle(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="Brief description of the issue"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    value={newRequestDescription}
+                    onChange={(e) => setNewRequestDescription(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg h-32"
+                    placeholder="Provide detailed information about the issue..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Priority
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(["LOW", "NORMAL", "HIGH", "URGENT"] as const).map((priority) => (
+                      <button
+                        key={priority}
+                        type="button"
+                        onClick={() => setNewRequestPriority(priority)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${newRequestPriority === priority
+                            ? priority === "URGENT"
+                              ? "bg-red-600 text-white"
+                              : priority === "HIGH"
+                                ? "bg-orange-600 text-white"
+                                : priority === "NORMAL"
+                                  ? "bg-blue-600 text-white"
+                                  : "bg-gray-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                      >
+                        {priority}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setShowNewRequestModal(false)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!newRequestTitle.trim() || !newRequestDescription.trim()) {
+                          alert("Please fill in all required fields");
+                          return;
+                        }
+
+                        const result = await createRequest({
+                          title: newRequestTitle,
+                          description: newRequestDescription,
+                          priority: newRequestPriority,
+                        });
+
+                        if (result.success) {
+                          setShowNewRequestModal(false);
+                          setNewRequestTitle("");
+                          setNewRequestDescription("");
+                          setNewRequestPriority("NORMAL");
+                          alert("Maintenance request submitted successfully!");
+                        } else {
+                          alert(`Failed to submit request: ${result.error}`);
+                        }
+                      }}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium"
+                    >
+                      Submit Request
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
