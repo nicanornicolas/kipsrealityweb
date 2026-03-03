@@ -5,10 +5,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 export interface Lease {
   id: string;
   property: {
+    id?: string;
     propertyName: string;
     address: string;
   };
   unit: {
+    id?: string;
     unitNumber: string;
   };
   rentAmount: number;

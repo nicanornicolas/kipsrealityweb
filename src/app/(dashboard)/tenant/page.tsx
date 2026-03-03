@@ -60,7 +60,7 @@ const DashboardPage = () => {
     loading: maintenanceLoading,
     error: maintenanceError,
     createRequest,
-  } = useMaintenanceRequests();
+  } = useMaintenanceRequests(activeLease?.property?.id, activeLease?.unit?.id);
 
   const generateInviteLink = async () => {
     setIsGeneratingInvite(true);
@@ -124,43 +124,6 @@ const DashboardPage = () => {
 
   const refetchAll = async () => {
     await Promise.all([refetchLeases(), refetchInvoices()]);
-  };
-
-  // Create maintenance request function
-  const createRequest = async (data: { title: string; description: string; priority: "LOW" | "NORMAL" | "HIGH" | "URGENT" }) => {
-    try {
-      if (!user?.id || !user?.organization?.id || !activeLease?.property?.id || !activeLease?.unit?.id) {
-        return { success: false, error: "Missing tenant or lease information" };
-      }
-
-      const response = await fetch("/api/maintenance", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          organizationId: user.organization.id,
-          propertyId: activeLease.property.id,
-          unitId: activeLease.unit.id,
-          userId: user.id,
-          title: data.title,
-          description: data.description,
-          priority: data.priority,
-          category: "STANDARD",
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        return { success: false, error: result?.error || "Failed to create maintenance request" };
-      }
-
-      return { success: true, data: result };
-    } catch (error) {
-      console.error("Failed to create request:", error);
-      return { success: false, error: "Failed to create maintenance request" };
-    }
   };
 
   // Calculate days remaining in lease
