@@ -8,7 +8,7 @@ import { CTASection } from "@/components/website/services/CTASection";
 
 interface Service {
   id: number;
-  category_id: number;
+  categoryId: number;
   name: string;
   description: string;
   features: string[];

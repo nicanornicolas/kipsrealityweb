@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { plaidClient, createStripeBankAccountToken } from "@/lib/payment/services/plaid-service";
 import { prisma } from "@/lib/db";
 import Stripe from "stripe";
+import crypto from "crypto";
 
 let stripeClient: Stripe | null = null;
 
@@ -59,12 +60,14 @@ export async function POST(req: Request) {
         // NOTE: In production, encrypt `accessToken` before saving.
         await prisma.tenantPaymentMethod.create({
             data: {
+                id: crypto.randomUUID(),
                 userId,
                 type: 'ACH',
                 plaidAccessToken: accessToken, // ENCRYPT THIS
                 plaidAccountId: accountId,
                 stripePaymentMethodId: source.id,
-                isDefault: true
+                isDefault: true,
+                updatedAt: new Date(),
             }
         });
 

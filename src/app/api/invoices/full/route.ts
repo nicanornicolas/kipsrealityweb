@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
     amount = lease.rentAmount;
   } else {
     // Utilities: sum all fixed utilities linked to lease
-    const leaseUtilities = await prisma.lease_utility.findMany({
-      where: { lease_id: leaseId },
+    const leaseUtilities = await prisma.leaseUtility.findMany({
+      where: { leaseId: leaseId },
       include: { utility: true },
     });
     amount = leaseUtilities.reduce((sum, lu) => sum + (lu.utility.fixedAmount || 0), 0);
@@ -61,3 +61,4 @@ function calculateNextDueDate(lease: { paymentFrequency: string; paymentDueDay?:
 
   return nextDate;
 }
+

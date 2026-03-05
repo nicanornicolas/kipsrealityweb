@@ -61,7 +61,7 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
 
   try {
     // Delete all services linked to this category
-    await prisma.services.deleteMany({ where: { category_id: categoryId } });
+    await prisma.services.deleteMany({ where: { categoryId } });
 
     // Delete the category
     await prisma.categories.delete({ where: { id: categoryId } });

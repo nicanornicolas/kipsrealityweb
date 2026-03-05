@@ -222,10 +222,10 @@ async function fetchMeterUsageForLeases(leaseIds: string[]): Promise<MeterUsageM
     if (leaseIds.length === 0) return {};
 
     // Batch fetch all lease utilities with their readings (N+1 fix)
-    const leaseUtilities = await prisma.lease_utility.findMany({
-        where: { lease_id: { in: leaseIds } },
+    const leaseUtilities = await prisma.leaseUtility.findMany({
+        where: { leaseId: { in: leaseIds } },
         include: {
-            utility_reading: {
+            readings: {
                 orderBy: { readingDate: "desc" },
                 take: 2, // Need 2 readings to compute delta
             },
@@ -235,21 +235,21 @@ async function fetchMeterUsageForLeases(leaseIds: string[]): Promise<MeterUsageM
     const usageMap: MeterUsageMap = {};
 
     for (const leaseUtility of leaseUtilities) {
-        const readings = leaseUtility.utility_reading;
+        const readings = leaseUtility.readings;
 
         // SUB_METERED requires 2+ readings for valid delta
         if (readings.length < 2) {
             return null; // Fail entire allocation — no partial metering allowed
         }
 
-        const latest = readings[0].reading_value;
-        const previous = readings[1].reading_value;
+        const latest = readings[0].readingValue;
+        const previous = readings[1].readingValue;
         const usage = latest - previous;
 
         // Negative usage = data corruption
         if (usage < 0) return null;
 
-        usageMap[leaseUtility.lease_id] = usage;
+        usageMap[leaseUtility.leaseId] = usage;
     }
 
     // Verify ALL leases have meter data
@@ -492,3 +492,4 @@ const customRatioAllocation = allocateCustomRatio(
     bill.totalAmount // Pass totalAmount as a number
 );
 console.log("Custom Ratio Allocation:", customRatioAllocation);
+

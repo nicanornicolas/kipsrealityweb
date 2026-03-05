@@ -17,7 +17,7 @@ export default async function ServiceCrudWrapper() {
     services: cat.services.map((service: any) => ({
       id: service.id,
       name: service.name,
-      categoryId: service.category_id,
+      categoryId: service.categoryId,
       description: service.description,
       impact: service.impact,
       icon: service.icon,

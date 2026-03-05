@@ -31,7 +31,7 @@ export default async function ServicesPage() {
     color: cat.color,
     services: cat.services.map((srv) => ({
       id: srv.id,
-      category_id: srv.category_id,
+      categoryId: srv.categoryId,
       name: srv.name,
       description: srv.description,
       features: Array.isArray(srv.features)

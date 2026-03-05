@@ -35,11 +35,11 @@ export async function PUT(req: NextRequest, context: RouteContext) {
   try {
     const body = await req.json();
     const { categoryId, name, description, features, impact, icon } = body;
-    const category_id = categoryId != null ? Number(categoryId) : undefined;
+    const normalizedCategoryId = categoryId != null ? Number(categoryId) : undefined;
 
     const updatedService = await prisma.services.update({
       where: { id },
-      data: { category_id, name, description, features, impact, icon },
+      data: { categoryId: normalizedCategoryId, name, description, features, impact, icon },
     });
 
     return NextResponse.json(updatedService);

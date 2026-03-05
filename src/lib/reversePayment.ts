@@ -18,11 +18,11 @@ export async function reversePayment(paymentId: string, userId: string, reason: 
     await tx.paymentReversal.create({
       data: {
         id: crypto.randomUUID(), // PaymentReversal has no default @id in schema
-        payment_id: payment.id,
-        invoice_id: payment.invoiceId,
+        paymentId: payment.id,
+        invoiceId: payment.invoiceId,
         amount: Number(payment.amount),
         reason,
-        reversed_by: userId,
+        reversedBy: userId,
       }
     });
 

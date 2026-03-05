@@ -41,11 +41,11 @@ export async function POST(_req: Request, context: { params: Promise<{ leaseId: 
     }
 
     // Fetch all utilities linked to this lease
-    const leaseUtilities = await prisma.lease_utility.findMany({
-      where: { lease_id: leaseId },
+    const leaseUtilities = await prisma.leaseUtility.findMany({
+      where: { leaseId: leaseId },
       include: {
         utility: true,
-        utility_reading: {
+        readings: {
           orderBy: { readingDate: "desc" },
           take: 1, // latest reading
         },
@@ -67,8 +67,8 @@ export async function POST(_req: Request, context: { params: Promise<{ leaseId: 
       if (utility.type === "FIXED") {
         amount = utility.fixedAmount ?? 0;
       } else if (utility.type === "METERED") {
-        const latestReading = lu.utility_reading[0];
-        amount = (latestReading?.reading_value ?? 0) * (utility.unitPrice ?? 0);
+        const latestReading = lu.readings[0];
+        amount = (latestReading?.readingValue ?? 0) * (utility.unitPrice ?? 0);
       }
 
       return {

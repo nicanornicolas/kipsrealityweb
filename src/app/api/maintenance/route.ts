@@ -22,13 +22,13 @@ export async function GET(req: NextRequest) {
       where.status = status;
     }
     if (unassigned === "true") {
-      where.assigned_vendor_id = null;
+      where.assignedVendorId = null;
     }
     if (propertyId) {
       where.propertyId = propertyId;
     }
     if (vendorId) {
-      where.assigned_vendor_id = vendorId;
+      where.assignedVendorId = vendorId;
     }
 
     const requests = await (prisma as any).maintenanceRequest.findMany({

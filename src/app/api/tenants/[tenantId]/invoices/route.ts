@@ -55,10 +55,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ tenantId
                 unitNumber: true,
               },
             },
-            lease_utility: {
+            leaseUtilities: {
               include: {
                 utility: true,
-                utility_reading: { orderBy: { readingDate: "desc" }, take: 1 },
+                readings: { orderBy: { readingDate: "desc" }, take: 1 },
               },
             },
           },
@@ -121,14 +121,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ tenantId
           }
           : undefined,
       } : undefined,
-      utilities: inv.Lease?.lease_utility?.map((lu: any) => ({
+      utilities: inv.Lease?.leaseUtilities?.map((lu: any) => ({
         id: lu.utility.id,
         name: lu.utility.name,
         type: lu.utility.type || lu.utility.name,
         fixedAmount: lu.utility.fixedAmount ?? 0,
         unitPrice: lu.utility.unitPrice ?? 0,
-        isTenantResponsible: lu.is_tenant_responsible,
-        lastReading: lu.utility_reading?.[0]?.reading_value ?? null,
+        isTenantResponsible: lu.isTenantResponsible,
+        lastReading: lu.readings?.[0]?.readingValue ?? null,
       })),
     }));
 
@@ -173,3 +173,4 @@ export async function GET(req: Request, { params }: { params: Promise<{ tenantId
     );
   }
 }
+
