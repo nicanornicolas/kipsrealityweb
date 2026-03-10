@@ -186,7 +186,7 @@ async function main() {
             // Map common plural/casing issues
             if (clientKey === 'vendors') clientKey = 'vendor';
             if (clientKey === 'services') clientKey = 'service';
-            if (clientKey === 'categories') clientKey = 'category';
+            if (clientKey === 'categories') clientKey = 'serviceCategory';
             if (clientKey === 'invoice') clientKey = 'invoice';
             if (clientKey === 'payment') clientKey = 'payment';
             if (clientKey === 'receipt') clientKey = 'receipt';
@@ -194,7 +194,7 @@ async function main() {
             if (clientKey === 'lease_utility') clientKey = 'leaseUtility';
             if (clientKey === 'utility_reading') clientKey = 'utilityReading';
             if (clientKey === 'payment_reversal') clientKey = 'paymentReversal';
-            if (clientKey === 'Tenantapplication') clientKey = 'tenantapplication';
+            if (clientKey === 'Tenantapplication') clientKey = 'tenantApplication';
             if (clientKey === 'PropertyImage') clientKey = 'propertyImage';
 
             clientKey = clientKey.charAt(0).toLowerCase() + clientKey.slice(1);
