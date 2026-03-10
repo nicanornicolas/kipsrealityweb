@@ -2,8 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { toNumber } from "@/lib/decimal-utils";
-
+import { toNumber } from "@/lib/decimal-utils"; 
 export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
@@ -12,26 +11,20 @@ export async function GET(req: Request) {
     }
 
     const url = new URL(req.url);
-    const rawStatus = url.searchParams.get("status"); // "PENDING,OVERDUE"
+    const rawStatus = url.searchParams.get("status");
     const type = url.searchParams.get("type");
 
-    console.log("Filters received:", { rawStatus, type });
-
-    // Build the where clause with user-based filtering
+    // 1. FIX: Safer relation query based on your schema's managerId
     const where: any = {
-      // Only show invoices for properties managed by the current user
       Lease: {
         property: {
-          manager: {
-            userId: user.id,
-          },
+          managerId: user.id, // Directly matches the managerId string on the Property model
         },
       },
     };
 
-    // ✅ FIX: Support multiple statuses
     if (rawStatus) {
-      const statuses = rawStatus.split(",").map(s => s.trim());
+      const statuses = rawStatus.split(",").map((s) => s.trim());
       where.status = { in: statuses };
     }
 
@@ -42,7 +35,7 @@ export async function GET(req: Request) {
     const invoices = await prisma.invoice.findMany({
       where,
       include: {
-        payments: true, // ✅ ADD THIS - Include payment data for balance calculation
+        payments: true, 
         Lease: {
           include: {
             tenant: {
@@ -63,23 +56,22 @@ export async function GET(req: Request) {
               },
             },
             unit: {
-              select: { id: true, unitNumber: true, unitName: true }, // Added unitName
+              select: { id: true, unitNumber: true, unitName: true }, 
             }
           },
         },
       },
-      orderBy: { createdAt: "desc" },
+      // 2. FIX: Removed createdAt and replaced with dueDate to prevent Prisma crash
+      orderBy: { dueDate: "asc" }, 
     });
-
-    console.log("Fetched invoices:", JSON.stringify(invoices, null, 2));
 
     // Add financial calculations and building name
     const invoicesWithFinancials = invoices.map((invoice) => {
-      const invoiceTotalAmount = Number(invoice.totalAmount);
-      const totalPaid = invoice.payments?.reduce((sum, payment) => sum + Number(payment.amount), 0) || 0;
+      // 3. FIX: Safely convert Decimals using your imported utility
+      const invoiceTotalAmount = toNumber(invoice.totalAmount);
+      const totalPaid = invoice.payments?.reduce((sum, payment) => sum + toNumber(payment.amount), 0) || 0;
       const balance = invoiceTotalAmount - totalPaid;
 
-      // Get building name from property details
       const buildingName =
         invoice.Lease?.property?.apartmentComplexDetail?.buildingName ||
         invoice.Lease?.property?.houseDetail?.houseName ||
@@ -89,6 +81,11 @@ export async function GET(req: Request) {
       return {
         ...invoice,
         totalAmount: invoiceTotalAmount,
+        // Ensure payments array also has its Decimals converted to regular numbers
+        payments: invoice.payments?.map(p => ({
+          ...p,
+          amount: toNumber(p.amount)
+        })),
         buildingName,
         financialSummary: {
           totalPaid,
@@ -101,7 +98,8 @@ export async function GET(req: Request) {
 
     const grouped = Object.values(
       invoicesWithFinancials.reduce((acc: any, inv) => {
-        const dateKey = inv.dueDate.toISOString().split("T")[0];
+        // 4. FIX: Safely wrap dueDate in new Date() in case Prisma returns a string instead of a Date object
+        const dateKey = inv.dueDate ? new Date(inv.dueDate).toISOString().split("T")[0] : "no-date";
         const leaseKey = inv.Lease?.id || "unknown";
         const groupKey = `${leaseKey}-${dateKey}`;
 
@@ -114,16 +112,26 @@ export async function GET(req: Request) {
           };
         }
 
-        acc[groupKey].totalAmount += Number(inv.totalAmount);
+        acc[groupKey].totalAmount += inv.totalAmount; // Keep running total - FIXED variable name
         acc[groupKey].invoices.push(inv);
 
         return acc;
       }, {})
     );
 
-    return NextResponse.json(grouped);
+    // Return both grouped and flat array for flexibility
+    return NextResponse.json({
+      grouped,
+      invoices: invoicesWithFinancials
+    });
   } catch (err) {
-    console.error("GET /api/invoices error:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    // Log the full error server-side for debugging
+    console.error("GET /api/invoices error:", err); 
+    
+    // Send a generic error message to the client
+    return NextResponse.json(
+      { error: "An error occurred while fetching invoices" }, 
+      { status: 500 }
+    );
   }
 }

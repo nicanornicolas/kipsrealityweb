@@ -14,27 +14,34 @@ interface DashboardSidebarLinksProps {
 }
 
 export function DashboardSidebarLinks({ user, open = true, isCollapsed = false, darkMode = true }: DashboardSidebarLinksProps) {
-  const userRoutes = routeConfig[user.role as keyof typeof routeConfig]
+  const userRoutes = routeConfig[user.role as keyof typeof routeConfig] as Record<string, any>;
   const { logout } = useLogout({ redirectTo: '/' });
 
   const handleLogout = async () => {
     await logout()
   }
 
+  // Get the first/default route group for this role (varies by role)
+  const defaultRoutes = userRoutes?.main || userRoutes?.overview || [];
+
   return (
     <motion.div className="flex flex-1 flex-col justify-between overflow-hidden" layout>
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar pr-2 pb-4">
-        {userRoutes.main && <RouteGroup routes={userRoutes.main} open={open} isCollapsed={isCollapsed} darkMode={darkMode} />}
-        {Object.entries(userRoutes).map(([key, routes]: any) => key !== 'main' && routes && (
-          <RouteGroup
-            key={key}
-            routes={routes}
-            open={open}
-            categoryLabel={key.charAt(0).toUpperCase() + key.slice(1)}
-            isCollapsed={isCollapsed}
-            darkMode={darkMode}
-          />
-        ))}
+        {defaultRoutes && defaultRoutes.length > 0 && <RouteGroup routes={defaultRoutes} open={open} isCollapsed={isCollapsed} darkMode={darkMode} />}
+        {Object.entries(userRoutes || {}).map(([key, routes]: [string, any]) => {
+          const skipKeys = ['main', 'overview'];
+          if (skipKeys.includes(key)) return null;
+          return (
+            <RouteGroup
+              key={key}
+              routes={routes}
+              open={open}
+              categoryLabel={key.charAt(0).toUpperCase() + key.slice(1)}
+              isCollapsed={isCollapsed}
+              darkMode={darkMode}
+            />
+          );
+        })}
       </div>
     </motion.div>
   )

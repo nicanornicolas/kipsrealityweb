@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import {
-	Building2, Users, Wallet, AlertCircle,
-	Plus, ArrowUpRight, ArrowDownRight, FileText,
-	Home, Sparkles, TrendingUp, DollarSign, Activity, Wrench, Calendar
+import React, { useEffect, useState, useMemo } from "react";
+import { 
+	CheckCircle, Clock, AlertCircle, Wrench, 
+	TrendingUp, TrendingDown, DollarSign, 
+	FileText, Plus, Search, Building2
 } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,61 +12,124 @@ import RevenueChart from "./RevenueChart";
 import { FinancialSummaryCard } from "./financial-summary-card";
 import { PendingLeasesCard } from "./pending-leases-card";
 import OccupancyLineChart from "./OccupancyLineChart";
-import { toast } from "sonner"; // Assuming sonner is used for toasts
+import InvoiceQueueCard from "./InvoiceQueueCard";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
-// Metric Card Component
-const MetricCard = ({ title, value, subtext, icon: Icon, color }: any) => (
-	<div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-		<div className="flex justify-between items-start mb-2">
-			<div>
-				<p className="text-gray-600 text-xs font-bold uppercase tracking-widest">{title}</p>
-				<h3 className="text-2xl font-extrabold text-gray-900 mt-1">{value}</h3>
+// --- Alert Chip Component ---
+function AlertChip({ icon: Icon, color, text }: { icon: any; color: string; text: string }) {
+	return (
+		<div className={cn("flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-medium", color)}>
+			<Icon className="w-4 h-4" />
+			<span>{text}</span>
+		</div>
+	);
+}
+
+// --- KPI Card with Trend ---
+function KpiCard({ title, value, trend, trendUp, icon: Icon }: { title: string; value: string; trend: string; trendUp: boolean; icon?: any }) {
+	return (
+		<div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+			<div className="flex justify-between items-start mb-2">
+				<p className="text-sm font-medium text-slate-500">{title}</p>
 			</div>
-			<div className={`p-2 rounded-lg ${color} bg-opacity-10`}>
-				<Icon className={`w-5 h-5 ${color.replace('bg-', 'text-')}`} />
+			<div className="flex items-baseline gap-2">
+				<h3 className="text-2xl font-bold text-slate-900">{value}</h3>
+			</div>
+			<div className={cn("flex items-center gap-1 mt-2 text-xs font-semibold", trendUp ? "text-emerald-600" : "text-rose-600")}>
+				{trendUp ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+				{trend}
 			</div>
 		</div>
-		<p className="text-xs text-gray-500 font-medium">{subtext}</p>
-	</div>
-);
+	);
+}
 
-// --- Quick Action Card Component ---
-const ActionCard = ({ title, desc, icon: Icon, href, color }: any) => (
-	<Link href={href} className="group">
-		<div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all hover:border-blue-200 cursor-pointer h-full">
-			<div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${color}`}>
-				<Icon className="w-6 h-6 text-white" />
+// --- Queue Card Component ---
+function QueueCard({ title, items, type }: { title: string; items: any[]; type: string }) {
+	return (
+		<div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[320px]">
+			<div className="px-5 py-4 border-b border-slate-50 flex justify-between items-center">
+				<h4 className="text-sm font-bold text-slate-800 uppercase tracking-tight">{title}</h4>
 			</div>
-			<h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{title}</h3>
-			<p className="text-sm text-gray-500 mt-2 font-medium leading-relaxed">{desc}</p>
+			<div className="flex-1 overflow-y-auto">
+				{items.length === 0 ? (
+					<div className="flex items-center justify-center h-full text-slate-400 text-sm">
+						No items found
+					</div>
+				) : (
+					items.map((item: any, i: number) => (
+						<div key={i} className="px-5 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer flex justify-between items-center">
+							<div className="space-y-0.5">
+								<p className="text-sm font-bold text-slate-900">{item.name}</p>
+								<p className="text-[11px] text-slate-400">{item.subtext}</p>
+							</div>
+							<div className="text-right space-y-0.5">
+								<p className="text-xs font-bold text-slate-700">{item.value}</p>
+								{item.badge && (
+									<span className={cn("text-[9px] px-1.5 py-0.5 rounded font-bold uppercase", item.badgeColor)}>
+										{item.badge}
+									</span>
+								)}
+							</div>
+						</div>
+					))
+				)}
+			</div>
 		</div>
-	</Link>
-);
+	);
+}
 
-// --- Empty State Component ---
-const OnboardingState = () => (
-	<div className="flex flex-col items-center justify-center h-[80vh] text-center p-6">
-		<div className="bg-blue-50 p-6 rounded-full mb-6">
-			<Building2 className="w-16 h-16 text-blue-600" />
-		</div>
-		<h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to RentFlow360</h1>
-		<p className="text-gray-500 max-w-md mb-8">
-			Your dashboard is empty because you haven't added any properties yet.
-			Add your first property to unlock powerful analytics.
-		</p>
-		<Link href="/property-manager/add-property">
-			<button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold shadow-lg transition-all flex items-center gap-2">
-				<Plus size={20} /> Add First Property
-			</button>
-		</Link>
-	</div>
-);
+// --- Main Dashboard Page ---
 
 export default function Dashboard() {
 	const [data, setData] = useState<any>(null);
 	const [loading, setLoading] = useState(true);
 	const [selectedProperty, setSelectedProperty] = useState("all");
 	const [selectedTimeRange, setSelectedTimeRange] = useState("6m");
+
+	// Check if this is a zero-data state (no properties yet)
+	const isZeroDataState = !data || data.kpis?.totalUnits === 0;
+
+	// Build maintenance items from API data using useMemo - BEFORE the loading check
+	const maintenanceItems = useMemo(() => {
+		const mbp = data?.breakdowns?.maintenanceByPriority;
+		if (!mbp) return [];
+
+		const { urgent, high, normal } = mbp;
+		const items: { name: string; subtext: string; value: string; badge: string; badgeColor: string }[] = [];
+
+		if (urgent > 0) {
+			items.push({
+				name: `${urgent} Urgent Request${urgent > 1 ? 's' : ''}`,
+				subtext: "Requires immediate attention",
+				value: "Action Required",
+				badge: "Urgent",
+				badgeColor: "bg-red-600 text-white"
+			});
+		}
+
+		if (high > 0) {
+			items.push({
+				name: `${high} High Priority Request${high > 1 ? 's' : ''}`,
+				subtext: "Requires attention soon",
+				value: "Action Required",
+				badge: "High",
+				badgeColor: "bg-rose-600 text-white"
+			});
+		}
+
+		if (normal > 0) {
+			items.push({
+				name: `${normal} Standard Request${normal > 1 ? 's' : ''}`,
+				subtext: "Scheduled maintenance",
+				value: "Pending",
+				badge: "Normal",
+				badgeColor: "bg-emerald-500 text-white"
+			});
+		}
+
+		return items.length > 0 ? items : [{ name: "No active requests", subtext: "All clear", value: "Clear", badge: "OK", badgeColor: "bg-slate-100 text-slate-500" }];
+	}, [data]);
 
 	useEffect(() => {
 		const fetchData = async (propId: string, timeRange: string) => {
@@ -100,267 +163,240 @@ export default function Dashboard() {
 		return (
 			<div className="p-6 space-y-6">
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-					{[...Array(8)].map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}
+					{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}
 				</div>
-				<Skeleton className="h-80 w-full rounded-xl" />
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-xl" />)}
+				</div>
 			</div>
 		);
 	}
 
-	// Handle "Zero Data" Onboarding State
-	if (!data || data.kpis.totalUnits === 0) {
-		return <OnboardingState />;
-	}
+	// Default values for zero-data state
+	const kpis = data?.kpis || {
+		occupancyRate: 0,
+		occupancyTrend: "0",
+		totalUnits: 0,
+		revenue: 0,
+		noi: 0,
+		arrears: 0,
+		vacancyLoss: 0,
+		collectedThisMonth: 0,
+		revenueTrend: "0",
+		activeMaintenance: 0,
+		maintenanceSla: 0,
+		expiringLeases: 0,
+		operatingExpenseRatio: 0,
+		averageMaintenanceResponseTime: 0,
+		averageTimeToFillVacancy: 0,
+		debtServiceCoverageRatio: "N/A"
+	};
 
-	const { kpis } = data;
+	const breakdowns = data?.breakdowns || {
+		leaseExpirations: { days30: 0, days60: 0, details: [] },
+		openInvoices: { count: 0, amount: 0 },
+		maintenanceByPriority: { high: 0, normal: 0 }
+	};
+
+	// Determine status alerts based on data
+	const portfolioHealth = kpis.occupancyRate >= 90 ? "Strong" : kpis.occupancyRate >= 70 ? "Stable" : "Attention";
+	const leasesExpiringCount = breakdowns?.leaseExpirations?.days60 || 0;
+	const overdueInvoicesCount = breakdowns?.openInvoices?.count || 0;
+	const highPriorityMaintenance = (breakdowns?.maintenanceByPriority?.urgent || 0) + (breakdowns?.maintenanceByPriority?.high || 0);
+
+	// Format currency
+	const formatCurrency = (amount: number) => {
+		if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
+		if (amount >= 1000) return `${(amount / 1000).toFixed(0)}K`;
+		return `${amount}`;
+	};
+
+	// Build queue data from API - FIXED: Access nested tenant and unit objects
+	const invoiceItems = (breakdowns?.openInvoices?.details || []).slice(0, 5).map((inv: any) => ({
+		name: inv.Lease?.tenant?.firstName && inv.Lease?.tenant?.lastName 
+			? `${inv.Lease.tenant.firstName} ${inv.Lease.tenant.lastName}` 
+			: "Unknown Tenant",
+		subtext: inv.dueDate ? `Due ${new Date(inv.dueDate).toLocaleDateString()}` : "Due date unknown",
+		value: formatCurrency(inv.totalAmount || 0),
+		badge: inv.Lease?.unit?.unitNumber || "Unit",
+		badgeColor: inv.status === "OVERDUE" ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-600"
+	}));
+
+	const leaseItems = (breakdowns?.leaseExpirations?.details || []).slice(0, 5).map((lease: any) => ({
+		name: lease.tenant?.firstName && lease.tenant?.lastName 
+			? `${lease.tenant.firstName} ${lease.tenant.lastName}` 
+			: "Unknown Tenant",
+		subtext: lease.unit?.unitNumber ? `Unit ${lease.unit.unitNumber}` : "Unit unknown",
+		value: lease.endDate ? new Date(lease.endDate).toLocaleDateString() : "N/A"
+	}));
 
 	return (
-		<div className="p-6 max-w-7xl mx-auto space-y-8">
-
-			{/* NEW: Financial Summary Card from General Ledger */}
-			<FinancialSummaryCard />
-
-			{/* NEW: Pending Leases Action Center */}
-			<PendingLeasesCard />
-
-			{/* SECTION 1: Financial Health (Row 1) */}
-			<div>
-				<h2 className="text-xl font-extrabold text-gray-900 mb-6 flex items-center gap-3">
-					<div className="p-1.5 bg-emerald-50 rounded-lg">
-						<Wallet className="w-6 h-6 text-emerald-600" />
+		<div className="p-6 bg-slate-50/40 min-h-screen space-y-6">
+			
+			{/* 1. Header & Global Actions */}
+			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+				<div>
+					<h1 className="text-2xl font-bold text-slate-900 tracking-tight">Command Center</h1>
+					<p className="text-sm text-slate-500 mt-1">
+						{isZeroDataState ? "Add properties to start tracking your portfolio" : "Portfolio overview and pending actions"}
+					</p>
+				</div>
+				<div className="flex items-center gap-3">
+					{/* Search */}
+					<div className="relative">
+						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+						<input 
+							type="text" 
+							placeholder="Search..." 
+							className="pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none"
+						/>
 					</div>
-					Financial Health
-				</h2>
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-					<MetricCard
-						title="Total Revenue (MTD)"
-						value={`$${kpis.revenue.toLocaleString()}`}
-						subtext="Rent collected this month"
-						icon={TrendingUp}
-						color="bg-emerald-500"
-					/>
-					<MetricCard
-						title="Net Operating Income"
-						value={`$${kpis.noi.toLocaleString()}`}
-						subtext="Revenue - Expenses"
-						icon={Wallet}
-						color="bg-blue-500"
-					/>
-					<MetricCard
-						title="Outstanding Arrears"
-						value={`$${kpis.arrears.toLocaleString()}`}
-						subtext="Overdue invoices"
-						icon={AlertCircle}
-						color="bg-red-500"
-					/>
-					<MetricCard
-						title="Vacancy Loss"
-						value={`$${kpis.vacancyLoss.toLocaleString()}`}
-						subtext="Potential rent lost"
-						icon={DollarSign}
-						color="bg-orange-500"
-					/>
+					{/* Add Property Button */}
+					<Link href="/property-manager/add-property">
+						<button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm">
+							<Plus className="w-4 h-4" />
+							Add Property
+						</button>
+					</Link>
 				</div>
 			</div>
 
-			{/* SECTION 2: Operational Health (Row 2) */}
-			<div>
-				<h2 className="text-xl font-extrabold text-gray-900 mb-6 flex items-center gap-3">
-					<div className="p-1.5 bg-blue-50 rounded-lg">
-						<Activity className="w-6 h-6 text-blue-600" />
-					</div>
-					Operations
-				</h2>
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-					<MetricCard
-						title="Occupancy Rate"
-						value={`${kpis.occupancyRate}%`}
-						subtext={`${kpis.totalUnits} Units Under Management`}
-						icon={Building2}
-						color="bg-indigo-500"
-					/>
-					<MetricCard
-						title="Active Maintenance"
-						value={kpis.activeMaintenance}
-						subtext="Open tickets"
-						icon={Wrench}
-						color="bg-amber-500"
-					/>
-					<MetricCard
-						title="Lease Renewals"
-						value={kpis.expiringLeases}
-						subtext="Expiring in 30 days"
-						icon={Calendar}
-						color="bg-purple-500"
-					/>
-					<MetricCard
-						title="Average Rent"
-						value={`$${(kpis.totalUnits > 0 ? Math.round(kpis.revenue / kpis.totalUnits) : 0).toLocaleString()}`}
-						subtext="Per Unit Average"
-						icon={TrendingUp}
-						color="bg-cyan-500"
-					/>
-				</div>
-			</div>
-
-			{/* SECTION 3: Risk & Efficiency (Row 3) */}
-			<div>
-				<h2 className="text-xl font-extrabold text-gray-900 mb-6 flex items-center gap-3">
-					<div className="p-1.5 bg-purple-50 rounded-lg">
-						<TrendingUp className="w-6 h-6 text-purple-600" />
-					</div>
-					Risk & Efficiency
-				</h2>
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-					<MetricCard
-						title="Op. Expense Ratio"
-						value={`${kpis.operatingExpenseRatio}%`}
-						subtext="Expenses vs Revenue"
-						icon={TrendingUp}
-						color="bg-red-500"
-					/>
-					<MetricCard
-						title="Maint. Response Time"
-						value={`${kpis.averageMaintenanceResponseTime}h`}
-						subtext="Avg time to resolve"
-						icon={Wrench}
-						color="bg-blue-500"
-					/>
-					<MetricCard
-						title="Time to Fill"
-						value={`${kpis.averageTimeToFillVacancy}d`}
-						subtext="Avg vacancy duration"
-						icon={Home}
-						color="bg-emerald-500"
-					/>
-					<MetricCard
-						title="Debt Service Cover."
-						value={kpis.debtServiceCoverageRatio || "N/A"}
-						subtext="NOI / Debt Payments"
-						icon={DollarSign}
-						color="bg-orange-500"
-					/>
-				</div>
-			</div>
-
-			{/* SECTION 3: Visual Analytics */}
-			<div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-				<div className="mb-8 flex justify-between items-center sm:flex-row flex-col gap-4 sm:gap-0">
-					<div>
-						<h3 className="text-lg font-bold text-gray-900">Revenue Trends</h3>
-						<p className="text-sm text-gray-500 font-medium">Income vs Expenses (Last {selectedTimeRange})</p>
-					</div>
-					<div className="flex flex-wrap gap-2 w-full sm:w-auto mt-4 sm:mt-0">
-						<select
-							className="flex-1 sm:flex-none border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-							value={selectedTimeRange}
-							onChange={(e) => setSelectedTimeRange(e.target.value)}
-						>
-							<option value="30d">Last 30 Days</option>
-							<option value="90d">Last 90 Days</option>
-							<option value="6m">Last 6 Months</option>
-							<option value="12m">Last 12 Months</option>
-							<option value="all">All Time</option>
-						</select>
-						<select
-							className="flex-1 sm:flex-none border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-							value={selectedProperty}
-							onChange={(e) => setSelectedProperty(e.target.value)}
-						>
-							<option value="all">All Properties</option>
-							{data?.properties?.map((p: any) => (
-								<option key={p.id} value={p.id}>{p.name}</option>
-							))}
-						</select>
-
-						{/* EXPORT BUTTONS */}
-						<div className="flex gap-2 print:hidden ml-auto sm:ml-0">
-							<button
-								onClick={() => {
-									// CSV Export Logic
-									if (!data) return;
-									const rows = [
-										["Metric", "Value"],
-										["Total Revenue", data.kpis.revenue],
-										["Net Operating Income", data.kpis.noi],
-										["Arrears", data.kpis.arrears],
-										["Vacancy Loss", data.kpis.vacancyLoss],
-										["Occupancy Rate", `${data.kpis.occupancyRate}%`],
-										["Op. Expense Ratio", `${data.kpis.operatingExpenseRatio}%`],
-										["Maint. Response Time", `${data.kpis.averageMaintenanceResponseTime}h`],
-										["Time to Fill", `${data.kpis.averageTimeToFillVacancy}d`],
-										[],
-										["Month", "Revenue", "Expenses"],
-										...data.chartData.map((d: any) => [d.month, d.revenue, d.expenses])
-									];
-
-									const csvContent = "data:text/csv;charset=utf-8,"
-										+ rows.map(e => e.join(",")).join("\n");
-
-									const encodedUri = encodeURI(csvContent);
-									const link = document.createElement("a");
-									link.setAttribute("href", encodedUri);
-									link.setAttribute("download", `dashboard_report_${new Date().toISOString().split('T')[0]}.csv`);
-									document.body.appendChild(link);
-									link.click();
-									document.body.removeChild(link);
-								}}
-								className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-md transition-colors"
-								title="Export CSV"
-							>
-								<FileText size={18} />
-							</button>
-							<button
-								onClick={() => window.print()}
-								className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-md transition-colors"
-								title="Print Report"
-							>
-								<Building2 size={18} />
-							</button>
-						</div>
-					</div>
-				</div>
-				<RevenueChart data={data.chartData} />
-
-				<div className="border-t border-gray-100 my-8"></div>
-
-				<div className="mb-6">
-					<h3 className="text-lg font-bold text-gray-900">Occupancy & Utilities</h3>
-					<p className="text-sm text-gray-500 font-medium">Occupancy rates and utility cost analysis</p>
-				</div>
-
-				<OccupancyLineChart
-					selectedProperty={selectedProperty}
-					myproperties={data?.properties || []}
+			{/* 2. Alert Ribbon - Compact top-level status */}
+			<div className="flex flex-wrap gap-3">
+				<AlertChip 
+					icon={CheckCircle} 
+					color={portfolioHealth === "Strong" ? "bg-emerald-50 border-emerald-100 text-emerald-700" : portfolioHealth === "Stable" ? "bg-blue-50 border-blue-100 text-blue-700" : "bg-rose-50 border-rose-100 text-rose-700"} 
+					text={`Portfolio Health: ${portfolioHealth}`} 
+				/>
+				<AlertChip 
+					icon={Clock} 
+					color="bg-blue-50 border-blue-100 text-blue-700" 
+					text={`${leasesExpiringCount} leases expiring in 60 days`} 
+				/>
+				<AlertChip 
+					icon={AlertCircle} 
+					color={overdueInvoicesCount > 0 ? "bg-rose-50 border-rose-100 text-rose-700" : "bg-emerald-50 border-emerald-100 text-emerald-700"} 
+					text={overdueInvoicesCount > 0 ? `${overdueInvoicesCount} overdue invoice` : "No overdue invoices"} 
+				/>
+				<AlertChip 
+					icon={Wrench} 
+					color={highPriorityMaintenance > 0 ? "bg-orange-50 border-orange-100 text-orange-700" : "bg-emerald-50 border-emerald-100 text-emerald-700"} 
+					text={highPriorityMaintenance > 0 ? `${highPriorityMaintenance} high-priority work order` : "Maintenance OK"} 
 				/>
 			</div>
 
-			{/* SECTION 4: Quick Actions */}
-			<div>
-				<h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Command Center</h2>
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-					<ActionCard
-						title="Register Property"
-						desc="Add a new building to portfolio."
-						icon={Plus}
-						href="/property-manager/add-property"
-						color="bg-blue-600 shadow-blue-100"
-					/>
-					<ActionCard
-						title="Onboard Tenant"
-						desc="Invite a tenant via link."
-						icon={Users}
-						href="/property-manager/content/tenants"
-						color="bg-emerald-600 shadow-emerald-100"
-					/>
-					<ActionCard
-						title="Post Journal Entry"
-						desc="Record an offline expense or income."
-						icon={FileText}
-						href="/property-manager/finance/journal"
-						color="bg-purple-600 shadow-purple-100"
-					/>
+			{/* 3. KPI Cards Row (4 Columns) */}
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+				<KpiCard 
+					title="Occupancy Rate" 
+					value={isZeroDataState ? "0%" : `${kpis.occupancyRate}%`} 
+					trend={isZeroDataState ? "0% vs last month" : `${parseFloat(kpis.occupancyTrend) >= 0 ? "+" : ""}${kpis.occupancyTrend}% vs last month`}
+					trendUp={parseFloat(kpis.occupancyTrend || "0") >= 0}
+				/>
+				<KpiCard 
+					title="Open Invoices" 
+					value={isZeroDataState ? "0" : `${breakdowns?.openInvoices?.count || 0}`} 
+					trend="12.4% past 30 days"
+					trendUp={false}
+				/>
+				<KpiCard 
+					title="Collected This Month" 
+					value={isZeroDataState ? "$0" : formatCurrency(kpis.collectedThisMonth || 0)} 
+					trend={isZeroDataState ? "0% MTD" : `${parseFloat(kpis.revenueTrend) >= 0 ? "+" : ""}${Math.abs(parseFloat(kpis.revenueTrend))}% MTD cash received`}
+					trendUp={parseFloat(kpis.revenueTrend || "0") >= 0}
+				/>
+				<KpiCard 
+					title="Open Requests" 
+					value={isZeroDataState ? "0" : `${kpis.activeMaintenance}`} 
+					trend="4.5% maintenance queue"
+					trendUp={false}
+				/>
+			</div>
+
+			{/* 4. Trends Section (3 Columns) */}
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				{/* Occupancy Trend */}
+				<div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col h-64">
+					<div className="flex justify-between mb-4">
+						<h4 className="text-sm font-semibold text-slate-800">Occupancy Trend</h4>
+						<span className="text-[10px] text-slate-400 uppercase tracking-wider">Last 7 months</span>
+					</div>
+					<div className="flex-1 bg-slate-50/50 rounded-lg flex items-center justify-center border-2 border-dashed border-slate-100">
+						{isZeroDataState ? (
+							<p className="text-xs text-slate-400">Add properties to see trends</p>
+						) : (
+							<OccupancyLineChart selectedProperty={selectedProperty} myproperties={data?.properties || []} />
+						)}
+					</div>
+					<p className="mt-4 text-xs text-slate-500">Current occupancy <span className="font-bold text-slate-900">{kpis.occupancyRate}%</span></p>
 				</div>
+
+				{/* Collections Trend */}
+				<div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col h-64">
+					<div className="flex justify-between mb-4">
+						<h4 className="text-sm font-semibold text-slate-800">Collections Trend</h4>
+						<span className="text-[10px] text-slate-400 uppercase tracking-wider">MTD</span>
+					</div>
+					<div className="flex-1 bg-slate-50/50 rounded-lg flex items-center justify-center border-2 border-dashed border-slate-100">
+						{isZeroDataState ? (
+							<p className="text-xs text-slate-400">Generate invoices to see trends</p>
+						) : (
+							<RevenueChart data={data?.chartData || []} />
+						)}
+					</div>
+					<p className="mt-4 text-xs text-slate-500">Collected this month <span className="font-bold text-slate-900">{formatCurrency(kpis.collectedThisMonth)}</span></p>
+				</div>
+
+				{/* Maintenance SLA */}
+				<div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm h-64">
+					<h4 className="text-sm font-semibold text-slate-800 mb-4">Maintenance SLA</h4>
+					<div className="space-y-4">
+						<div>
+							<div className="flex justify-between text-xs mb-1">
+								<span className="text-slate-500">Target 85%</span>
+								<span className="font-bold text-emerald-600">{kpis.maintenanceSla || 0}%</span>
+							</div>
+							<div className="w-full bg-slate-100 rounded-full h-2">
+								<div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${kpis.maintenanceSla || 0}%` }}></div>
+							</div>
+						</div>
+						<p className="text-[10px] text-slate-400">Resolved within SLA</p>
+						<div className="grid grid-cols-3 gap-2 pt-4">
+							<div className="text-center p-2 bg-slate-50 rounded border border-slate-100">
+								<div className="text-sm font-bold text-slate-700">{highPriorityMaintenance}</div>
+								<div className="text-[10px] text-slate-400">Open</div>
+							</div>
+							<div className="text-center p-2 bg-slate-50 rounded border border-slate-100">
+								<div className="text-sm font-bold text-slate-700">{breakdowns?.maintenanceByPriority?.normal || 0}</div>
+								<div className="text-[10px] text-slate-400">In Progress</div>
+							</div>
+							<div className="text-center p-2 bg-slate-50 rounded border border-slate-100">
+								<div className="text-sm font-bold text-slate-700">0</div>
+								<div className="text-[10px] text-slate-400">Blocked</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{/* 5. Action Queues (3 Columns) */}
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				{/* Invoice Queue */}
+				<InvoiceQueueCard />
+				
+				{/* Work Orders */}
+				<QueueCard title="Open Work Orders" items={kpis.activeMaintenance > 0 ? maintenanceItems : []} type="workorder" />
+				
+				{/* Lease Expirations */}
+				<QueueCard title="Upcoming Lease Expirations" items={leaseItems} type="lease" />
+			</div>
+
+			{/* 6. Tooltip Banner */}
+			<div className="bg-blue-50/50 border border-blue-100 p-3 rounded-lg flex items-center gap-2">
+				<span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">TIP</span>
+				<p className="text-xs text-blue-700 italic">
+					Use Portfolio → Leases to bulk-generate renewal packets and route signatures through Dashboard → eSign.
+				</p>
 			</div>
 
 		</div>
