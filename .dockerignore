@@ -1,0 +1,36 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+.next
+out
+build
+dist
+
+# Git
+.git
+.gitignore
+
+# Environment files (keep template but ignore actual env files)
+.env
+.env.local
+.env.production
+.env.test
+
+# IDE
+.vscode
+.idea
+
+# Testing
+coverage
+
+# Misc
+README.md
+LICENSE
+*.log
+.DS_Store
+Thumbs.db
+
+local_backups/

@@ -77,3 +77,4 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Failed to fetch invoice" }, { status: 500 });
   }
 }
+

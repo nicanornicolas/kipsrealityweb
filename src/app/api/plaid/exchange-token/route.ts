@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { plaidClient, createStripeBankAccountToken } from "@/lib/payment/services/plaid-service";
 import { prisma } from "@/lib/db";
 import Stripe from "stripe";
+import crypto from "crypto";
 
 let stripeClient: Stripe | null = null;
 

@@ -62,3 +62,4 @@ function calculateNextDueDate(lease: { paymentFrequency: string; paymentDueDay?:
 
   return nextDate;
 }
+

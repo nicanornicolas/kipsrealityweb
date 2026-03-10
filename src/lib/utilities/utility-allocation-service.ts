@@ -492,3 +492,4 @@ const customRatioAllocation = allocateCustomRatio(
     bill.totalAmount // Pass totalAmount as a number
 );
 console.log("Custom Ratio Allocation:", customRatioAllocation);
+
