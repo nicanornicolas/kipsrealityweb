@@ -2,7 +2,7 @@
 // No billing, no invoices, no accounting. Just readings.
 
 import { prisma } from "@/lib/db";
-import { Lease_leaseStatus } from "@prisma/client";
+import { LeaseStatus } from "@prisma/client";
 import {
     ReadingError,
     type CreateUtilityReadingInput,
@@ -39,10 +39,10 @@ export async function createReading(
     const { leaseUtilityId, readingValue, readingDate } = parsed.data;
 
     // 2. Fetch lease utility with related lease
-    const leaseUtility = await prisma.lease_utility.findUnique({
+    const leaseUtility = await prisma.leaseUtility.findUnique({
         where: { id: leaseUtilityId },
         include: {
-            Lease: { select: { leaseStatus: true } },
+            lease: { select: { leaseStatus: true } },
         },
     });
 
@@ -51,26 +51,26 @@ export async function createReading(
     }
 
     // 3. Enforce lease is active
-    if (leaseUtility.Lease.leaseStatus !== Lease_leaseStatus.ACTIVE) {
+    if (leaseUtility.lease.leaseStatus !== LeaseStatus.ACTIVE) {
         return { success: false, error: ReadingError.LEASE_NOT_ACTIVE };
     }
 
     // 4. Enforce tenant responsibility
-    if (!leaseUtility.is_tenant_responsible) {
+    if (!leaseUtility.isTenantResponsible) {
         return { success: false, error: ReadingError.UTILITY_NOT_TENANT_RESPONSIBLE };
     }
 
     // 5. Fetch previous reading (latest by date)
-    const previousReading = await prisma.utility_reading.findFirst({
-        where: { lease_utility_id: leaseUtilityId },
+    const previousReading = await prisma.utilityReading.findFirst({
+        where: { leaseUtilityId },
         orderBy: { readingDate: "desc" },
-        select: { reading_value: true },
+        select: { readingValue: true },
     });
 
     // 6. Validate reading rules (non-negative, monotonic)
     const readingCheck = validateNewReading(
         readingValue,
-        previousReading?.reading_value ?? null
+        previousReading?.readingValue ?? null
     );
     if (!readingCheck.valid) {
         return { success: false, error: readingCheck.error };
@@ -78,10 +78,10 @@ export async function createReading(
 
     // 7. Insert reading in transaction (append-only)
     const newReading = await prisma.$transaction(async (tx) => {
-        return tx.utility_reading.create({
+        return tx.utilityReading.create({
             data: {
-                lease_utility_id: leaseUtilityId,
-                reading_value: readingValue,
+                leaseUtilityId,
+                readingValue,
                 readingDate: readingDate ?? new Date(),
                 amount: null, // readings are data, not money
             },
@@ -98,16 +98,16 @@ export async function createReading(
 export async function getReadingsForLeaseUtility(
     leaseUtilityId: string
 ): Promise<{ readings: UtilityReadingDTO[] }> {
-    const readings = await prisma.utility_reading.findMany({
-        where: { lease_utility_id: leaseUtilityId },
+    const readings = await prisma.utilityReading.findMany({
+        where: { leaseUtilityId },
         orderBy: { readingDate: "asc" },
     });
 
     return {
         readings: readings.map((r: any) => ({
             id: r.id,
-            leaseUtilityId: r.lease_utility_id,
-            readingValue: r.reading_value,
+            leaseUtilityId: r.leaseUtilityId,
+            readingValue: r.readingValue,
             readingDate: r.readingDate ?? new Date(),
             createdAt: r.createdAt ?? new Date(),
         })),
