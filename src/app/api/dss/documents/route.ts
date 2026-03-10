@@ -5,6 +5,81 @@ import { verifyAccessToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { DssParticipantRole } from "@prisma/client";
 
+// Helper function to get authenticated user
+async function getAuthenticatedUser() {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    
+    if (!token) {
+        return null;
+    }
+    
+    return verifyAccessToken(token);
+}
+
+// GET handler - List all documents for the user's organization
+export async function GET(req: Request) {
+    try {
+        const user = await getAuthenticatedUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        let orgId = user.organizationId;
+        
+        // If organizationId is not in token, try to get it from the user's organization
+        if (!orgId) {
+            const userRecord = await prisma.user.findUnique({
+                where: { id: user.userId },
+                include: { organizationUsers: true }
+            });
+            
+            if (userRecord?.organizationUsers[0]?.organizationId) {
+                orgId = userRecord.organizationUsers[0].organizationId;
+            } else {
+                // Fallback: Get first organization (for development only)
+                console.warn('User has no organizationId, falling back to first organization');
+                const firstOrg = await prisma.organization.findFirst();
+                if (!firstOrg) {
+                    return NextResponse.json({ error: "No organization found" }, { status: 400 });
+                }
+                orgId = firstOrg.id;
+            }
+        }
+
+        // Fetch documents linked to properties in this organization
+        // First get properties for this org, then get documents
+        const properties = await prisma.property.findMany({
+            where: { organizationId: orgId },
+            select: { id: true }
+        });
+        
+        const propertyIds = properties.map(p => p.id);
+        
+        // Query DSS documents - assuming there's a relation through property
+        // If Document model has propertyId field
+        const documents = await prisma.dssDocument.findMany({
+            where: {
+                propertyId: { in: propertyIds }
+            },
+            include: {
+                property: {
+                    select: { name: true }
+                },
+                unit: {
+                    select: { unitNumber: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        return NextResponse.json(documents);
+    } catch (error: any) {
+        console.error("[DSS Documents GET Error]", error);
+        return NextResponse.json({ error: "Failed to fetch documents" }, { status: 500 });
+    }
+}
+
 export async function POST(req: Request) {
     try {
         // 1. Auth Check

@@ -12,23 +12,23 @@ export async function GET(request: NextRequest) {
         const utilityId = searchParams.get("utilityId");
 
         // Fetch readings with explicit select
-        const readings = await prisma.utility_reading.findMany({
+        const readings = await prisma.utilityReading.findMany({
             select: {
                 id: true,
-                lease_utility_id: true,
-                reading_value: true,
+                leaseUtilityId: true,
+                readingValue: true,
                 amount: true,
                 readingDate: true,
                 createdAt: true,
-                lease_utility: {
+                leaseUtility: {
                     select: {
-                        utility_id: true,
+                        utilityId: true,
                         utility: {
                             select: {
                                 name: true,
                             },
                         },
-                        Lease: {
+                        lease: {
                             select: {
                                 unitId: true,
                                 propertyId: true,
@@ -60,26 +60,26 @@ export async function GET(request: NextRequest) {
 
         // Filter by property/utility if provided
         const filtered = readings.filter((r: any) => {
-            const matchProperty = !propertyId || r.lease_utility.Lease.propertyId === propertyId;
-            const matchUtility = !utilityId || r.lease_utility.utility_id === utilityId;
+            const matchProperty = !propertyId || r.leaseUtility.lease.propertyId === propertyId;
+            const matchUtility = !utilityId || r.leaseUtility.utilityId === utilityId;
             return matchProperty && matchUtility;
         });
 
         const formattedReadings = filtered.map((reading: any) => {
-            const lease = reading.lease_utility.Lease;
+            const lease = reading.leaseUtility.lease;
             const tenant = lease.tenant;
 
             return {
                 id: reading.id,
-                leaseUtilityId: reading.lease_utility_id,
-                utilityId: reading.lease_utility.utility_id,
-                utilityName: reading.lease_utility.utility.name,
+                leaseUtilityId: reading.leaseUtilityId,
+                utilityId: reading.leaseUtility.utilityId,
+                utilityName: reading.leaseUtility.utility.name,
                 unitId: lease.unitId,
                 unitNumber: lease.unit.unitNumber,
                 propertyId: lease.propertyId,
                 propertyName: lease.property.name || lease.property.address,
                 tenantName: tenant ? `${tenant.firstName || ""} ${tenant.lastName || ""}`.trim() : "N/A",
-                readingValue: reading.reading_value,
+                readingValue: reading.readingValue,
                 amount: reading.amount,
                 readingDate: reading.readingDate?.toISOString(),
                 createdAt: reading.createdAt?.toISOString(),

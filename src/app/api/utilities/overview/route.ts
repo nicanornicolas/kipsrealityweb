@@ -38,20 +38,20 @@ export async function GET(request: NextRequest) {
         const utilityMap = new Map(utilities.map(u => [u.id, u.name]));
 
         // Get recent readings with explicit select
-        const readings = await prisma.utility_reading.findMany({
+        const readings = await prisma.utilityReading.findMany({
             select: {
                 id: true,
-                reading_value: true,
+                readingValue: true,
                 amount: true,
                 readingDate: true,
-                lease_utility: {
+                leaseUtility: {
                     select: {
                         utility: {
                             select: {
                                 name: true,
                             },
                         },
-                        Lease: {
+                        lease: {
                             select: {
                                 unit: {
                                     select: {
@@ -100,10 +100,10 @@ export async function GET(request: NextRequest) {
         // Format recent readings for display
         const recentReadings = readings.map((reading: any) => ({
             id: reading.id,
-            utilityName: reading.lease_utility.utility.name,
-            unitNumber: reading.lease_utility.Lease.unit.unitNumber,
-            propertyName: reading.lease_utility.Lease.property.name || reading.lease_utility.Lease.property.address,
-            readingValue: reading.reading_value,
+            utilityName: reading.leaseUtility.utility.name,
+            unitNumber: reading.leaseUtility.lease.unit.unitNumber,
+            propertyName: reading.leaseUtility.lease.property.name || reading.leaseUtility.lease.property.address,
+            readingValue: reading.readingValue,
             amount: reading.amount,
             readingDate: reading.readingDate?.toISOString(),
         }));

@@ -59,12 +59,14 @@ export async function POST(req: Request) {
         // NOTE: In production, encrypt `accessToken` before saving.
         await prisma.tenantPaymentMethod.create({
             data: {
+                id: crypto.randomUUID(),
                 userId,
                 type: 'ACH',
                 plaidAccessToken: accessToken, // ENCRYPT THIS
                 plaidAccountId: accountId,
                 stripePaymentMethodId: source.id,
-                isDefault: true
+                isDefault: true,
+                updatedAt: new Date(),
             }
         });
 

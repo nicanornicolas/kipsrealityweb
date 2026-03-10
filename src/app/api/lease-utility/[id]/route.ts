@@ -6,9 +6,9 @@ import { prisma } from "@/lib/db";
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const assignment = await prisma.lease_utility.findUnique({
+    const assignment = await prisma.leaseUtility.findUnique({
       where: { id },
-      include: { utility: true, Lease: true },
+      include: { utility: true, lease: true },
     });
 
     if (!assignment) {
@@ -33,9 +33,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ success: false, error: "isTenantResponsible is required" }, { status: 400 });
     }
 
-    const updated = await prisma.lease_utility.update({
+    const updated = await prisma.leaseUtility.update({
       where: { id },
-      data: { is_tenant_responsible: isTenantResponsible },
+      data: { isTenantResponsible },
     });
 
     return NextResponse.json({ success: true, data: updated });
@@ -49,7 +49,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    await prisma.lease_utility.delete({ where: { id } });
+    await prisma.leaseUtility.delete({ where: { id } });
     return NextResponse.json({ success: true, message: "Lease utility removed successfully" });
   } catch (error: any) {
     console.error(error);
