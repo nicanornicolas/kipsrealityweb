@@ -24,8 +24,7 @@ type Request = {
   createdAt?: string;
   property?: { address?: string | null; name?: string | null; city?: string | null };
   unit?: { unitNumber: string; unitName?: string | null };
-  assignedVendor?: { user?: { firstName?: string; lastName?: string }; companyName?: string | null };
-  vendors?: { user?: { firstName?: string; lastName?: string }; companyName?: string | null };
+  vendor?: { user?: { firstName?: string; lastName?: string }; companyName?: string | null };
   cost?: string;
 };
 
@@ -151,7 +150,7 @@ export default function MaintenanceRequestsClient(): ReactElement {
             Make Request
           </button>
           <Link href="/property-manager/maintenance/vendors" className="inline-flex items-center gap-2 px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white shadow">
-            Assign vendors
+            Assign Vendor
           </Link>
           {/* <a
             href="/property-manager/maintenance/vendors/add"
@@ -315,10 +314,10 @@ export default function MaintenanceRequestsClient(): ReactElement {
                   {/* <td className="p-2 text-gray-900">{r.category?.toLowerCase() ?? "standard"}</td> */}
                   <td className="p-2 text-gray-900">{r.cost ?? "-"}</td>
                   <td className="p-2 text-gray-900">
-                    {r.vendors ? (
-                      r.vendors.companyName
-                        ? r.vendors.companyName
-                        : `${r.vendors.user?.firstName ?? ""} ${r.vendors.user?.lastName ? r.vendors.user.lastName.charAt(0) + "." : ""}`.trim()
+                    {r.vendor ? (
+                      r.vendor.companyName
+                        ? r.vendor.companyName
+                        : `${r.vendor.user?.firstName ?? ""} ${r.vendor.user?.lastName ? r.vendor.user.lastName.charAt(0) + "." : ""}`.trim()
                     ) : (
                       "-"
                     )}
@@ -359,7 +358,7 @@ export default function MaintenanceRequestsClient(): ReactElement {
                               <div><strong>Created At:</strong> {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString() : '-'}</div>
                               <div><strong>Unit:</strong> {selectedRequest.unit?.unitName ?? selectedRequest.unit?.unitNumber ?? '-'}</div>
                               <div><strong>Requested By:</strong> {selectedRequest.requestedBy?.user ? `${selectedRequest.requestedBy.user.firstName ?? ''} ${selectedRequest.requestedBy.user.lastName ?? ''}` : '-'}</div>
-                              <div><strong>Assigned Vendor:</strong> {selectedRequest.vendors?.companyName ? selectedRequest.vendors.companyName : `${selectedRequest.vendors?.user?.firstName ?? ''} ${selectedRequest.vendors?.user?.lastName ?? ''}`}</div>
+                              <div><strong>Assigned Vendor:</strong> {selectedRequest.vendor?.companyName ? selectedRequest.vendor.companyName : `${selectedRequest.vendor?.user?.firstName ?? ''} ${selectedRequest.vendor?.user?.lastName ?? ''}`}</div>
                             </div>
                           </div>
                         </div>
