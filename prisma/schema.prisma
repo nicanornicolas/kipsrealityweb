@@ -41,13 +41,15 @@ model Organization {
 
 model User {
   id                     String                   @id @default(uuid())
-  name                   String
-  slug                   String                   @unique
-  logoUrl                String?                  @map("logo_url")
-  website                String?
-  phone                  String?
-  address                String?
-  isActive               Boolean                  @default(true) @map("is_active")
+  email                  String                   @unique
+  passwordHash           String                   @map("password_hash")
+  firstName              String?                  @map("first_name")
+  lastName               String?                  @map("last_name")
+  phone                  String?                  @unique // E.164 format (e.g. +2547...)
+  phoneVerified          DateTime? // Null = not verified
+  avatarUrl              String?                  @map("avatar_url")
+  status                 UserStatus               @default(ACTIVE)
+  lastLoginAt            DateTime?                @map("last_login_at")
   createdAt              DateTime                 @default(now()) @map("created_at")
   updatedAt              DateTime                 @updatedAt @map("updated_at")
   emailVerified          DateTime?                @map("email_verified")
@@ -72,46 +74,6 @@ model User {
   organizationUsers      OrganizationUser[]
   tenantPaymentMethods  TenantPaymentMethod[]
   vendors                Vendor[]
-
-  @@index([planId], map: "organizations_planId_fkey")
-  @@map("organizations")
-}
-
-model User {
-  id                   String                @id @default(uuid())
-  email                String                @unique
-  passwordHash         String                @map("password_hash")
-  firstName            String?               @map("first_name")
-  lastName             String?               @map("last_name")
-  phone                String?               @unique // E.164 format (e.g. +2547...)
-  phoneVerified        DateTime? // Null = not verified
-  avatarUrl            String?               @map("avatar_url")
-  status               UserStatus            @default(ACTIVE)
-  lastLoginAt          DateTime?             @map("last_login_at")
-  createdAt            DateTime              @default(now()) @map("created_at")
-  updatedAt            DateTime              @updatedAt @map("updated_at")
-  emailVerified        DateTime?             @map("email_verified")
-  verificationToken    String?               @unique
-  consentMarketing     Boolean               @default(false) @map("consent_marketing")
-  consentNotifications Boolean               @default(true) @map("consent_notifications")
-  consentTransactional Boolean               @default(true) @map("consent_transactional")
-  kycStatus            users_kyc_status      @default(PENDING) @map("kyc_status")
-  paystackCustomerCode String?               @map("paystack_customer_code")
-  plaidAccessToken     String?               @map("plaid_access_token")
-  region               users_region?         @default(KEN)
-  stripeCustomerId     String?               @map("stripe_customer_id")
-  AgentInvite          AgentInvite[]
-  sentInvites          Invite[]              @relation("UserInvites")
-  leases               Lease[]
-  listings             Listing[]
-  passwordResetTokens  PasswordResetToken[]
-  tenantApplications   Tenantapplication[]
-  twoFactorEnabled     Boolean               @default(false)
-  dssParticipants      DssParticipant[]
-  listingAuditEntries  ListingAuditEntry[]
-  organizationUsers    OrganizationUser[]
-  tenantPaymentMethods TenantPaymentMethod[]
-  vendors              Vendor[]
 
   // Relation to OTPs
   otps Otp[]
