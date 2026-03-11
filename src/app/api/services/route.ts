@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-// GET all services or by category_id
+// GET all services or by categoryId
 export async function GET(req: NextRequest) {
   const categoryId = req.nextUrl.searchParams.get("category_id");
   try {

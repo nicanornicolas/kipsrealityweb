@@ -22,7 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 }
 
-// PUT /api/lease-utilities/:id -> Update assignment (e.g., is_tenant_responsible)
+// PUT /api/lease-utilities/:id -> Update assignment (e.g., isTenantResponsible)
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -56,3 +56,4 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
