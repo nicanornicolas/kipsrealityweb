@@ -311,6 +311,12 @@ model UtilityAllocation {
   disputes       UtilityDispute[]
   payments       UtilityPayment[]
 
+  // ------ AI Sidecar metadata -----
+  splitMethod    UtilitySplitMethod      @default(EQUAL)
+  aiConfidenceScore Float?               // Null = not AI-generated
+  anomalyFlag    Boolean                 @default(false)
+  allocationExplanation String?           @db.Text // AI explanation for the allocation
+
   @@index([utilityBillId])
   @@index([tenantId])
   @@index([leaseId])
@@ -1674,6 +1680,7 @@ enum UtilitySplitMethod {
   SUB_METERED
   CUSTOM_RATIO
   AI_OPTIMIZED
+  FIXED
 }
 
 enum UtilityBillStatus {
