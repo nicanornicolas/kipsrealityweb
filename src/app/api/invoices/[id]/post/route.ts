@@ -42,12 +42,35 @@ export async function POST(
     // 4. Organization Validation - Ensure user has access to this invoice's property
     // For SYSTEM_ADMIN, we allow access to all organizations
     // For PROPERTY_MANAGER, we require organizationId to match
-    if (user.role === "PROPERTY_MANAGER" && user.organizationId) {
+    let userOrgId = user.organizationId;
+    
+    // If organizationId is missing from token, try to derive from organizationUsers
+    if (!userOrgId && user.role === 'PROPERTY_MANAGER') {
+      const userRecord = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: { organizationUsers: { include: { organization: true } } }
+      });
+      
+      if (userRecord?.organizationUsers?.[0]?.organizationId) {
+        userOrgId = userRecord.organizationUsers[0].organizationId;
+      }
+    }
+    
+    // If still no orgId for a PROPERTY_MANAGER, deny access (fail closed)
+    if (user.role === 'PROPERTY_MANAGER' && !userOrgId) {
+      return NextResponse.json(
+        { error: 'Forbidden - No organization context found' },
+        { status: 403 }
+      );
+    }
+    
+    // Perform the organization check
+    if (user.role === 'PROPERTY_MANAGER' && userOrgId) {
       const invoiceOrganizationId = invoice.Lease?.property?.organizationId;
       
-      if (invoiceOrganizationId && invoiceOrganizationId !== user.organizationId) {
+      if (invoiceOrganizationId && invoiceOrganizationId !== userOrgId) {
         return NextResponse.json(
-          { error: "Forbidden - You do not have access to this invoice" },
+          { error: 'Forbidden - You do not have access to this invoice' },
           { status: 403 }
         );
       }

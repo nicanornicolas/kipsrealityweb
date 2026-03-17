@@ -14,12 +14,22 @@ export async function GET(req: Request) {
     const rawStatus = url.searchParams.get("status");
     const type = url.searchParams.get("type");
 
-    // 1. FIX: Safer relation query based on your schema's managerId
+    // FIX: Use proper relation filter - managerId on Property references OrganizationUser.id
+    // We need to get the organizationUserId from the user's organizationUsers relationship
+    // Fall back to the organization-level filter if organizationUserId is not available
+    let managerFilter: any = {};
+    
+    // Get organizationUserId from user's organization relationship
+    if (user.organizationUserId) {
+      managerFilter = { managerId: user.organizationUserId };
+    } else if (user.organizationId) {
+      // If no direct manager relationship, filter by organization
+      managerFilter = { organizationId: user.organizationId };
+    }
+    
     const where: any = {
       Lease: {
-        property: {
-          managerId: user.id, // Directly matches the managerId string on the Property model
-        },
+        property: managerFilter,
       },
     };
 
@@ -120,6 +130,11 @@ export async function GET(req: Request) {
     );
 
     // Return both grouped and flat array for flexibility
+    // Support backward compatibility via ?format=flat query param
+    const format = url.searchParams.get("format");
+    if (format === "flat") {
+      return NextResponse.json(invoicesWithFinancials);
+    }
     return NextResponse.json({
       grouped,
       invoices: invoicesWithFinancials

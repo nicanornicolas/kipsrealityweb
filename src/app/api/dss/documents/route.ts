@@ -36,15 +36,15 @@ export async function GET(req: Request) {
             
             if (userRecord?.organizationUsers[0]?.organizationId) {
                 orgId = userRecord.organizationUsers[0].organizationId;
-            } else {
-                // Fallback: Get first organization (for development only)
-                console.warn('User has no organizationId, falling back to first organization');
-                const firstOrg = await prisma.organization.findFirst();
-                if (!firstOrg) {
-                    return NextResponse.json({ error: "No organization found" }, { status: 400 });
-                }
-                orgId = firstOrg.id;
             }
+        }
+
+        // SECURITY: Do not fall back to first organization - fail closed instead
+        if (!orgId) {
+            return NextResponse.json(
+                { error: "Forbidden - No organization context found. Please contact support." },
+                { status: 403 }
+            );
         }
 
         // Fetch documents linked to properties in this organization
@@ -103,15 +103,15 @@ export async function POST(req: Request) {
             
             if (userRecord?.organizationUsers[0]?.organizationId) {
                 orgId = userRecord.organizationUsers[0].organizationId;
-            } else {
-                // Fallback: Get first organization (for development only)
-                console.warn('User has no organizationId, falling back to first organization');
-                const firstOrg = await prisma.organization.findFirst();
-                if (!firstOrg) {
-                    return NextResponse.json({ error: "No organization found" }, { status: 400 });
-                }
-                orgId = firstOrg.id;
             }
+        }
+
+        // SECURITY: Do not fall back to first organization - fail closed instead
+        if (!orgId) {
+            return NextResponse.json(
+                { error: "Forbidden - No organization context found. Please contact support." },
+                { status: 403 }
+            );
         }
 
         // 2. Parse FormData

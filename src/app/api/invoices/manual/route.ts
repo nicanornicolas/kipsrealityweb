@@ -41,9 +41,47 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Validate lease exists
-  const lease = await prisma.lease.findUnique({ where: { id: body.leaseId } });
+  // Validate lease exists and belongs to user's organization
+  const lease = await prisma.lease.findUnique({ 
+    where: { id: body.leaseId },
+    include: { property: true }
+  });
   if (!lease) return NextResponse.json({ error: 'Lease not found' }, { status: 404 });
+
+  // SECURITY: Verify the lease belongs to the user's organization/managed properties
+  if (user.role === 'PROPERTY_MANAGER') {
+    // For property managers, verify they manage this property
+    if (user.organizationUserId) {
+      // Check if property is managed by this organization user
+      const property = await prisma.property.findFirst({
+        where: {
+          id: lease.propertyId,
+          managerId: user.organizationUserId
+        }
+      });
+      if (!property) {
+        return NextResponse.json(
+          { error: 'Forbidden - You do not have access to create invoices for this property' },
+          { status: 403 }
+        );
+      }
+    } else if (user.organizationId) {
+      // Fall back to organization check
+      if (lease.property.organizationId !== user.organizationId) {
+        return NextResponse.json(
+          { error: 'Forbidden - You do not have access to create invoices for this property' },
+          { status: 403 }
+        );
+      }
+    } else {
+      // No organization context - deny access
+      return NextResponse.json(
+        { error: 'Forbidden - No organization context found' },
+        { status: 403 }
+      );
+    }
+  }
+  // SYSTEM_ADMIN can create invoices for any lease
 
   const invoice = await prisma.invoice.create({
     data: {
