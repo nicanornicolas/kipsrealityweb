@@ -29,13 +29,20 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
+# 1. Create the non-root user and group
 RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 
+# 2. Copy the standalone build (Output of Next.js output: 'standalone')
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
+# 3. Create cache directories and set strict permissions for the non-root user
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next/cache \
+    && mkdir -p /tmp && chown -R nextjs:nodejs /tmp
+
+# 4. Drop privileges to the non-root user
 USER nextjs
 
 EXPOSE 3000

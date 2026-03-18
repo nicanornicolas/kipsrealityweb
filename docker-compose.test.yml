@@ -1,0 +1,33 @@
+# Docker Compose for Test Database
+# This provides a MySQL 8.0 database for integration tests (matching production)
+# Run with: docker-compose -f docker-compose.test.yml up -d
+
+services:
+  test-db:
+    image: mysql:8.0
+    container_name: rentflow_test_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password_123}
+      MYSQL_DATABASE: ${MYSQL_TEST_DB:-rentflow_test}
+      MYSQL_USER: ${MYSQL_TEST_USER:-test_user}
+      MYSQL_PASSWORD: ${MYSQL_TEST_PASSWORD:-test_password}
+    ports:
+      - "3307:3306"
+    volumes:
+      - test-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # CI-specific: Ensure database is ready before running tests
+    # Use in docker-compose.override.yml or CI scripts:
+    # depends_on:
+    #   test-db:
+    #     condition: service_healthy
+
+volumes:
+  test-db-data:
+    driver: local
