@@ -1,0 +1,92 @@
+name: RentFlow360 CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-and-scan:
+    runs-on: ubuntu-latest
+
+    # Spin up MySQL for Integration Tests and E2E Tests
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_root_password
+          MYSQL_DATABASE: rentflow_test
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3307:3306
+        options: --health-cmd="mysqladmin ping -h localhost -u test_user -ptest_password" --health-interval=10s --health-timeout=5s --health-retries=5
+
+      mysql-e2e:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: test
+          MYSQL_PASSWORD: test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # 1. Run Unit Tests (Fast, no DB required)
+      - name: Run Unit Tests (Vitest)
+        run: npm run test:unit
+
+      # 2. Setup Test DB & Run Integration Tests
+      - name: Prepare Test Database
+        run: npx prisma db push --accept-data-loss
+        env:
+          DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
+
+      - name: Run Integration Tests (Vitest)
+        run: npm run test:integration
+        env:
+          DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
+
+      # 3. Run E2E Tests (Playwright)
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run E2E Tests
+        run: npm run test:e2e:ci
+        env:
+          DATABASE_URL: mysql://test:test@localhost:3306/test_db
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      # 4. Build the Docker Image
+      - name: Build Docker Image
+        run: docker build --target runner -t rentflow360/app:test .
+
+      # 5. DevSecOps: Vulnerability Scanning with Trivy
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'rentflow360/app:test'
+          format: 'table'
+          exit-code: '1' # Fails the pipeline if vulnerabilities are found
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH' # Only fail on High/Critical CVEs
