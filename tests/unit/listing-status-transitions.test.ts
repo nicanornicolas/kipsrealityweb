@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import { ListingStatus, isValidStatusTransition, VALID_STATUS_TRANSITIONS } from '../../src/lib/listing-types';
 
@@ -14,9 +14,9 @@ import { ListingStatus, isValidStatusTransition, VALID_STATUS_TRANSITIONS } from
  * function should return true, and for any invalid transition, it should return false.
  */
 
-test.describe('Listing Status Transitions Property Tests', () => {
+describe('Listing Status Transitions Property Tests', () => {
     
-    test('Property 8: Valid State Transitions - All defined transitions should be valid', async () => {
+    it('Property 8: Valid State Transitions - All defined transitions should be valid', async () => {
         await fc.assert(
             fc.property(
                 // Generate all possible valid transitions from the state machine
@@ -37,7 +37,7 @@ test.describe('Listing Status Transitions Property Tests', () => {
         );
     });
 
-    test('Property 8: Valid State Transitions - Invalid transitions should be rejected', async () => {
+    it('Property 8: Valid State Transitions - Invalid transitions should be rejected', async () => {
         await fc.assert(
             fc.property(
                 // Generate pairs of statuses
@@ -59,7 +59,7 @@ test.describe('Listing Status Transitions Property Tests', () => {
         );
     });
 
-    test('Property 8: Valid State Transitions - State machine completeness', async () => {
+    it('Property 8: Valid State Transitions - State machine completeness', () => {
         // Verify that every status has at least one valid transition defined
         const allStatuses = Object.values(ListingStatus);
         
@@ -70,7 +70,7 @@ test.describe('Listing Status Transitions Property Tests', () => {
         }
     });
 
-    test('Property 8: Valid State Transitions - Reflexivity check', async () => {
+    it('Property 8: Valid State Transitions - Reflexivity check', async () => {
         await fc.assert(
             fc.property(
                 fc.constantFrom(...Object.values(ListingStatus)),
@@ -90,7 +90,7 @@ test.describe('Listing Status Transitions Property Tests', () => {
         );
     });
 
-    test('Property 8: Valid State Transitions - Specific business rules', async () => {
+    it('Property 8: Valid State Transitions - Specific business rules', () => {
         // Test specific business rules from the requirements
         
         // PRIVATE can transition to ACTIVE and PENDING
