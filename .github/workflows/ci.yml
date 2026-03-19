@@ -47,6 +47,8 @@ jobs:
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
 
       # 1. Run Unit Tests (Fast, no DB required)
       - name: Run Unit Tests (Vitest)
