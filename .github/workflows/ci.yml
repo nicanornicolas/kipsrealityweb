@@ -86,7 +86,7 @@ jobs:
           path: playwright-results/
           retention-days: 30
 
-      # 5. Build the Docker Image with BuildKit caching
+      # 5. Build the Docker Image with BuildKit caching (don't push yet)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -98,8 +98,34 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 7. Build and Push Docker Image to Registry
-      - name: Build and Push Docker Image
+      # 7. Build Docker Image (load locally for scanning)
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: runner
+          push: false
+          load: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 8. Scan BEFORE pushing - fail if critical vulnerabilities found
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      # 9. Only push if scan passes AND it's a push to main (not a PR)
+      - name: Push Docker Image to GHCR
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -110,14 +136,3 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      # 8. DevSecOps: Vulnerability Scanning with Trivy
-      - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
