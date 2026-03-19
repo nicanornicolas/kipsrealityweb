@@ -77,8 +77,4 @@ export default defineConfig({
     timeout: 120000, // 2 minutes to start the server
   },
   
-  /* Global teardown for cleanup */
-  teardown: process.env['CI'] 
-    ? undefined 
-    : undefined,
 });

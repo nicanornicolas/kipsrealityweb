@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { MpesaPaymentStrategy } from '@/lib/payment/strategies/mpesa';
-import { PaymentRequest, PaymentGateway } from '@/lib/payment/types';
+import type { PaymentRequest } from '@/lib/payment/types';
 import { TransactionStatus } from '@prisma/client';
 
 // Mock environment variables
@@ -47,7 +47,7 @@ describe('M-Pesa Authentication Flow', () => {
     // Create actual instance (not mocked) for testing
     mpesaStrategy = new MpesaPaymentStrategy();
     
-    // Mock payment request
+    // Mock payment request - using proper types
     mockPaymentRequest = {
       user: {
         id: 'user-123',
@@ -61,14 +61,14 @@ describe('M-Pesa Authentication Flow', () => {
         plaidAccessTokenEncrypted: null,
         paystackCustomerCode: null,
         paymentMethods: []
-      } as any,
+      },
       organization: {
         id: 'org-123',
         name: 'Test Org',
         region: 'KEN',
         paystackSubaccountCode: 'test-subaccount',
         stripeConnectId: null
-      } as any,
+      },
       amount: 1500,
       currency: 'KES',
       invoiceId: 'inv-123',
@@ -106,16 +106,19 @@ describe('M-Pesa Authentication Flow', () => {
         })
       });
 
-      // We need to test the private method indirectly via initializePayment
-      // Mock the rest of initializePayment to isolate token retrieval
-      const originalGetAccessToken = (mpesaStrategy as any).getAccessToken;
-      (mpesaStrategy as any).getAccessToken = vi.fn().mockResolvedValue('test-access-token-123');
+      // Spy on the actual getAccessToken method and mock its return value
+      const spy = vi.spyOn(mpesaStrategy, 'getAccessToken').mockResolvedValue('test-access-token-123');
       
-      const token = await (mpesaStrategy as any).getAccessToken();
+      // Call the actual method through the spy
+      const token = await mpesaStrategy.getAccessToken();
       
       expect(token).toBe('test-access-token-123');
       expect(typeof token).toBe('string');
       expect(token.length).toBeGreaterThan(0);
+      
+      // Verify the spy was called
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
     });
 
     it('should handle authentication failure with invalid credentials', async () => {
@@ -128,29 +131,31 @@ describe('M-Pesa Authentication Flow', () => {
         })
       });
 
-      // We'll test error handling via initializePayment
-      const originalGetAccessToken = (mpesaStrategy as any).getAccessToken;
-      (mpesaStrategy as any).getAccessToken = vi.fn().mockRejectedValue(
+      // Spy on the actual method and mock it to throw an error
+      const spy = vi.spyOn(mpesaStrategy, 'getAccessToken').mockRejectedValue(
         new Error('M-Pesa authentication failed: Invalid client credentials')
       );
 
-      await expect((mpesaStrategy as any).getAccessToken())
+      await expect(mpesaStrategy.getAccessToken())
         .rejects
         .toThrow('M-Pesa authentication failed: Invalid client credentials');
+      
+      spy.mockRestore();
     });
 
     it('should handle network errors during authentication', async () => {
       // Mock network error
       mockFetch.mockRejectedValueOnce(new Error('Network connection failed'));
 
-      const originalGetAccessToken = (mpesaStrategy as any).getAccessToken;
-      (mpesaStrategy as any).getAccessToken = vi.fn().mockRejectedValue(
+      const spy = vi.spyOn(mpesaStrategy, 'getAccessToken').mockRejectedValue(
         new Error('M-Pesa authentication failed: Network connection failed')
       );
 
-      await expect((mpesaStrategy as any).getAccessToken())
+      await expect(mpesaStrategy.getAccessToken())
         .rejects
         .toThrow('M-Pesa authentication failed: Network connection failed');
+      
+      spy.mockRestore();
     });
   });
 
@@ -196,7 +201,7 @@ describe('M-Pesa Authentication Flow', () => {
         ...mockPaymentRequest,
         user: {
           ...mockPaymentRequest.user,
-          phone: '' as any
+          phone: ''
         },
         metadata: {}
       };

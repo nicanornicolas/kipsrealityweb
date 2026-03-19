@@ -54,14 +54,14 @@ if (process.env.NODE_ENV !== 'production') {
  * Uses MySQL ping or a simple connection test
  */
 async function waitForDatabase(maxAttempts = 30): Promise<boolean> {
-  const dbUrl = getTestDatabaseUrl();
+  // dbUrl intentionally not used - connection uses singleton prisma client
   
   for (let i = 0; i < maxAttempts; i++) {
     try {
       await prisma.$connect();
       console.log('✅ Test database is ready');
       return true;
-    } catch (error) {
+    } catch {
       console.log(`⏳ Waiting for test database... (attempt ${i + 1}/${maxAttempts})`);
       await new Promise(resolve => setTimeout(resolve, 1000));
     }

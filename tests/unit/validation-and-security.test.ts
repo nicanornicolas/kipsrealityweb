@@ -3,7 +3,7 @@
  * Tests input validation, role-based permissions, data sanitization, and rate limiting
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { 
     ListingValidationService 
 } from '@/lib/listing-validation';
@@ -18,12 +18,11 @@ import {
     PathSanitizer,
     SecurityAuditor 
 } from '@/lib/listing-sanitizer';
-import { ListingSecurityMiddleware } from '@/lib/listing-security-middleware';
 import { getSecurityPolicy, requiresAuth, getRequiredRole, SECURITY_POLICIES } from '@/lib/listing-security-config';
 
 // Simple mock schemas for testing (Zod-like interface)
 const CreateListingSchema = {
-    safeParse: (data: any) => {
+    safeParse: (data: unknown) => {
         const errors: string[] = [];
         if (!data.title || data.title.length < 1) errors.push('Title is required');
         if (data.title && data.title.length > 200) errors.push('Title too long');
@@ -39,7 +38,7 @@ const CreateListingSchema = {
 };
 
 const UpdateListingSchema = {
-    safeParse: (data: any) => {
+    safeParse: (data: unknown) => {
         const errors: string[] = [];
         if (data.title && data.title.length > 200) errors.push('Title too long');
         if (data.price && data.price < 1) errors.push('Price must be positive');
@@ -53,7 +52,7 @@ const UpdateListingSchema = {
 };
 
 const BulkOperationSchema = {
-    safeParse: (data: any) => {
+    safeParse: (data: unknown) => {
         const errors: string[] = [];
         if (!data.unitIds || !Array.isArray(data.unitIds)) errors.push('unitIds must be an array');
         if (data.unitIds && data.unitIds.length > 50) errors.push('Too many units');
@@ -68,7 +67,7 @@ const BulkOperationSchema = {
 };
 
 const StatusUpdateSchema = {
-    safeParse: (data: any) => {
+    safeParse: (data: unknown) => {
         const errors: string[] = [];
         if (!data.status) errors.push('status is required');
         const allowedStatuses = ['ACTIVE', 'INACTIVE', 'PENDING', 'SUSPENDED'];
@@ -362,7 +361,8 @@ describe('Data Sanitization', () => {
             
             // Test that the function properly validates URLs when not in strict mode
             // by checking the logic directly
-            const url = 'http://example.com/path';
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const _url = 'http://example.com/path';
             
             // The function should return null for URLs without proper protocol
             // or validate correctly
