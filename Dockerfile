@@ -2,7 +2,7 @@ FROM node:20-alpine AS base
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@8 --activate
+RUN corepack enable && corepack prepare pnpm@9 --activate
 
 # Prisma and some native Next.js dependencies require these runtime libs.
 RUN apk add --no-cache libc6-compat openssl
