@@ -66,7 +66,13 @@ jobs:
           DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
           INTEGRATION_TEST_DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
 
-      # 3. Run E2E Tests (Playwright) - uses same database on port 3307
+      # 3. Seed E2E Test Data (must run after integration tests, before E2E tests)
+      - name: Seed E2E Test Data
+        run: pnpm run db:seed:test
+        env:
+          DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
+
+      # 4. Run E2E Tests (Playwright) - uses same database on port 3307
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps
 
@@ -76,7 +82,7 @@ jobs:
           DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
           NEXT_PUBLIC_APP_URL: http://localhost:3000
 
-      # 4. Upload Test Artifacts (Playwright reports)
+      # 5. Upload Test Artifacts (Playwright reports)
       - name: Upload Playwright Report
         if: always()
         uses: actions/upload-artifact@v4
