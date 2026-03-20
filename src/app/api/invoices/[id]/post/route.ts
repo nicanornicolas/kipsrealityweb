@@ -134,10 +134,20 @@ export async function POST(
       }, { status: 500 });
     }
 
-    // 9. Fetch the updated invoice to return
+    // 9. Fetch the updated invoice to verify final state
     const updatedInvoice = await prisma.invoice.findUnique({
       where: { id }
     });
+
+    // 10. Verify the invoice was actually posted to GL
+    if (!updatedInvoice || updatedInvoice.postingStatus !== 'POSTED' || updatedInvoice.status !== 'PENDING') {
+      return NextResponse.json({ 
+        success: false, 
+        error: "GL posting did not complete successfully",
+        status: updatedInvoice?.status || 'unknown',
+        postingStatus: updatedInvoice?.postingStatus || 'unknown'
+      }, { status: 500 });
+    }
 
     return NextResponse.json({ 
       success: true, 
