@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
    */
   output: "standalone",
 
+  // Use webpack instead of Turbopack (required for custom webpack config like fflate alias)
+  turbopack: {},
+
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -54,13 +57,20 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
 
-  // Safety: Ignored ESLint during build to prevent styling nitpicks from failing deployment
+  // Note: ESLint configuration is handled in eslint.config.mjs, not in NextConfig.
+  // If you need to ignore ESLint errors during build, configure it in package.json
+  // scripts or use ESLint's own ignore mechanisms.
 
-  // Optional: Uncomment this if Type Errors are blocking your build
-  // and you need to force a deploy (Not recommended long term, but good for MVP crunch)
-  // typescript: {
-  //   ignoreBuildErrors: true,
-  // },
+  // Fix fflate/Worker issue - force browser version instead of Node.js Worker API
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'fflate/lib/node.cjs': 'fflate/browser',
+      }
+    }
+    return config
+  },
 };
 
 export default nextConfig;
