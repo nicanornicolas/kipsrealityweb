@@ -129,16 +129,17 @@ export async function GET(req: Request) {
       }, {})
     );
 
-    // Return both grouped and flat array for flexibility
-    // Support backward compatibility via ?format=flat query param
+    // Return flat array by default for backward compatibility
+    // Use ?format=grouped to get the grouped format
     const format = url.searchParams.get("format");
-    if (format === "flat") {
-      return NextResponse.json(invoicesWithFinancials);
+    if (format === "grouped") {
+      return NextResponse.json({
+        grouped,
+        invoices: invoicesWithFinancials
+      });
     }
-    return NextResponse.json({
-      grouped,
-      invoices: invoicesWithFinancials
-    });
+    // Default: return flat array (backward compatible with old behavior)
+    return NextResponse.json(invoicesWithFinancials);
   } catch (err) {
     // Log the full error server-side for debugging
     console.error("GET /api/invoices error:", err); 

@@ -75,6 +75,11 @@ test.describe('Financial Core Workflow', () => {
         await seedTestUser();
     });
 
+    // Cleanup: Disconnect Prisma after all tests to prevent connection leaks
+    test.afterAll(async () => {
+        await prisma.$disconnect();
+    });
+
     test('Manager can create invoice and record payment', async ({ page }) => {
         test.setTimeout(90000); // Give it plenty of time for GL posting + toast
         

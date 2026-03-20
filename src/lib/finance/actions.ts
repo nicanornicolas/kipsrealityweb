@@ -68,6 +68,8 @@ export const financeActions = {
                 where: { id: invoice.id },
                 data: { postingStatus: PostingStatus.FAILED }
             });
+            // Rethrow so caller knows GL posting failed
+            throw error;
         }
     },
 
@@ -134,6 +136,8 @@ export const financeActions = {
                 where: { id: payment.id },
                 data: { postingStatus: PostingStatus.FAILED }
             });
+            // Rethrow so caller knows GL posting failed
+            throw error;
         }
     }
 };
