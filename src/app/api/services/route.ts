@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-// GET all services or by categoryId
+// GET all services or by categoryId (supports both categoryId and category_id for compatibility)
 export async function GET(req: NextRequest) {
-  const categoryId = req.nextUrl.searchParams.get("category_id");
+  // Support both camelCase and snake_case query params
+  const categoryId = req.nextUrl.searchParams.get("categoryId") || req.nextUrl.searchParams.get("category_id");
   try {
-    const services = await prisma.services.findMany({
+    const services = await prisma.service.findMany({
       where: categoryId ? { categoryId: parseInt(categoryId) } : {},
     });
     return NextResponse.json(services);
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { categoryId, name, description, features, impact, icon } = body;
 
-    const service = await prisma.services.create({
+    const service = await prisma.service.create({
       data: {
         categoryId: Number(categoryId),
         name,

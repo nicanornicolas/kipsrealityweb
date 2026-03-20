@@ -18,8 +18,86 @@ import {
   Building2,
   Calculator,
   Zap,
-  FileSignature
+  FileSignature,
+  FolderOpen,
+  PenTool,
+  Contact,
+  PieChart,
+  Wallet,
+  FileInput,
+  CreditCard,
+  UserCircle,
+  Store,
+  Book,
+  Box,
+  Shield,
+  LucideIcon
 } from 'lucide-react'
+
+// Type definitions for the new structured sidebar
+export interface SidebarLink {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+export interface SidebarCategory {
+  title: string;
+  items: SidebarLink[];
+}
+
+// New structured format for Property Manager sidebar with collapsible categories
+export const PROPERTY_MANAGER_LINKS: SidebarCategory[] = [
+  {
+    title: 'Overview',
+    items: [
+      { name: 'Dashboard', href: '/property-manager', icon: LayoutDashboard },
+      { name: 'Documents', href: '/property-manager/documents', icon: FolderOpen },
+      { name: 'eSign (DSS)', href: '/property-manager/dss/upload', icon: PenTool },
+    ],
+  },
+  {
+    title: 'Portfolio',
+    items: [
+      { name: 'Properties', href: '/property-manager/view-own-property', icon: Building2 },
+      { name: 'Leases', href: '/property-manager/content/lease', icon: FileText },
+      { name: 'Marketplace Listings', href: '/property-manager/listings', icon: Store },
+    ],
+  },
+  {
+    title: 'Tenants',
+    items: [
+      { name: 'My Tenants', href: '/property-manager/content/tenants', icon: Users },
+      { name: 'Directory', href: '/property-manager/directory', icon: Contact },
+    ],
+  },
+  {
+    title: 'Operations',
+    items: [
+      { name: 'Maintenance', href: '/property-manager/maintenance/requests', icon: Wrench },
+      { name: 'Utility Ops', href: '/property-manager/content/utilities', icon: Zap },
+      { name: 'Allocations', href: '/property-manager/content/utilities/allocations', icon: PieChart },
+    ],
+  },
+  {
+    title: 'Finance',
+    items: [
+      { name: 'Invoices', href: '/property-manager/finance/invoices', icon: FileInput },
+      { name: 'Payments', href: '/property-manager/content/payments', icon: CreditCard },
+      { name: 'Ledger', href: '/property-manager/finance/ledger', icon: Wallet },
+      { name: 'Journal Entries', href: '/property-manager/finance/journal', icon: Book },
+    ],
+  },
+  {
+    title: 'System',
+    items: [
+      { name: 'Settings', href: '/property-manager/settings', icon: Settings },
+      { name: 'Integrations', href: '/property-manager/settings/integrations', icon: Box },
+      { name: 'Role Management', href: '/property-manager/settings/roles', icon: Shield },
+      { name: 'Profile', href: '/property-manager/profile', icon: UserCircle },
+    ],
+  },
+];
 
 
 
@@ -147,46 +225,36 @@ export const routeConfig = {
 
 
   'PROPERTY_MANAGER': {
-    main: [
-      { path: '/property-manager', label: 'Dashboard Overview', icon: LayoutDashboard },
+    overview: [
+      { path: '/property-manager', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/property-manager/documents', label: 'Documents', icon: FolderOpen },
+      { path: '/property-manager/dss/upload', label: 'eSign (DSS)', icon: PenTool },
     ],
-    documents: [
-      { path: '/property-manager/dss/upload', label: 'Sign Documents', icon: FileSignature },
-    ],
-    properties: [
-      { path: '/property-manager/view-own-property', label: 'Manage Property', icon: Building2 },
-      { path: '/property-manager/listings', label: 'Marketplace Listings', icon: Building2 },
-      { path: '/property-manager/content/lease', label: 'Manage Leases', icon: Building2 },
-      // { path: '/property-manager/properties/vacancy', label: 'Vacancy Tracker', icon: Building2 },
+    portfolio: [
+      { path: '/property-manager/view-own-property', label: 'Properties', icon: Building2 },
+      { path: '/property-manager/content/lease', label: 'Leases', icon: FileText },
+      { path: '/property-manager/listings', label: 'Marketplace Listings', icon: Store },
     ],
     tenants: [
-      // { path: '/property-manager/content/invites', label: 'Invites', icon: Users },
-      // { path: '/property-manager/content/tenantapplication', label: 'Applications', icon: Users },
-      { path: '/property-manager/content/tenants', label: 'My tenants', icon: Users },
-      // { path: '/property-manager/tenants/moves', label: 'Move-ins / Move-outs', icon: Users },
-      // { path: '/property-manager/tenants/communication', label: 'Communication', icon: Users },
+      { path: '/property-manager/content/tenants', label: 'My Tenants', icon: Users },
+      { path: '/property-manager/directory', label: 'Directory', icon: Contact },
     ],
-    maintenance: [
-      { path: '/property-manager/maintenance/requests', label: 'Requests', icon: Wrench },
-      // Removed 'Assign Vendors' and 'Analytics' links as requested
+    operations: [
+      { path: '/property-manager/maintenance/requests', label: 'Maintenance', icon: Wrench },
+      { path: '/property-manager/content/utilities', label: 'Utility Ops', icon: Zap },
+      { path: '/property-manager/content/utilities/allocations', label: 'Allocations', icon: PieChart },
     ],
-    accounting: [
-      { path: '/property-manager/finance/invoices', label: 'View Invoices', icon: BarChart3 },
-      { path: '/property-manager/content/payments', label: 'Payment Records', icon: DollarSign },
-      { path: '/property-manager/finance/ledger', label: 'General Ledger', icon: Calculator },
-      { path: '/property-manager/finance/journal', label: 'Journal Entries', icon: FileText },
+    finance: [
+      { path: '/property-manager/finance/invoices', label: 'Invoices', icon: FileInput },
+      { path: '/property-manager/content/payments', label: 'Payments', icon: CreditCard },
+      { path: '/property-manager/finance/ledger', label: 'Ledger', icon: Wallet },
+      { path: '/property-manager/finance/journal', label: 'Journal Entries', icon: Book },
     ],
-    utilities: [
-      { path: '/property-manager/content/utilities', label: 'Overview', icon: Zap },
-      { path: '/property-manager/content/utilities/bills', label: 'Utility Operations', icon: FileText },
-      { path: '/property-manager/content/utilities/allocations', label: 'Allocations', icon: Calculator },
-    ],
-
-
-    settings: [
+    system: [
       { path: '/property-manager/settings', label: 'Settings', icon: Settings },
-      { path: '/property-manager/settings/integrations', label: 'Integrations', icon: Settings },
-      { path: '/property-manager/settings/roles', label: 'Role Management', icon: Settings },
+      { path: '/property-manager/settings/integrations', label: 'Integrations', icon: Box },
+      { path: '/property-manager/settings/roles', label: 'Role Management', icon: Shield },
+      { path: '/property-manager/profile', label: 'Profile', icon: UserCircle },
     ],
   },
 

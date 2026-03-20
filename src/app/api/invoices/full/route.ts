@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { FullInvoiceInput } from '@/app/data/FinanceData';
+import { InvoiceStatus } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
   const { leaseId, type }: FullInvoiceInput = await req.json();
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
   } else {
     // Utilities: sum all fixed utilities linked to lease
     const leaseUtilities = await prisma.leaseUtility.findMany({
-      where: { leaseId: leaseId },
+      where: { leaseId },
       include: { utility: true },
     });
     amount = leaseUtilities.reduce((sum, lu) => sum + (lu.utility.fixedAmount || 0), 0);
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
       type,
       totalAmount: amount,
       dueDate,
-      status: 'PENDING',
+      status: InvoiceStatus.PENDING,
     },
   });
 

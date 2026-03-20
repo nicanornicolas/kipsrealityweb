@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Ensure the tenant application exists and is approved
-    const app = await prisma.tenantapplication.findUnique({
+    const app = await prisma.tenantApplication.findUnique({
       where: { id: applicationId },
       include: { property: true, unit: true },
     });

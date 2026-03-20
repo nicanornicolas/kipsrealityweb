@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/Getcurrentuser";
 import { maintenanceService } from "@/lib/finance/maintenance-service";
 import { maintenanceListingIntegration } from "@/lib/maintenance-listing-integration";
-import { MaintenanceRequest_status } from "@prisma/client";
+import { MaintenanceRequestStatus } from "@prisma/client";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,7 +35,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
 
     // If status updated to COMPLETED, trigger financial billing
-    if (status === MaintenanceRequest_status.COMPLETED && updated.cost && Number(updated.cost) > 0) {
+    if (status === MaintenanceRequestStatus.COMPLETED && updated.cost && Number(updated.cost) > 0) {
       await maintenanceService.postMaintenanceBill(id);
     }
 

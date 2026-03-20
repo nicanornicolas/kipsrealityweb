@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/Getcurrentuser";
 import { leaseListingIntegration } from "@/lib/lease-listing-integration";
-import { Lease_leaseStatus } from "@prisma/client";
+import { LeaseStatus } from "@prisma/client";
 
 export async function PUT(
     req: NextRequest,
@@ -18,9 +18,16 @@ export async function PUT(
         const { status, reason } = await req.json();
 
         // Validate status
-        const validStatuses: Lease_leaseStatus[] = [
-            'DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'SIGNED', 
-            'ACTIVE', 'EXPIRING_SOON', 'EXPIRED', 'TERMINATED', 'RENEWED'
+        const validStatuses: LeaseStatus[] = [
+            LeaseStatus.DRAFT,
+            LeaseStatus.PENDING_APPROVAL,
+            LeaseStatus.APPROVED,
+            LeaseStatus.SIGNED,
+            LeaseStatus.ACTIVE,
+            LeaseStatus.EXPIRING_SOON,
+            LeaseStatus.EXPIRED,
+            LeaseStatus.TERMINATED,
+            LeaseStatus.RENEWED
         ];
 
         if (!validStatuses.includes(status)) {

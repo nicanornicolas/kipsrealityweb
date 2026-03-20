@@ -3,7 +3,7 @@
 
 import { prisma } from "./db";
 import { listingService } from "./listing-service";
-import { MaintenanceRequest_status } from "@prisma/client";
+import { MaintenanceRequestStatus } from "@prisma/client";
 
 /**
  * Service for integrating maintenance workflows with listing management
@@ -17,7 +17,7 @@ export class MaintenanceListingIntegration {
      */
     async handleMaintenanceStatusChange(
         maintenanceRequestId: string,
-        newStatus: MaintenanceRequest_status,
+        newStatus: MaintenanceRequestStatus,
         userId: string
     ): Promise<void> {
         try {
@@ -40,13 +40,13 @@ export class MaintenanceListingIntegration {
             const unitId = maintenanceRequest.unit.id;
 
             switch (newStatus) {
-                case MaintenanceRequest_status.IN_PROGRESS:
-                case MaintenanceRequest_status.ON_HOLD:
+                case MaintenanceRequestStatus.IN_PROGRESS:
+                case MaintenanceRequestStatus.ON_HOLD:
                     // Start maintenance mode for high-priority or unit-affecting requests
                     await this.evaluateMaintenanceModeStart(maintenanceRequest, userId);
                     break;
 
-                case MaintenanceRequest_status.COMPLETED:
+                case MaintenanceRequestStatus.COMPLETED:
                     // End maintenance mode if it was started for this request
                     await listingService.handleMaintenanceRequestCompleted(
                         maintenanceRequestId,
@@ -55,7 +55,7 @@ export class MaintenanceListingIntegration {
                     );
                     break;
 
-                case MaintenanceRequest_status.CANCELLED:
+                case MaintenanceRequestStatus.CANCELLED:
                     // End maintenance mode if it was started for this request
                     await listingService.handleMaintenanceRequestCompleted(
                         maintenanceRequestId,

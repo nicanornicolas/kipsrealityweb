@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = "force-dynamic";
 import SignUpPageContent from "@/components/website/Signup/SignUpPageContent";
 import Link from "next/link";
 

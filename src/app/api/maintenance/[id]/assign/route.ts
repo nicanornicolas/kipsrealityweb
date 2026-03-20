@@ -59,7 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         property: { select: { id: true, name: true } },
         unit: { select: { id: true, unitNumber: true, unitName: true } },
         requestedBy: { include: { user: { select: { firstName: true, lastName: true } } } },
-        vendors: { include: { user: { select: { firstName: true, lastName: true } } } },
+        vendor: { include: { user: { select: { firstName: true, lastName: true } } } },
       },
     });
 

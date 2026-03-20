@@ -5,7 +5,7 @@ import { ListingAction, ListingStatus } from "@/lib/listing-types";
 import { sendEmail } from "@/lib/mail";
 import { auditService } from "@/lib/audit-service";
 import { leaseNotificationService } from "@/lib/lease-notification-service";
-import { Lease_leaseStatus } from "@prisma/client";
+import { LeaseStatus } from "@prisma/client";
 
 export class LeaseListingIntegration {
     private listingService: ListingService;
@@ -229,8 +229,8 @@ export class LeaseListingIntegration {
      */
     async handleLeaseStatusChange(
         leaseId: string, 
-        newStatus: Lease_leaseStatus, 
-        previousStatus: Lease_leaseStatus | null,
+        newStatus: LeaseStatus, 
+        previousStatus: LeaseStatus | null,
         userId?: string
     ): Promise<void> {
         try {

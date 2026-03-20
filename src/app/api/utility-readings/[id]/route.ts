@@ -40,7 +40,7 @@ export async function GET(
       leaseUtility: {
         id: reading.leaseUtility.id,
         utility: reading.leaseUtility.utility,
-        Lease: {
+        lease: {
           id: reading.leaseUtility.lease?.id,
           tenantName: reading.leaseUtility.lease?.tenant
             ? `${reading.leaseUtility.lease.tenant.firstName ?? ""} ${reading.leaseUtility.lease.tenant.lastName ?? ""}`.trim() || "Unknown Tenant"
@@ -73,7 +73,7 @@ export async function PATCH(
     const updated = await prisma.utilityReading.update({
       where: { id: id },
       data: {
-        readingValue: readingValue,
+        readingValue,
         readingDate: readingDate ? new Date(readingDate) : undefined,
         amount
       },

@@ -37,7 +37,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             leaseUtilities: {
               include: {
                 utility: true,
-                readings: {
+                utilityReadings: {
                   orderBy: { readingDate: "desc" },
                   take: 1,
                 },

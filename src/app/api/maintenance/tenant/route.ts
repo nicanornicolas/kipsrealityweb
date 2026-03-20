@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
             } 
           } 
         },
-        vendors: { 
+        vendor: { 
           include: { 
             user: { 
               select: { 

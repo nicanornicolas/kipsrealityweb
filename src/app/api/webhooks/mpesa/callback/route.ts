@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { financeActions } from "@/lib/finance/actions";
-import { TransactionStatus, Payment, Prisma } from "@prisma/client";
+import { PaymentMethod, TransactionStatus, Payment, Prisma } from "@prisma/client";
 
 /**
  * M-Pesa Daraja API STK Push Callback Handler
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
         const updateData: Prisma.PaymentUpdateInput = {
             status: TransactionStatus.SETTLED,
             gatewayReference: metadata.mpesaReceiptNumber,
-            method: 'MPESA' as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            method: PaymentMethod.MPESA,
             paidOn: new Date()
         };
 

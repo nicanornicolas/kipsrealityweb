@@ -225,7 +225,7 @@ async function fetchMeterUsageForLeases(leaseIds: string[]): Promise<MeterUsageM
     const leaseUtilities = await prisma.leaseUtility.findMany({
         where: { leaseId: { in: leaseIds } },
         include: {
-            readings: {
+            utilityReadings: {
                 orderBy: { readingDate: "desc" },
                 take: 2, // Need 2 readings to compute delta
             },
@@ -235,7 +235,7 @@ async function fetchMeterUsageForLeases(leaseIds: string[]): Promise<MeterUsageM
     const usageMap: MeterUsageMap = {};
 
     for (const leaseUtility of leaseUtilities) {
-        const readings = leaseUtility.readings;
+        const readings = leaseUtility.utilityReadings;
 
         // SUB_METERED requires 2+ readings for valid delta
         if (readings.length < 2) {

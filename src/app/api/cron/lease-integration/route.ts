@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { leaseListingIntegration } from "@/lib/lease-listing-integration";
-import { Lease_leaseStatus } from "@prisma/client";
+import { LeaseStatus } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
     try {
@@ -69,7 +69,7 @@ async function processExpiringLeases(results: any): Promise<void> {
     const leasesToExpire = await prisma.lease.findMany({
         where: { 
             endDate: { lt: today }, 
-            leaseStatus: { in: ["ACTIVE", "EXPIRING_SOON"] } 
+            leaseStatus: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING_SOON] } 
         },
         select: { id: true, leaseStatus: true }
     });
@@ -84,13 +84,13 @@ async function processExpiringLeases(results: any): Promise<void> {
             // Update lease status
             await prisma.lease.update({
                 where: { id: lease.id },
-                data: { leaseStatus: "EXPIRED" }
+                data: { leaseStatus: LeaseStatus.EXPIRED }
             });
 
             // Handle listing integration
             await leaseListingIntegration.handleLeaseStatusChange(
                 lease.id,
-                "EXPIRED",
+                LeaseStatus.EXPIRED,
                 previousStatus,
                 'system'
             );
@@ -112,7 +112,7 @@ async function processActivatingLeases(results: any): Promise<void> {
     const leasesToActivate = await prisma.lease.findMany({
         where: {
             startDate: { lte: today },
-            leaseStatus: "SIGNED",
+            leaseStatus: LeaseStatus.SIGNED,
             landlordSignedAt: { not: null },
             tenantSignedAt: { not: null },
         },

@@ -478,7 +478,7 @@ export class PropertyDeactivationService {
   ): Promise<string[]> {
     try {
       // Get all pending applications for the units
-      const applications = await tx.tenantapplication.findMany({
+      const applications = await tx.tenantApplication.findMany({
         where: {
           unitId: { in: unitIds },
           status: {
@@ -489,7 +489,7 @@ export class PropertyDeactivationService {
 
       // Update application status to reflect property deactivation
       if (applications.length > 0) {
-        await tx.tenantapplication.updateMany({
+        await tx.tenantApplication.updateMany({
           where: {
             id: { in: applications.map((app: { id: string }) => app.id) }
           },

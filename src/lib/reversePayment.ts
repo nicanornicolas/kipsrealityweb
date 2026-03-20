@@ -1,6 +1,6 @@
 import { prisma } from "./db";
 import crypto from "crypto";
-import { invoice_status } from "@prisma/client";
+import { InvoiceStatus } from "@prisma/client";
 import { toNumber } from "./decimal-utils";
 
 export async function reversePayment(paymentId: string, userId: string, reason: string) {
@@ -46,10 +46,10 @@ export async function reversePayment(paymentId: string, userId: string, reason: 
     const balance = totalAmount - totalPaid;
     const dueDate = payment.invoice.dueDate ? new Date(payment.invoice.dueDate) : new Date();
 
-    let status: invoice_status;
-    if (totalPaid >= totalAmount - 0.01) status = invoice_status.PAID;
-    else if (new Date() > dueDate) status = invoice_status.OVERDUE;
-    else status = invoice_status.PENDING;
+    let status: InvoiceStatus;
+    if (totalPaid >= totalAmount - 0.01) status = InvoiceStatus.PAID;
+    else if (new Date() > dueDate) status = InvoiceStatus.OVERDUE;
+    else status = InvoiceStatus.PENDING;
 
     await tx.invoice.update({
       where: { id: payment.invoiceId },
