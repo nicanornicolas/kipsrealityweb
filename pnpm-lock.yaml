@@ -373,7 +373,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       vitest:
-        specifier: ^4.1.0
+        specifier: 4.1.0
         version: 4.1.0(@types/node@20.19.26)(vite@8.0.0(@types/node@20.19.26)(esbuild@0.27.1)(jiti@2.6.1)(tsx@4.21.0))
 
 packages:
