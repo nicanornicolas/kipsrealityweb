@@ -147,11 +147,11 @@ importers:
         specifier: ^9.0.2
         version: 9.0.3
       jspdf:
-        specifier: ^4.0.0
-        version: 4.0.0
+        specifier: ^4.2.0
+        version: 4.2.1
       jspdf-autotable:
         specifier: ^5.0.2
-        version: 5.0.2(jspdf@4.0.0)
+        version: 5.0.2(jspdf@4.2.1)
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
@@ -550,6 +550,10 @@ packages:
 
   '@babel/runtime@7.28.4':
     resolution: {integrity: sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/runtime@7.29.2':
+    resolution: {integrity: sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==}
     engines: {node: '>=6.9.0'}
 
   '@babel/template@7.27.2':
@@ -4498,8 +4502,8 @@ packages:
     peerDependencies:
       jspdf: ^2 || ^3
 
-  jspdf@4.0.0:
-    resolution: {integrity: sha512-w12U97Z6edKd2tXDn3LzTLg7C7QLJlx0BPfM3ecjK2BckUl9/81vZ+r5gK4/3KQdhAcEZhENUxRhtgYBj75MqQ==}
+  jspdf@4.2.1:
+    resolution: {integrity: sha512-YyAXyvnmjTbR4bHQRLzex3CuINCDlQnBqoSYyjJwTP2x9jDLuKDzy7aKUl0hgx3uhcl7xzg32agn5vlie6HIlQ==}
 
   jsx-ast-utils@3.3.5:
     resolution: {integrity: sha512-ZZow9HBI5O6EPgSJLUb8n2NKgmVWTwCvHGwFuJlMjvLFqlGG6pjirPhtdsseaLZjSibD8eegzmYpUZwoIlj2cQ==}
@@ -6827,6 +6831,8 @@ snapshots:
       '@babel/types': 7.29.0
 
   '@babel/runtime@7.28.4': {}
+
+  '@babel/runtime@7.29.2': {}
 
   '@babel/template@7.27.2':
     dependencies:
@@ -9510,7 +9516,7 @@ snapshots:
 
   canvg@3.0.11:
     dependencies:
-      '@babel/runtime': 7.28.4
+      '@babel/runtime': 7.29.2
       '@types/raf': 3.4.3
       core-js: 3.47.0
       raf: 3.4.1
@@ -10976,13 +10982,13 @@ snapshots:
       ms: 2.1.3
       semver: 7.7.3
 
-  jspdf-autotable@5.0.2(jspdf@4.0.0):
+  jspdf-autotable@5.0.2(jspdf@4.2.1):
     dependencies:
-      jspdf: 4.0.0
+      jspdf: 4.2.1
 
-  jspdf@4.0.0:
+  jspdf@4.2.1:
     dependencies:
-      '@babel/runtime': 7.28.4
+      '@babel/runtime': 7.29.2
       fast-png: 6.4.0
       fflate: 0.8.2
     optionalDependencies:
