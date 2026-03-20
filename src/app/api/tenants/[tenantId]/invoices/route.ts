@@ -58,7 +58,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ tenantId
             leaseUtilities: {
               include: {
                 utility: true,
-                readings: { orderBy: { readingDate: "desc" }, take: 1 },
+                utilityReadings: { orderBy: { readingDate: "desc" }, take: 1 },
               },
             },
           },
@@ -128,7 +128,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ tenantId
         fixedAmount: lu.utility.fixedAmount ?? 0,
         unitPrice: lu.utility.unitPrice ?? 0,
         isTenantResponsible: lu.isTenantResponsible,
-        lastReading: lu.readings?.[0]?.readingValue ?? null,
+        lastReading: lu.utilityReadings?.[0]?.readingValue ?? null,
       })),
     }));
 

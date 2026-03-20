@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { Decimal } from "@prisma/client/runtime/library";
 import { CHART_OF_ACCOUNTS } from "./types";
 import { journalService } from "./journal-service";
-import { MaintenanceRequest_status } from "@prisma/client";
+import { MaintenanceRequestStatus } from "@prisma/client";
 
 export const maintenanceService = {
     /**
@@ -29,7 +29,7 @@ export const maintenanceService = {
             });
 
             if (!request) throw new Error("Maintenance request not found");
-            if (request.status !== MaintenanceRequest_status.COMPLETED) {
+            if (request.status !== MaintenanceRequestStatus.COMPLETED) {
                 throw new Error("Only completed requests can be billed");
             }
             if (!request.cost || Number(request.cost) <= 0) {

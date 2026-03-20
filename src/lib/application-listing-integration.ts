@@ -268,7 +268,7 @@ export class ApplicationListingIntegrationService {
         return;
       }
 
-      const applications = await prisma.tenantapplication.findMany({
+      const applications = await prisma.tenantApplication.findMany({
         where: {
           id: { in: applicationIds }
         },

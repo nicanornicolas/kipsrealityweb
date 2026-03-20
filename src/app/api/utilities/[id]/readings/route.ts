@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { LeaseStatus } from "@prisma/client";
 
 export async function GET(
     _req: NextRequest,
@@ -28,7 +29,7 @@ export async function GET(
         const readings = await prisma.utilityReading.findMany({
             where: {
                 leaseUtility: {
-                    utilityId: utilityId,
+                    utilityId,
                 },
             },
             include: {
@@ -120,7 +121,7 @@ export async function POST(
         }
 
         // Check lease is active
-        if (leaseUtility.lease.leaseStatus !== "ACTIVE") {
+        if (leaseUtility.lease.leaseStatus !== LeaseStatus.ACTIVE) {
             return NextResponse.json(
                 { success: false, error: "LEASE_NOT_ACTIVE" },
                 { status: 400 }
@@ -145,7 +146,7 @@ export async function POST(
 
         // Get previous reading and validate monotonic increase
         const previous = await prisma.utilityReading.findFirst({
-            where: { leaseUtilityId: leaseUtilityId },
+            where: { leaseUtilityId },
             orderBy: { readingDate: "desc" },
         });
 
@@ -164,8 +165,8 @@ export async function POST(
         // Create reading
         const newReading = await prisma.utilityReading.create({
             data: {
-                leaseUtilityId: leaseUtilityId,
-                readingValue: readingValue,
+                leaseUtilityId,
+                readingValue,
                 readingDate: readingDate ? new Date(readingDate) : new Date(),
                 amount,
             },

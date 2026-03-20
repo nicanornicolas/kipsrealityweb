@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const updated = await prisma.leaseUtility.update({
       where: { id },
-      data: { isTenantResponsible: isTenantResponsible },
+      data: { isTenantResponsible },
     });
 
     return NextResponse.json({ success: true, data: updated });

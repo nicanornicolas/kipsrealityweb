@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     // Check if the assignment already exists
     const existing = await prisma.leaseUtility.findFirst({
-      where: { leaseId: leaseId, utilityId: utilityId },
+      where: { leaseId, utilityId },
     });
     if (existing) {
       return NextResponse.json(
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     }
 
     const assignment = await prisma.leaseUtility.create({
-      data: { leaseId: leaseId, utilityId: utilityId, isTenantResponsible: isTenantResponsible },
+      data: { leaseId, utilityId, isTenantResponsible },
       include: {
         lease: {
           include: {

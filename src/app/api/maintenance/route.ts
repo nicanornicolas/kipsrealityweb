@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
         },
         requestedBy: { include: { user: { select: { firstName: true, lastName: true, email: true } } } },
         unit: { select: { id: true, unitNumber: true, unitName: true } },
-        vendors: { include: { user: { select: { firstName: true, lastName: true } } } },
+        vendor: { include: { user: { select: { firstName: true, lastName: true } } } },
       },
     });
     return NextResponse.json(requests);

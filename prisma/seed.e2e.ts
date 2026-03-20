@@ -99,7 +99,7 @@ async function main() {
   });
 
   // 7. Create Tenant Application (required for lease foreign key)
-  const tenantApplication = await prisma.tenantapplication.create({
+  const tenantApplication = await prisma.tenantApplication.create({
     data: {
       fullName: 'Test Tenant',
       email: 'tenant@test.com',

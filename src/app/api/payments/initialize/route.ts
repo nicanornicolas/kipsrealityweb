@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/Getcurrentuser";
 import { prisma } from "@/lib/db";
 import { PaymentFactory } from "@/lib/payment/payment-factory";
 import { PaymentRequest } from "@/lib/payment/types";
-import { TransactionStatus, Prisma } from "@prisma/client";
+import { PaymentMethod, TransactionStatus, Prisma } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
     try {
@@ -83,7 +83,10 @@ export async function POST(req: NextRequest) {
 
         // 5. Log Intent to DB (Create Payment Record)
         // We create a payment record with status PENDING.
-        const paymentMethod = region === "KEN" && result.gateway === "MPESA_DIRECT" ? "MPESA" : "CREDIT_CARD";
+        const paymentMethod =
+            region === "KEN" && result.gateway === "MPESA_DIRECT"
+                ? PaymentMethod.MPESA
+                : PaymentMethod.CREDIT_CARD;
         
         const paymentData: Prisma.PaymentCreateInput = {
             invoice: { connect: { id: invoice.id } },

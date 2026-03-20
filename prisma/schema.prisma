@@ -8,72 +8,72 @@ datasource db {
 }
 
 model Organization {
-  id                     String                   @id @default(uuid())
-  name                   String
-  slug                   String                   @unique
-  logoUrl                String?                  @map("logo_url")
-  website                String?
-  phone                  String?
-  address                String?
-  isActive               Boolean                  @default(true) @map("is_active")
-  createdAt              DateTime                 @default(now()) @map("created_at")
-  updatedAt              DateTime                 @updatedAt @map("updated_at")
-  planId                 Int?
-  paystackSubaccountCode String?                  @map("paystack_subaccount_code")
-  region                 organizations_region?    @default(KEN)
-  stripeConnectId        String?                  @map("stripe_connect_id")
-  invites                Invite[]
-  listings               Listing[]
-  maintenanceRequests    MaintenanceRequest[]
-  properties             Property[]               @relation("OrganizationToProperty")
-  notaryRecords          BlockchainNotaryRecord[]
-  dssDocuments           DssDocument[]
-  dssParticipants        DssParticipant[]
-  dssWorkflowTemplates   DssWorkflowTemplate[]
-  financialEntities      FinancialEntity[]
-  users                  OrganizationUser[]
-  plan                   Plan?                    @relation(fields: [planId], references: [id])
-  vendors                Vendor[]
+  id                       String                   @id @default(uuid())
+  name                     String
+  slug                     String                   @unique
+  logoUrl                  String?                  @map("logo_url")
+  website                  String?
+  phone                    String?
+  address                  String?
+  isActive                 Boolean                  @default(true) @map("is_active")
+  createdAt                DateTime                 @default(now()) @map("created_at")
+  updatedAt                DateTime                 @updatedAt @map("updated_at")
+  planId                   Int?
+  paystackSubaccountCode   String?                  @map("paystack_subaccount_code")
+  region                   Region?                  @default(KEN)
+  stripeConnectId          String?                  @map("stripe_connect_id")
+  invites                  Invite[]
+  listings                 Listing[]
+  maintenanceRequests      MaintenanceRequest[]
+  properties               Property[]               @relation("OrganizationToProperty")
+  notaryRecords            BlockchainNotaryRecord[]
+  dssDocuments             DssDocument[]
+  dssParticipants          DssParticipant[]
+  dssWorkflowTemplates     DssWorkflowTemplate[]
+  financialEntities        FinancialEntity[]
+  users                    OrganizationUser[]
+  plan                     Plan?                    @relation(fields: [planId], references: [id])
+  vendors                  Vendor[]
 
   @@index([planId], map: "organizations_planId_fkey")
   @@map("organizations")
 }
 
 model User {
-  id                   String                @id @default(uuid())
-  email                String                @unique
-  passwordHash         String                @map("password_hash")
-  firstName            String?               @map("first_name")
-  lastName             String?               @map("last_name")
-  phone                String?               @unique // E.164 format (e.g. +2547...)
-  phoneVerified        DateTime? // Null = not verified
-  avatarUrl            String?               @map("avatar_url")
-  status               UserStatus            @default(ACTIVE)
-  lastLoginAt          DateTime?             @map("last_login_at")
-  createdAt            DateTime              @default(now()) @map("created_at")
-  updatedAt            DateTime              @updatedAt @map("updated_at")
-  emailVerified        DateTime?             @map("email_verified")
-  verificationToken    String?               @unique
-  consentMarketing     Boolean               @default(false) @map("consent_marketing")
-  consentNotifications Boolean               @default(true) @map("consent_notifications")
-  consentTransactional Boolean               @default(true) @map("consent_transactional")
-  kycStatus            users_kyc_status      @default(PENDING) @map("kyc_status")
-  paystackCustomerCode String?               @map("paystack_customer_code")
-  plaidAccessToken     String?               @map("plaid_access_token")
-  region               users_region?         @default(KEN)
-  stripeCustomerId     String?               @map("stripe_customer_id")
-  AgentInvite          AgentInvite[]
-  sentInvites          Invite[]              @relation("UserInvites")
-  leases               Lease[]
-  listings             Listing[]
-  passwordResetTokens  PasswordResetToken[]
-  tenantApplications   Tenantapplication[]
-  twoFactorEnabled     Boolean               @default(false)
-  dssParticipants      DssParticipant[]
-  listingAuditEntries  ListingAuditEntry[]
-  organizationUsers    OrganizationUser[]
-  tenantPaymentMethods TenantPaymentMethod[]
-  vendors              Vendor[]
+  id                     String                   @id @default(uuid())
+  email                  String                   @unique
+  passwordHash           String                   @map("password_hash")
+  firstName              String?                  @map("first_name")
+  lastName               String?                  @map("last_name")
+  phone                  String?                  @unique // E.164 format (e.g. +2547...)
+  phoneVerified          DateTime? // Null = not verified
+  avatarUrl              String?                  @map("avatar_url")
+  status                 UserStatus               @default(ACTIVE)
+  lastLoginAt            DateTime?                @map("last_login_at")
+  createdAt              DateTime                 @default(now()) @map("created_at")
+  updatedAt              DateTime                 @updatedAt @map("updated_at")
+  emailVerified          DateTime?                @map("email_verified")
+  verificationToken      String?                  @unique
+  consentMarketing       Boolean                  @default(false) @map("consent_marketing")
+  consentNotifications   Boolean                  @default(true) @map("consent_notifications")
+  consentTransactional   Boolean                  @default(true) @map("consent_transactional")
+  kycStatus              KycStatus                @default(PENDING) @map("kyc_status")
+  paystackCustomerCode   String?                  @map("paystack_customer_code")
+  plaidAccessToken       String?                  @map("plaid_access_token")
+  region                 Region?                  @default(KEN)
+  stripeCustomerId       String?                  @map("stripe_customer_id")
+  AgentInvite            AgentInvite[]
+  sentInvites            Invite[]                 @relation("UserInvites")
+  leases                 Lease[]
+  listings               Listing[]
+  passwordResetTokens    PasswordResetToken[]
+  tenantApplications     TenantApplication[]
+  twoFactorEnabled       Boolean                  @default(false)
+  dssParticipants        DssParticipant[]
+  listingAuditEntries    ListingAuditEntry[]
+  organizationUsers      OrganizationUser[]
+  tenantPaymentMethods  TenantPaymentMethod[]
+  vendors                Vendor[]
 
   // Relation to OTPs
   otps Otp[]
@@ -85,7 +85,7 @@ model OrganizationUser {
   id                String                  @id @default(uuid())
   userId            String                  @map("user_id")
   organizationId    String                  @map("organization_id")
-  role              organization_users_role
+  role              OrganizationUserRole
   createdAt         DateTime                @default(now()) @map("created_at")
   adminActions      AdminAction[]           @relation("AdminActionsByAdmin")
   targetActions     AdminAction[]           @relation("AdminActionsTarget")
@@ -139,7 +139,7 @@ model Invite {
   id             String       @id @default(cuid())
   email          String
   token          String       @unique
-  role           Invite_role
+  role           InviteRole
   organizationId String
   invitedById    String?
   expiresAt      DateTime
@@ -390,7 +390,7 @@ model Property {
   organization           Organization?           @relation("OrganizationToProperty", fields: [organizationId], references: [id])
   propertyType           PropertyType?           @relation(fields: [propertyTypeId], references: [id])
   images                 PropertyImage[]
-  tenantapplications     Tenantapplication[]
+  tenantApplications     TenantApplication[]
   townhouseDetail        TownhouseDetail?
   units                  Unit[]
   DssDocument            DssDocument[]
@@ -510,7 +510,7 @@ model Unit {
   squareFootage       Float?               @map("square_footage")
   leases              Lease[]
   maintenanceRequests MaintenanceRequest[]
-  tenantApplications  Tenantapplication[]
+  tenantApplications  TenantApplication[]
   listing             Listing?             @relation("UnitListing", fields: [listingId], references: [id])
   property            Property             @relation(fields: [propertyId], references: [id])
   DssDocument         DssDocument[]
@@ -530,7 +530,7 @@ model Appliance {
   units       Unit[]   @relation("UnitAppliances")
 }
 
-model Tenantapplication {
+model TenantApplication {
   id                 String            @id @default(uuid())
   fullName           String
   email              String
@@ -569,6 +569,7 @@ model Tenantapplication {
   @@index([propertyId])
   @@index([userId])
   @@index([unitId], map: "Tenantapplication_unitId_fkey")
+  @@map("Tenantapplication")
 }
 
 model Lease {
@@ -581,7 +582,7 @@ model Lease {
   endDate                  DateTime
   rentAmount               Float
   securityDeposit          Float?
-  leaseStatus              Lease_leaseStatus?      @default(DRAFT)
+  leaseStatus              LeaseStatus?            @default(DRAFT)
   createdAt                DateTime                @default(now())
   updatedAt                DateTime                @updatedAt
   earlyTerminationFee      Float?
@@ -605,18 +606,18 @@ model Lease {
   renewalRentIncrease      Float?
   autoRenew                Boolean?                @default(false)
   hasRentEscalation        Boolean?                @default(false)
-  escalationType           Lease_escalationType?
+  escalationType           LeaseEscalationType?
   escalationRate           Float?
   escalationFrequency      String?                 @db.VarChar(20)
   nextEscalationDate       DateTime?               @db.DateTime(0)
   documentVersion          Int?                    @default(1)
   lastDocumentUpdate       DateTime?               @db.DateTime(0)
   complianceCheckDate      DateTime?               @db.DateTime(0)
-  complianceStatus         Lease_complianceStatus? @default(PENDING)
+  complianceStatus         LeaseComplianceStatus? @default(PENDING)
   complianceNotes          String?                 @db.Text
   tenantSignedAt           DateTime?
   invites                  Invite[]                @relation("LeaseInvites")
-  application              Tenantapplication       @relation(fields: [applicationId], references: [id])
+  application              TenantApplication       @relation(fields: [applicationId], references: [id])
   property                 Property                @relation(fields: [propertyId], references: [id])
   tenant                   User?                   @relation(fields: [tenantId], references: [id])
   unit                     Unit                    @relation(fields: [unitId], references: [id])
@@ -641,12 +642,12 @@ model Lease {
 model Invoice {
   id                 String              @id @default(uuid())
   leaseId            String              @map("lease_id")
-  type               invoice_type
+  type               InvoiceType
   totalAmount        Float               @map("amount")
   amountPaid         Float               @default(0) @map("amount_paid")
   balance            Float               @default(0)
   dueDate            DateTime            @db.DateTime(0)
-  status             invoice_status?     @default(PENDING)
+  status             InvoiceStatus?      @default(PENDING)
   postingStatus      PostingStatus       @default(PENDING) @map("posting_status")
   journalEntryId     String?             @unique @map("journal_entry_id")
   utilityBillId      String?             @map("utility_bill_id")
@@ -679,33 +680,33 @@ model InvoiceItem {
 }
 
 model Payment {
-  id               String            @id @default(uuid())
-  invoiceId        String            @map("invoice_id")
-  amount           Decimal           @db.Decimal(10, 2)
-  method           payment_method
-  reference        String?           @db.VarChar(100)
-  paidOn           DateTime?         @default(now()) @db.DateTime(0)
-  postingStatus    PostingStatus     @default(PENDING) @map("posting_status")
-  journalEntryId   String?           @unique @map("journal_entry_id")
-  createdAt        DateTime?         @default(now()) @db.DateTime(0)
-  updatedAt        DateTime?         @default(now()) @db.DateTime(0)
-  isReversed       Boolean           @default(false) @map("is_reversed")
-  reversedAt       DateTime?         @map("reversed_at") @db.DateTime(0)
-  reversalReason   String?           @map("reversal_reason") @db.VarChar(255)
-  reversedBy       String?           @map("reversed_by") @db.VarChar(100)
-  amountSubunits   BigInt?           @map("amount_subunits")
-  currency         String            @default("KES") @db.VarChar(3)
-  gateway          payment_gateway   @default(MANUAL)
-  gatewayReference String?           @map("gateway_reference")
-  status           payment_status    @default(PENDING)
-  type             payment_type      @default(RENT)
-  metadata         Json?
-  invoice          Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  journalEntry     JournalEntry?     @relation(fields: [journalEntryId], references: [id])
-  paymentReversals PaymentReversal[]
-  receipts         Receipt[]
+  id                String            @id @default(uuid())
+  invoiceId         String            @map("invoice_id")
+  amount            Decimal           @db.Decimal(10, 2)
+  method            PaymentMethod
+  reference         String?           @db.VarChar(100)
+  paidOn            DateTime?         @default(now()) @db.DateTime(0)
+  postingStatus     PostingStatus     @default(PENDING) @map("posting_status")
+  journalEntryId    String?           @unique @map("journal_entry_id")
+  createdAt         DateTime?         @default(now()) @db.DateTime(0)
+  updatedAt         DateTime?         @default(now()) @db.DateTime(0)
+  isReversed        Boolean           @default(false) @map("is_reversed")
+  reversedAt        DateTime?         @map("reversed_at") @db.DateTime(0)
+  reversalReason    String?           @map("reversal_reason") @db.VarChar(255)
+  reversedBy        String?           @map("reversed_by") @db.VarChar(100)
+  amountSubunits    BigInt?           @map("amount_subunits")
+  currency          String            @default("KES") @db.VarChar(3)
+  gateway           PaymentGateway    @default(MANUAL)
+  gatewayReference  String?           @map("gateway_reference")
+  status            TransactionStatus @default(PENDING)
+  type              TransactionType   @default(RENT)
+  metadata          Json?
+  invoice           Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  journalEntry      JournalEntry?     @relation(fields: [journalEntryId], references: [id])
+  paymentReversals  PaymentReversal[]
+  receipts          Receipt[]
 
-  riskScore Int? @map("risk_score") // Plaid Signal Score
+  riskScore        Int?           @map("risk_score") // Plaid Signal Score
 
   @@index([invoiceId])
   @@index([gatewayReference])
@@ -714,15 +715,15 @@ model Payment {
 }
 
 model PaymentReversal {
-  id         String   @id @db.Char(36)
-  paymentId  String   @map("payment_id") @db.Char(36)
-  invoiceId  String   @map("invoice_id") @db.Char(36)
-  amount     Float    @db.Float
-  reason     String?  @db.VarChar(255)
-  createdAt  DateTime @default(now()) @map("created_at") @db.DateTime(0)
-  reversedBy String?  @map("reversed_by") @db.VarChar(100)
-  metadata   Json?
-  payment    Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reversal_payment")
+  id          String   @id @db.Char(36)
+  paymentId   String   @map("payment_id") @db.Char(36)
+  invoiceId   String   @map("invoice_id") @db.Char(36)
+  amount      Float    @db.Float
+  reason      String?  @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  reversedBy  String?  @map("reversed_by") @db.VarChar(100)
+  metadata    Json?
+  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reversal_payment")
 
   @@index([paymentId], map: "idx_payment_id")
   @@map("payment_reversal")
@@ -747,7 +748,7 @@ model Receipt {
 model Utility {
   id            String          @id @default(dbgenerated("(uuid())")) @db.Char(36)
   name          String          @unique(map: "name") @db.VarChar(100)
-  type          utility_type
+  type          UtilityType
   unitPrice     Float?          @db.Float
   fixedAmount   Float?          @db.Float
   createdAt     DateTime?       @default(now()) @db.DateTime(0)
@@ -759,15 +760,15 @@ model Utility {
 }
 
 model LeaseUtility {
-  id                  String            @id @default(uuid())
-  leaseId             String            @map("lease_id")
-  utilityId           String            @map("utility_id") @db.Char(36)
-  isTenantResponsible Boolean?          @default(true) @map("is_tenant_responsible")
-  createdAt           DateTime?         @default(now()) @db.DateTime(0)
-  updatedAt           DateTime?         @default(now()) @db.DateTime(0)
-  lease               Lease             @relation(fields: [leaseId], references: [id], onDelete: Cascade)
-  utility             Utility           @relation(fields: [utilityId], references: [id], onDelete: Cascade)
-  readings            UtilityReading[]
+  id                    String            @id @default(uuid())
+  leaseId               String            @map("lease_id")
+  utilityId             String            @map("utility_id") @db.Char(36)
+  isTenantResponsible   Boolean?          @default(true) @map("is_tenant_responsible")
+  createdAt             DateTime?         @default(now()) @db.DateTime(0)
+  updatedAt             DateTime?         @default(now()) @db.DateTime(0)
+  lease                 Lease             @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  utility               Utility           @relation(fields: [utilityId], references: [id], onDelete: Cascade)
+  utilityReadings       UtilityReading[]
 
   @@index([leaseId])
   @@index([utilityId])
@@ -775,14 +776,14 @@ model LeaseUtility {
 }
 
 model UtilityReading {
-  id             String       @id @default(uuid())
-  leaseUtilityId String       @map("lease_utility_id") @db.Char(36)
-  readingValue   Float        @map("reading_value") @db.Float
-  readingDate    DateTime?    @default(now()) @db.DateTime(0)
-  amount         Float?       @db.Float
-  createdAt      DateTime?    @default(now()) @db.DateTime(0)
-  updatedAt      DateTime?    @default(now()) @db.DateTime(0)
-  leaseUtility   LeaseUtility @relation(fields: [leaseUtilityId], references: [id], onDelete: Cascade)
+  id               String        @id @default(uuid())
+  leaseUtilityId   String        @map("lease_utility_id") @db.Char(36)
+  readingValue     Float         @map("reading_value") @db.Float
+  readingDate      DateTime?     @default(now()) @db.DateTime(0)
+  amount           Float?        @db.Float
+  createdAt        DateTime?     @default(now()) @db.DateTime(0)
+  updatedAt        DateTime?     @default(now()) @db.DateTime(0)
+  leaseUtility     LeaseUtility @relation(fields: [leaseUtilityId], references: [id], onDelete: Cascade)
 
   @@index([leaseUtilityId])
   @@map("utility_reading")
@@ -972,7 +973,7 @@ model MaintenanceRequest {
   title              String
   description        String
   priority           Priority                  @default(NORMAL)
-  status             MaintenanceRequest_status @default(OPEN)
+  status             MaintenanceRequestStatus  @default(OPEN)
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
   category           RequestCategory           @default(STANDARD)
@@ -989,7 +990,7 @@ model MaintenanceRequest {
   property           Property                  @relation("PropertyMaintenanceRequests", fields: [propertyId], references: [id])
   requestedBy        OrganizationUser          @relation("RequestCreator", fields: [requestedById], references: [id])
   unit               Unit?                     @relation(fields: [unitId], references: [id])
-  vendors            Vendor?                   @relation(fields: [assignedVendorId], references: [id], onUpdate: NoAction, map: "fk_MaintenanceRequest_assignedVendorId")
+  vendor             Vendor?                   @relation(fields: [assignedVendorId], references: [id], onUpdate: NoAction, map: "fk_MaintenanceRequest_assignedVendorId")
 
   @@index([organizationId])
   @@index([propertyId])
@@ -1082,17 +1083,17 @@ model ServiceType {
   serviceMarketplace ServiceMarketplace[]
 }
 
-model categories {
+model ServiceCategory {
   id       Int        @id @default(autoincrement())
   name     String
   tagline  String
   color    String
-  services services[]
+  services Service[]
 
   @@map("categories")
 }
 
-model services {
+model Service {
   id          Int        @id @default(autoincrement())
   categoryId  Int        @map("category_id")
   name        String
@@ -1100,7 +1101,7 @@ model services {
   features    Json
   impact      String
   icon        String
-  categories  categories @relation(fields: [categoryId], references: [id])
+  category    ServiceCategory @relation(fields: [categoryId], references: [id])
 
   @@index([categoryId])
   @@map("services")
@@ -1271,7 +1272,7 @@ model SidebarItem {
   featureId   Int?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
-  role        SidebarItem_role
+  role        SidebarItemRole
   feature     Feature?         @relation(fields: [featureId], references: [id])
   plans       Plan[]           @relation("SidebarItemPlans")
 
@@ -1297,12 +1298,12 @@ model NavbarItem {
 model LeaseAmendment {
   id             String                       @id
   leaseId        String
-  amendmentType  LeaseAmendment_amendmentType
+  amendmentType  LeaseAmendmentType
   effectiveDate  DateTime                     @db.DateTime(0)
   description    String?                      @db.Text
   changes        Json?
   previousValues Json?
-  status         LeaseAmendment_status?       @default(PENDING)
+  status         LeaseAmendmentStatus?        @default(PENDING)
   createdBy      String
   createdAt      DateTime?                    @default(now()) @db.DateTime(0)
   approvedBy     String?
@@ -1333,7 +1334,7 @@ model LeaseAuditLog {
 model LeaseDocument {
   id           String                     @id
   leaseId      String
-  documentType LeaseDocument_documentType
+  documentType LeaseDocumentType
   fileName     String                     @db.Text
   fileUrl      String                     @db.Text
   fileSize     Int?
@@ -1353,14 +1354,14 @@ model LeaseDocument {
 model LeaseNotification {
   id               String                             @id
   leaseId          String
-  notificationType LeaseNotification_notificationType
+  notificationType LeaseNotificationType
   recipientEmail   String
   recipientRole    String?                            @db.VarChar(20)
   subject          String?                            @db.Text
   message          String?                            @db.Text
   scheduledFor     DateTime                           @db.DateTime(0)
   sentAt           DateTime?                          @db.DateTime(0)
-  status           LeaseNotification_status?          @default(PENDING)
+  status           LeaseNotificationStatus?           @default(PENDING)
   metadata         Json?
   createdAt        DateTime?                          @default(now()) @db.DateTime(0)
   Lease            Lease                              @relation(fields: [leaseId], references: [id], onDelete: Cascade)
@@ -1372,18 +1373,18 @@ model LeaseNotification {
 model LeaseRenewal {
   id                 String                       @id
   leaseId            String
-  renewalType        LeaseRenewal_renewalType
+  renewalType        LeaseRenewalType
   oldEndDate         DateTime                     @db.DateTime(0)
   newEndDate         DateTime                     @db.DateTime(0)
   oldRentAmount      Float                        @db.Float
   newRentAmount      Float                        @db.Float
   notificationSentAt DateTime?                    @db.DateTime(0)
   tenantResponseAt   DateTime?                    @db.DateTime(0)
-  tenantResponse     LeaseRenewal_tenantResponse?
+  tenantResponse     LeaseRenewalTenantResponse?
   negotiationNotes   String?                      @db.Text
   executedAt         DateTime?                    @db.DateTime(0)
   executedBy         String?
-  status             LeaseRenewal_status?         @default(PENDING)
+  status             LeaseRenewalStatus?          @default(PENDING)
   createdAt          DateTime?                    @default(now()) @db.DateTime(0)
   Lease              Lease                        @relation(fields: [leaseId], references: [id], onDelete: Cascade)
 
@@ -1396,7 +1397,7 @@ model RentEscalation {
   effectiveDate   DateTime                      @db.DateTime(0)
   previousRent    Float                         @db.Float
   newRent         Float                         @db.Float
-  escalationType  RentEscalation_escalationType
+  escalationType  RentEscalationType
   escalationRate  Float?                        @db.Float
   calculationNote String?                       @db.Text
   appliedAt       DateTime?                     @default(now()) @db.DateTime(0)
@@ -1433,9 +1434,9 @@ model ListingAuditEntry {
   id             String              @id @default(uuid())
   unitId         String              @map("unit_id")
   listingId      String?             @map("listing_id")
-  action         ListingAction_enum
-  previousStatus ListingStatus_enum? @map("previous_status")
-  newStatus      ListingStatus_enum  @map("new_status")
+  action         ListingActionType
+  previousStatus ListingStatusCode?  @map("previous_status")
+  newStatus      ListingStatusCode   @map("new_status")
   userId         String              @map("user_id")
   timestamp      DateTime            @default(now())
   reason         String?
@@ -1454,16 +1455,16 @@ model ListingAuditEntry {
 }
 
 model TenantPaymentMethod {
-  id                    String   @id
-  userId                String   @map("user_id")
-  type                  String
-  plaidAccessToken      String?  @map("plaid_access_token")
-  plaidAccountId        String?  @map("plaid_account_id")
-  stripePaymentMethodId String   @map("stripe_payment_method_id")
-  isDefault             Boolean  @default(false) @map("is_default")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @map("updated_at")
-  users                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                       String   @id
+  userId                   String   @map("user_id")
+  type                     String
+  plaidAccessToken         String?  @map("plaid_access_token")
+  plaidAccountId           String?  @map("plaid_account_id")
+  stripePaymentMethodId    String   @map("stripe_payment_method_id")
+  isDefault                Boolean  @default(false) @map("is_default")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @map("updated_at")
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("tenant_payment_methods")
@@ -1496,19 +1497,19 @@ enum ApplicationStatus {
   UNDER_REVIEW
 }
 
-enum invoice_type {
+enum InvoiceType {
   RENT
   UTILITY
   MAINTENANCE
   DAMAGE
 }
 
-enum utility_type {
+enum UtilityType {
   FIXED
   METERED
 }
 
-enum payment_method {
+enum PaymentMethod {
   CASH
   BANK
   CREDIT_CARD
@@ -1519,13 +1520,15 @@ enum payment_method {
   MANUAL
 }
 
-enum invoice_status {
+enum InvoiceStatus {
+  DRAFT
   PENDING
   PAID
   OVERDUE
+  CANCELLED
 }
 
-enum MaintenanceRequest_status {
+enum MaintenanceRequestStatus {
   OPEN
   IN_PROGRESS
   ON_HOLD
@@ -1534,7 +1537,7 @@ enum MaintenanceRequest_status {
   REJECTED
 }
 
-enum LeaseAmendment_amendmentType {
+enum LeaseAmendmentType {
   RENT_CHANGE
   TERM_EXTENSION
   UTILITY_CHANGE
@@ -1543,7 +1546,7 @@ enum LeaseAmendment_amendmentType {
   OTHER
 }
 
-enum LeaseDocument_documentType {
+enum LeaseDocumentType {
   LEASE_AGREEMENT
   ADDENDUM
   AMENDMENT
@@ -1554,27 +1557,27 @@ enum LeaseDocument_documentType {
   OTHER
 }
 
-enum LeaseRenewal_renewalType {
+enum LeaseRenewalType {
   AUTO
   MANUAL
   RENEGOTIATED
 }
 
-enum RentEscalation_escalationType {
+enum RentEscalationType {
   FIXED
   PERCENTAGE
   INDEX
   MARKET
 }
 
-enum LeaseAmendment_status {
+enum LeaseAmendmentStatus {
   PENDING
   APPROVED
   REJECTED
   EXECUTED
 }
 
-enum Lease_leaseStatus {
+enum LeaseStatus {
   DRAFT
   PENDING_APPROVAL
   APPROVED
@@ -1586,21 +1589,21 @@ enum Lease_leaseStatus {
   RENEWED
 }
 
-enum LeaseNotification_status {
+enum LeaseNotificationStatus {
   PENDING
   SENT
   FAILED
   CANCELLED
 }
 
-enum LeaseRenewal_tenantResponse {
+enum LeaseRenewalTenantResponse {
   ACCEPT
   DECLINE
   NEGOTIATE
   NO_RESPONSE
 }
 
-enum LeaseRenewal_status {
+enum LeaseRenewalStatus {
   PENDING
   NOTICE_SENT
   TENANT_RESPONDED
@@ -1610,21 +1613,21 @@ enum LeaseRenewal_status {
   DECLINED
 }
 
-enum Lease_escalationType {
+enum LeaseEscalationType {
   FIXED
   PERCENTAGE
   INDEX
   MARKET
 }
 
-enum Lease_complianceStatus {
+enum LeaseComplianceStatus {
   PENDING
   COMPLIANT
   NON_COMPLIANT
   UNDER_REVIEW
 }
 
-enum LeaseNotification_notificationType {
+enum LeaseNotificationType {
   RENEWAL_REMINDER
   EXPIRY_WARNING
   RENT_DUE
@@ -1747,7 +1750,7 @@ enum PostingStatus {
   REVERSED
 }
 
-enum Invite_role {
+enum InviteRole {
   SYSTEM_ADMIN
   PROPERTY_MANAGER
   TENANT
@@ -1756,7 +1759,7 @@ enum Invite_role {
   ALL
 }
 
-enum organization_users_role {
+enum OrganizationUserRole {
   SYSTEM_ADMIN
   PROPERTY_MANAGER
   TENANT
@@ -1770,7 +1773,7 @@ enum OtpType {
   PHONE_VERIFICATION
 }
 
-enum SidebarItem_role {
+enum SidebarItemRole {
   SYSTEM_ADMIN
   PROPERTY_MANAGER
   TENANT
@@ -1779,7 +1782,7 @@ enum SidebarItem_role {
   ALL
 }
 
-enum ListingStatus_enum {
+enum ListingStatusCode {
   PRIVATE
   ACTIVE
   SUSPENDED
@@ -1787,7 +1790,7 @@ enum ListingStatus_enum {
   EXPIRED
 }
 
-enum ListingAction_enum {
+enum ListingActionType {
   CREATE
   REMOVE
   SUSPEND
@@ -1795,48 +1798,6 @@ enum ListingAction_enum {
   UPDATE
   EXPIRE
 }
-
-enum organizations_region {
-  USA
-  KEN
-}
-
-enum payment_gateway {
-  STRIPE
-  PLAID
-  PAYSTACK
-  MPESA_DIRECT
-  MANUAL
-}
-
-enum users_kyc_status {
-  PENDING
-  VERIFIED
-  FAILED
-}
-
-enum payment_status {
-  PENDING
-  AUTHORIZED
-  SETTLED
-  FAILED
-  DISPUTED
-  REVERSED
-}
-
-enum users_region {
-  USA
-  KEN
-}
-
-enum payment_type {
-  RENT
-  DEPOSIT
-  SAAS_FEE
-  MAINTENANCE
-}
-
-// -------PAYMENT INFRASTRUCTURE ENUMS--------
 
 enum Region {
   USA

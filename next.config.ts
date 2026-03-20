@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* 
-   * 1. Output Standalone 
-   * Essential for VPS/Docker deployments. 
+  /*
+   * 1. Output Standalone
+   * Essential for VPS/Docker deployments.
    * It creates a small 'standalone' folder with only necessary files for production.
    */
   output: "standalone",
@@ -16,9 +16,9 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    // ❌ REMOVED: 'domains' (It is deprecated in Next.js 14+)
+    // REMOVED: 'domains' (It is deprecated in Next.js 14+)
 
-    // ✅ NEW: Strict Remote Patterns
+    // NEW: Strict Remote Patterns
     remotePatterns: [
       // External Image Providers
       {
@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "i.postimg.cc",
-        pathname: "/**"
+        pathname: "/**",
       },
 
       // Your Production Domain (If you serve uploaded images from the server)

@@ -30,7 +30,7 @@ export async function GET() {
       leaseUtility: {
         id: r.leaseUtilityId,
         leaseUtility: r.leaseUtility,
-        Lease: {
+        lease: {
           id: r.leaseUtility.lease?.id,
           tenantName: r.leaseUtility.lease?.tenant
             ? `${r.leaseUtility.lease.tenant.firstName ?? ""} ${r.leaseUtility.lease.tenant.lastName ?? ""}`.trim() || "Unknown Tenant"
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     const previous = await prisma.utilityReading.findFirst({
-      where: { leaseUtilityId: leaseUtilityId },
+      where: { leaseUtilityId },
       orderBy: { readingDate: "desc" }
     });
 
@@ -95,8 +95,8 @@ export async function POST(req: NextRequest) {
 
     const newReading = await prisma.utilityReading.create({
       data: {
-        leaseUtilityId: leaseUtilityId,
-        readingValue: readingValue,
+        leaseUtilityId,
+        readingValue,
         readingDate: readingDate ? new Date(readingDate) : new Date(),
         amount,
       },

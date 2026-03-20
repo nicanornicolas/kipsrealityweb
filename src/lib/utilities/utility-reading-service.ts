@@ -2,7 +2,7 @@
 // No billing, no invoices, no accounting. Just readings.
 
 import { prisma } from "@/lib/db";
-import { Lease_leaseStatus } from "@prisma/client";
+import { LeaseStatus } from "@prisma/client";
 import {
     ReadingError,
     type CreateUtilityReadingInput,
@@ -51,7 +51,7 @@ export async function createReading(
     }
 
     // 3. Enforce lease is active
-    if (leaseUtility.lease.leaseStatus !== Lease_leaseStatus.ACTIVE) {
+    if (leaseUtility.lease.leaseStatus !== LeaseStatus.ACTIVE) {
         return { success: false, error: ReadingError.LEASE_NOT_ACTIVE };
     }
 
@@ -62,7 +62,7 @@ export async function createReading(
 
     // 5. Fetch previous reading (latest by date)
     const previousReading = await prisma.utilityReading.findFirst({
-        where: { leaseUtilityId: leaseUtilityId },
+        where: { leaseUtilityId },
         orderBy: { readingDate: "desc" },
         select: { readingValue: true },
     });
@@ -80,8 +80,8 @@ export async function createReading(
     const newReading = await prisma.$transaction(async (tx) => {
         return tx.utilityReading.create({
             data: {
-                leaseUtilityId: leaseUtilityId,
-                readingValue: readingValue,
+                leaseUtilityId,
+                readingValue,
                 readingDate: readingDate ?? new Date(),
                 amount: null, // readings are data, not money
             },
@@ -99,7 +99,7 @@ export async function getReadingsForLeaseUtility(
     leaseUtilityId: string
 ): Promise<{ readings: UtilityReadingDTO[] }> {
     const readings = await prisma.utilityReading.findMany({
-        where: { leaseUtilityId: leaseUtilityId },
+        where: { leaseUtilityId },
         orderBy: { readingDate: "asc" },
     });
 
