@@ -365,7 +365,7 @@ describe('Bulk Operations Unit Tests', () => {
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('TRANSACTION_FAILED')
-      expect(result.message).toContain('rollback also failed')
+      expect(result.message).toContain('rolled back due to high failure rate')
     })
 
     it('should handle empty operations array', async () => {
