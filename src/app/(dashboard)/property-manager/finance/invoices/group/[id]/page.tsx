@@ -5,8 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { fetchInvoices } from "@/lib/Invoice";
 import { GroupedInvoice, Invoice, Payment } from "@/app/data/FinanceData";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import Link from "next/link";
 
 interface LeaseInfo {
@@ -97,11 +95,14 @@ export default function LeaseInvoiceGroupPage() {
   }, [groupedInvoices]);
 
   // Download PDF function
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
     if (groupedInvoices.length === 0) {
       toast.error("No invoices to download");
       return;
     }
+
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
 
     const doc = new jsPDF();
     doc.setFontSize(18);

@@ -23,8 +23,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import Link from "next/link";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { GenerateBillModal } from "./GenerateBillModal";
 import { AddReadingModal } from "../[id]/readings/AddReadingModal";
 
@@ -234,7 +232,7 @@ export default function UtilityOperationsPage() {
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
-    const handleExportPDF = () => {
+    const handleExportPDF = async () => {
         if (filteredBills.length === 0) {
             toast.error("No Data to Export", {
                 description: "There are no bills matching your current filters."
@@ -246,9 +244,11 @@ export default function UtilityOperationsPage() {
             description: "Please wait while we prepare your document."
         });
 
-        setTimeout(() => {
-            try {
-                const doc = new jsPDF();
+        try {
+            const { default: jsPDF } = await import("jspdf");
+            const { default: autoTable } = await import("jspdf-autotable");
+            
+            const doc = new jsPDF();
                 doc.setFontSize(20);
                 doc.setTextColor(0, 59, 115);
                 doc.text("RentFlow360", 14, 22);
@@ -280,12 +280,11 @@ export default function UtilityOperationsPage() {
                 doc.save(`bills_report_${new Date().toISOString().split('T')[0]}.pdf`);
                 toast.dismiss(toastId);
                 toast.success("Export Complete", { description: "Your PDF report has been downloaded." });
-            } catch (error) {
+        } catch (error) {
                 console.error("PDF Export failed", error);
                 toast.dismiss(toastId);
                 toast.error("Export Failed", { description: "An error occurred while generating the PDF." });
-            }
-        }, 500);
+        }
     };
 
     // ----------------------------------------------------------------------

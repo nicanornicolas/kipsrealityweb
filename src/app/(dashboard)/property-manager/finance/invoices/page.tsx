@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { fetchInvoices } from "@/lib/Invoice";
 import { GroupedInvoice } from "@/app/data/FinanceData";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import CreateInvoiceModal from "@/components/Dashboard/propertymanagerdash/CreateInvoiceModal";
 
 export default function InvoicesPage() {
@@ -35,11 +33,14 @@ export default function InvoicesPage() {
   }, [status, type]);
 
   // --- PDF Download function ---
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
     if (invoiceGroups.length === 0) {
       toast.error("No invoices to download");
       return;
     }
+
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
 
     const doc = new jsPDF();
     doc.setFontSize(18);

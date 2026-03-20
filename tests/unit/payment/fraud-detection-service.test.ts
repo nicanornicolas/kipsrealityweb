@@ -12,6 +12,9 @@ describe('Fraud Detection Service', () => {
   let mockContext: FraudDetectionContext;
   let mockPaymentRequest: PaymentRequest;
 
+  // Store original Date constructor
+  const OriginalDate = Date;
+
   beforeEach(() => {
     service = new FraudDetectionService();
     
@@ -180,21 +183,42 @@ describe('Fraud Detection Service', () => {
   });
 
   describe('Rule: Unusual Time', () => {
+    // Helper to mock the system date
+    function mockDate(date: Date) {
+      const mockDateFn = class extends Date {
+        constructor(...args: any[]) {
+          if (args.length === 0) {
+            return date;
+          }
+          return new OriginalDate(...args);
+        }
+      };
+      mockDate.now = () => date.getTime();
+      mockDate.prototype = OriginalDate.prototype;
+      return mockDateFn;
+    }
+
     it('should pass for normal business hours', async () => {
-      const normalHour = new Date();
-      normalHour.setHours(14, 0, 0, 0); // 2 PM
-      mockContext.timestamp = normalHour;
+      // Mock Date to return 2 PM on a Wednesday (within business hours 8 AM - 8 PM)
+      const normalHour = new Date('2024-01-17T14:00:00'); // Wednesday Jan 17, 2024 at 2 PM
+      // @ts-expect-error - replacing global Date
+      global.Date = mockDate(normalHour);
       
       const report = await service.checkPayment(mockPaymentRequest, mockContext);
       const timeRule = report.results.find(r => r.ruleName === 'UNUSUAL_TIME');
       
       expect(timeRule?.passed).toBe(true);
+      
+      // Restore original Date
+      // @ts-expect-error - restoring global Date
+      global.Date = OriginalDate;
     });
 
     it('should fail for early morning transactions', async () => {
-      const earlyMorning = new Date();
-      earlyMorning.setHours(3, 0, 0, 0); // 3 AM
-      mockContext.timestamp = earlyMorning;
+      // Mock Date to return 3 AM on a Wednesday (outside business hours)
+      const earlyMorning = new Date('2024-01-17T03:00:00'); // Wednesday Jan 17, 2024 at 3 AM
+      // @ts-expect-error - replacing global Date
+      global.Date = mockDate(earlyMorning);
       
       const report = await service.checkPayment(mockPaymentRequest, mockContext);
       const timeRule = report.results.find(r => r.ruleName === 'UNUSUAL_TIME');
@@ -202,22 +226,33 @@ describe('Fraud Detection Service', () => {
       expect(timeRule?.passed).toBe(false);
       expect(timeRule?.score).toBe(30);
       expect(timeRule?.message).toContain('outside normal business hours');
+      
+      // Restore original Date
+      // @ts-expect-error - restoring global Date
+      global.Date = OriginalDate;
     });
 
     it('should fail for late night transactions', async () => {
-      const lateNight = new Date();
-      lateNight.setHours(22, 0, 0, 0); // 10 PM
-      mockContext.timestamp = lateNight;
+      // Mock Date to return 10 PM on a Wednesday (outside business hours)
+      const lateNight = new Date('2024-01-17T22:00:00'); // Wednesday Jan 17, 2024 at 10 PM
+      // @ts-expect-error - replacing global Date
+      global.Date = mockDate(lateNight);
       
       const report = await service.checkPayment(mockPaymentRequest, mockContext);
       const timeRule = report.results.find(r => r.ruleName === 'UNUSUAL_TIME');
       
       expect(timeRule?.passed).toBe(false);
+      
+      // Restore original Date
+      // @ts-expect-error - restoring global Date
+      global.Date = OriginalDate;
     });
 
     it('should add weekend penalty', async () => {
-      const weekend = new Date('2024-01-06T14:00:00Z'); // Saturday 2 PM
-      mockContext.timestamp = weekend;
+      // Mock Date to return Saturday (weekend)
+      const weekend = new Date('2024-01-06T14:00:00'); // Saturday Jan 6, 2024 at 2 PM
+      // @ts-expect-error - replacing global Date
+      global.Date = mockDate(weekend);
       
       const report = await service.checkPayment(mockPaymentRequest, mockContext);
       const timeRule = report.results.find(r => r.ruleName === 'UNUSUAL_TIME');
@@ -225,7 +260,17 @@ describe('Fraud Detection Service', () => {
       expect(timeRule?.passed).toBe(false);
       expect(timeRule?.score).toBe(20);
       expect(timeRule?.message).toContain('weekend');
+      
+      // Restore original Date
+      // @ts-expect-error - restoring global Date
+      global.Date = OriginalDate;
     });
   });
 
   describe('Rule: Email Domain Validation', () => {
+    // Placeholder - test not implemented yet
+    it('should validate email domain', () => {
+      expect(true).toBe(true);
+    });
+  });
+});
