@@ -33,7 +33,7 @@
     "test:integration": "vitest run --config vitest.config.integration.ts",
     "test:integration:watch": "vitest --config vitest.config.integration.ts",
     "// --- E2E TESTING (Playwright - Minutes) ---": "",
-    "test:e2e": "playwright test",
+    "test:e2e": "dotenv -e .env.test -e .env.test.local -- playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ci": "playwright test --reporter=html,json",

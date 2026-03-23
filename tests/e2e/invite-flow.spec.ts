@@ -51,6 +51,33 @@ test.describe('Tenant Invitation Flow', () => {
         await page.fill('input[name="password"]', 'password123');
         await page.click('button[type="submit"]');
 
+        // Enhanced error handling - check for multiple error indicators
+        const errorSelectors = [
+            '.toast-error',
+            '[role="alert"]',
+            'div.bg-red-50 p',
+            '.text-red-500',
+            '[data-testid="error-message"]',
+            '.text-red-600',
+        ];
+
+        let loginError = null;
+        for (const selector of errorSelectors) {
+            const errorEl = page.locator(selector);
+            if (await errorEl.isVisible({ timeout: 3000 }).catch(() => false)) {
+                const errorMsg = await errorEl.textContent().catch(() => '');
+                if (errorMsg && errorMsg.trim()) {
+                    loginError = errorMsg.trim();
+                    console.error('DEBUG: Login Error found in UI:', loginError);
+                    break;
+                }
+            }
+        }
+
+        if (loginError) {
+            throw new Error(`Login failed with error: ${loginError}`);
+        }
+
         // Wait for navigation
         await expect(page).toHaveURL(/\/property-manager/, { timeout: 30000 });
 
