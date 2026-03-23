@@ -78,6 +78,15 @@ test.describe('Tenant Invitation Flow', () => {
             throw new Error(`Login failed with error: ${loginError}`);
         }
 
+        if (!page.url().includes('/property-manager')) {
+            const currentUrl = page.url();
+            console.error('Actual URL after login:', currentUrl);
+            const content = await page.content();
+            if (content.toLowerCase().includes('error')) {
+                console.error('Page contains error snippet:', content);
+            }
+        }
+
         // Wait for navigation
         await expect(page).toHaveURL(/\/property-manager/, { timeout: 30000 });
 
