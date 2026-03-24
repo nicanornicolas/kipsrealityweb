@@ -11,6 +11,8 @@ interface User {
     lastName: string;
     role: 'SYSTEM_ADMIN' | 'PROPERTY_MANAGER' | 'TENANT' | 'VENDOR';
     avatarUrl?: string;
+    region?: "USA" | "KEN" | "NGA" | "GHA" | null;
+    currency?: string | null;
     phone?: string | null;
     phoneVerified?: Date | null;
     twoFactorEnabled?: boolean;
@@ -18,6 +20,8 @@ interface User {
         id: string;
         name: string;
         slug: string;
+        region?: "USA" | "KEN" | "NGA" | "GHA" | null;
+        currency?: string | null;
     };
     organizationUserId?: string;
     consentNotifications?: boolean;
