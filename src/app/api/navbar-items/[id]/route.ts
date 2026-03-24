@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireSystemAdmin } from "@/lib/rbac/requireRole";
 
 type UpdateBody = {
   name?: string;
@@ -33,6 +34,10 @@ export async function PUT(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  // Role check: Only SYSTEM_ADMIN can update navbar items
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
     const { id } = await context.params;
     const numericId = Number(id);
@@ -90,6 +95,10 @@ export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  // Role check: Only SYSTEM_ADMIN can delete navbar items
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
     const { id } = await context.params; //  Await params
     const numericId = Number(id);

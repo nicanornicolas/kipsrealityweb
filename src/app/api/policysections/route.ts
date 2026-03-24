@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { requireSystemAdmin } from "@/lib/rbac/requireRole";
 
 const prisma = new PrismaClient();
 
@@ -18,6 +19,10 @@ export async function GET() {
 
 // POST create a new section
 export async function POST(req: NextRequest) {
+  // Role check: Only SYSTEM_ADMIN can create policy sections
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { key, title, intro, content, order, policyId } = body;

@@ -9,7 +9,7 @@ interface User {
     email: string;
     firstName: string;
     lastName: string;
-    role: 'SYSTEM_ADMIN' | 'PROPERTY_MANAGER' | 'TENANT' | 'VENDOR';
+    role: 'SYSTEM_ADMIN' | 'PROPERTY_MANAGER' | 'TENANT' | 'VENDOR' | 'AGENT';
     avatarUrl?: string;
     region?: "USA" | "KEN" | "NGA" | "GHA" | null;
     currency?: string | null;

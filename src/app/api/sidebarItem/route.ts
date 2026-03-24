@@ -1,6 +1,7 @@
 // app/api/sidebarItem/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireSystemAdmin } from "@/lib/rbac/requireRole";
 
 // UserRole enum - local definition since it doesn't exist in Prisma schema
 const UserRole = {
@@ -90,6 +91,10 @@ export async function GET(req: Request) {
 
 // POST new sidebar item
 export async function POST(req: Request) {
+  // Role check: Only SYSTEM_ADMIN can create sidebar items
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
     const data = await req.json();
     const {
