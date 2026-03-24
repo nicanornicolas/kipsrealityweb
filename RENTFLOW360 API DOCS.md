@@ -1,7 +1,7 @@
 # RentFlow360 API Documentation
 
 **Version:** 6.0
-**Date:** March 4, 2026
+**Date:** March 24, 2026
 **Status:** Production Ready - Multi-Payment Gateway Integration Complete
 
 ---
@@ -286,6 +286,12 @@ Verify 2FA code.
 
 Initialize payment with automatic gateway selection based on region.
 
+**Headers (Optional):**
+
+```
+Idempotency-Key: <unique_key>
+```
+
 **Request Body:**
 
 ```json
@@ -396,10 +402,7 @@ Get payment details by ID.
   "currency": "USD",
   "status": "SETTLED",
   "gateway": "STRIPE",
-  "method": "CREDIT_CARD",
-  "gatewayReference": "pi_xxx",
-  "createdAt": "2026-03-04T10:00:00Z",
-  "settledAt": "2026-03-04T10:01:00Z"
+  "paidOn": "2026-03-04T10:01:00Z"
 }
 ```
 
@@ -1442,6 +1445,54 @@ Get comprehensive dashboard analytics.
 **Endpoint:** `/api/webhooks/mpesa/callback`
 
 **Events:** STK Push callbacks with transaction details
+
+### 17.4 Webhook Processing (Internal)
+
+**POST** `/api/internal/process-webhooks`
+
+Process pending webhook events with retry logic. Protected by `x-internal-key` when `INTERNAL_WEBHOOK_PROCESSOR_KEY` is set.
+
+**Headers:**
+
+```
+x-internal-key: <internal_secret>
+```
+
+**Response (200):**
+
+```json
+{
+  "processed": 5,
+  "results": [
+    { "id": "wh_123", "status": "PROCESSED" },
+    { "id": "wh_124", "status": "FAILED", "error": "Database timeout" }
+  ]
+}
+```
+
+**GET** `/api/internal/process-webhooks`
+
+Return webhook queue depth metrics for monitoring.
+
+**Response (200):**
+
+```json
+{
+  "pending": 12,
+  "processing": 1,
+  "failed": 3,
+  "processed": 2001,
+  "retryDue": 2,
+  "oldestPendingAt": "2026-03-24T08:10:00Z",
+  "timestamp": "2026-03-24T08:15:00Z"
+}
+```
+
+### 17.5 Webhook Cron Bridge
+
+**GET** `/api/cron/process-webhooks`
+
+Cron entrypoint for Vercel scheduled jobs. Requires `Authorization: Bearer ${CRON_SECRET}`.
 
 ---
 
