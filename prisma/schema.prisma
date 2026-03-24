@@ -81,6 +81,23 @@ model User {
   @@map("users")
 }
 
+model TenantPaymentMethod {
+  id                    String   @id @default(uuid())
+  userId                String   @map("user_id")
+  type                  String // 'ACH', 'CARD'
+  plaidAccessToken      String?  @map("plaid_access_token") // Encrypted
+  plaidAccountId        String?  @map("plaid_account_id")
+  stripePaymentMethodId String   @map("stripe_payment_method_id")
+  isDefault             Boolean  @default(false) @map("is_default")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("tenant_payment_methods")
+}
+
 model OrganizationUser {
   id                String                  @id @default(uuid())
   userId            String                  @map("user_id")
@@ -708,12 +725,13 @@ model Payment {
 
   riskScore        Int?           @map("risk_score") // Plaid Signal Score
 
+  @@index([gatewayReference])
+  @@index([status])
   @@index([invoiceId])
   @@index([gatewayReference])
   @@index([status])
   @@map("payment")
 }
-
 model PaymentReversal {
   id          String   @id @db.Char(36)
   paymentId   String   @map("payment_id") @db.Char(36)
@@ -1422,6 +1440,7 @@ model AgentInvite {
   usedAt          DateTime?
   isUsed          Boolean   @default(false)
   tenantId        String
+  invitedAgentId  String?   @unique @map("invited_agent_id")
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   tenant          User      @relation(fields: [tenantId], references: [id], onDelete: Cascade)

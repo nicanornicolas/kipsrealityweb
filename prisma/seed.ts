@@ -34,7 +34,7 @@ const BOOLEAN_FIELDS = new Set([
 // ✅ FIX: Mapping to CamelCase which Prisma Client expects
 const FIELD_TRANSLATIONS: Record<string, Record<string, string>> = {
     'MaintenanceRequest': {
-        'assigned_at': 'assignedAt',       // Fixes "Did you mean assignedAt?"
+        'assigned_at': 'assignedAt',       
         'assigned_vendor_id': 'assignedVendorId',
         'organization_id': 'organizationId',
         'property_id': 'propertyId',
@@ -76,7 +76,7 @@ const FIELD_TRANSLATIONS: Record<string, Record<string, string>> = {
 };
 
 const toCamelCase = (str: string) => {
-    return str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+    return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 };
 
 async function seedNavbarItemsIfMissing() {
@@ -197,10 +197,10 @@ async function main() {
             if (clientKey === 'Tenantapplication') clientKey = 'tenantApplication';
             if (clientKey === 'PropertyImage') clientKey = 'propertyImage';
 
-            clientKey = clientKey.charAt(0).toLowerCase() + clientKey.slice(1);
+                clientKey = clientKey.charAt(0).toLowerCase() + clientKey.slice(1);
 
-            if (processedModels.has(clientKey)) continue;
-            processedModels.add(clientKey);
+                if (processedModels.has(clientKey)) continue;
+                processedModels.add(clientKey);
 
             // @ts-ignore
             if (!prisma[clientKey]) {
@@ -212,46 +212,46 @@ async function main() {
                 }
             }
 
-            const filePath = path.join(backupDir, file);
-            const rawData = JSON.parse(fs.readFileSync(filePath, 'utf-8'), (key, value) => {
-                if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) return new Date(value);
-                return value;
-            });
+                const filePath = path.join(backupDir, file);
+                const rawData = JSON.parse(fs.readFileSync(filePath, 'utf-8'), (key, value) => {
+                    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) return new Date(value);
+                    return value;
+                });
 
-            if (!Array.isArray(rawData) || rawData.length === 0) continue;
+                if (!Array.isArray(rawData) || rawData.length === 0) continue;
 
-            const normalizedData = rawData.map(item => {
-                const newItem: any = {};
-                for (const key in item) {
-                    let value = item[key];
-                    let newKey = key;
+                const normalizedData = rawData.map(item => {
+                    const newItem: any = {};
+                    for (const key in item) {
+                        let value = item[key];
+                        let newKey = key;
 
-                    // 1. Apply Manual Translation (Backup Key -> Client Key)
-                    if (FIELD_TRANSLATIONS[rawModelName] && FIELD_TRANSLATIONS[rawModelName][key]) {
-                        newKey = FIELD_TRANSLATIONS[rawModelName][key];
+                        // 1. Apply Manual Translation (Backup Key -> Client Key)
+                        if (FIELD_TRANSLATIONS[rawModelName] && FIELD_TRANSLATIONS[rawModelName][key]) {
+                            newKey = FIELD_TRANSLATIONS[rawModelName][key];
+                        }
+                        // 2. Auto-convert snake_case -> camelCase
+                        else if (key.includes('_')) {
+                            newKey = toCamelCase(key);
+                        }
+
+                        // 3. Boolean Conversion
+                        // Check against the *original* key or the *new* key
+                        if ((BOOLEAN_FIELDS.has(key) || BOOLEAN_FIELDS.has(newKey)) && (value === 0 || value === 1)) {
+                            value = value === 1;
+                        }
+
+                        newItem[newKey] = value;
                     }
-                    // 2. Auto-convert snake_case -> camelCase
-                    else if (key.includes('_')) {
-                        newKey = toCamelCase(key);
-                    }
+                    return newItem;
+                });
 
-                    // 3. Boolean Conversion
-                    // Check against the *original* key or the *new* key
-                    if ((BOOLEAN_FIELDS.has(key) || BOOLEAN_FIELDS.has(newKey)) && (value === 0 || value === 1)) {
-                        value = value === 1;
-                    }
-
-                    newItem[newKey] = value;
-                }
-                return newItem;
-            });
-
-            // 4. Safety Filter: Remove rows with null required FKs
-            const cleanData = normalizedData.filter(item => {
-                if (clientKey === 'property' && !item.organizationId) return false;
-                if (clientKey === 'user' && !item.email) return false;
-                return true;
-            });
+                // 4. Safety Filter: Remove rows with null required FKs
+                const cleanData = normalizedData.filter(item => {
+                    if (clientKey === 'property' && !item.organizationId) return false;
+                    if (clientKey === 'user' && !item.email) return false;
+                    return true;
+                });
 
 
             try {
