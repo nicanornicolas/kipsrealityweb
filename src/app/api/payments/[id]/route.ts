@@ -1,22 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { PostingStatus } from "@prisma/client";
 
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
     const user = await getCurrentUser(req);
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { id } = await context.params;
-    
     const payment = await prisma.payment.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
         invoice: {
           include: {
@@ -36,87 +28,39 @@ export async function GET(
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
-    // Authorization: check if user has access to this payment
-    const orgUser = await prisma.organizationUser.findFirst({
-      where: { userId: user.id },
-    });
+    const isTenant =
+      user.role === "TENANT" && payment.invoice?.Lease?.tenant?.id === user.id;
 
-    if (!orgUser || payment.invoice.Lease.property.managerId !== orgUser.id) {
+    const isPropertyManager =
+      user.role === "PROPERTY_MANAGER" &&
+      payment.invoice?.Lease?.property?.managerId
+        ? await prisma.organizationUser.findFirst({
+            where: { userId: user.id, id: payment.invoice.Lease.property.managerId },
+          })
+        : null;
+
+    const isSystemAdmin = user.role === "SYSTEM_ADMIN";
+
+    if (!isTenant && !isPropertyManager && !isSystemAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    return NextResponse.json(payment);
+    return NextResponse.json({
+      id: payment.id,
+      status: payment.status,
+      gateway: payment.gateway,
+      amount: Number(payment.amount),
+      currency: payment.currency,
+      paidOn: payment.paidOn,
+      invoiceId: payment.invoiceId,
+    });
   } catch (error) {
     console.error("Error fetching payment:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PATCH(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    const user = await getCurrentUser(req);
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { id } = await context.params;
-    const body = await req.json();
-
-    const payment = await prisma.payment.findUnique({
-      where: { id },
-      include: {
-        invoice: {
-          include: {
-            Lease: {
-              include: {
-                property: true,
-                unit: true,
-                tenant: true,
-              },
-            },
-          },
-        },
+      {
+        error: "Failed to fetch payment",
+        details: error instanceof Error ? error.message : String(error),
       },
-    });
-
-    if (!payment) {
-      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
-    }
-
-    // Authorization
-    const orgUser = await prisma.organizationUser.findFirst({
-      where: { userId: user.id },
-    });
-
-    if (!orgUser || payment.invoice.Lease.property.managerId !== orgUser.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Update payment - only allowed fields
-    const updateData: { postingStatus?: PostingStatus; reference?: string } = {};
-    if (body.postingStatus !== undefined) {
-      updateData.postingStatus = body.postingStatus as PostingStatus;
-    }
-    if (body.reference !== undefined) {
-      updateData.reference = body.reference;
-    }
-
-    const updatedPayment = await prisma.payment.update({
-      where: { id },
-      data: updateData,
-    });
-
-    return NextResponse.json(updatedPayment);
-  } catch (error) {
-    console.error("Error updating payment:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
       { status: 500 }
     );
   }
