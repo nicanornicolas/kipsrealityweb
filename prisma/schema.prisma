@@ -730,7 +730,7 @@ model PaymentReversal {
 }
 
 model Receipt {
-  id        String    @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  id        String    @id @default(uuid()) @db.Char(36)
   invoiceId String    @map("invoice_id") @db.Char(36)
   paymentId String    @map("payment_id") @db.Char(36)
   receiptNo String    @unique(map: "receiptNo") @db.VarChar(100)
@@ -1832,4 +1832,28 @@ enum TransactionType {
   DEPOSIT
   SAAS_FEE
   MAINTENANCE
+}
+
+enum WebhookStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+model WebhookEvent {
+  id              String        @id @default(uuid())
+  gateway         String
+  eventType       String?
+  payload         Json
+  status          WebhookStatus @default(PENDING)
+  processingError String?       @db.Text
+  retryCount      Int           @default(0)
+  nextRetryAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@index([status, nextRetryAt])
+  @@index([gateway])
+  @@map("webhook_events")
 }
