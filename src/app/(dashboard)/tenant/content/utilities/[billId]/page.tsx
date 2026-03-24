@@ -1,12 +1,26 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Zap, Droplets, Flame } from "lucide-react";
+import { ArrowLeft, Download, Zap, Droplets, Flame, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { jsPDF } from "jspdf";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useInitializePayment, usePaymentStatus } from "@/hooks/usePayment";
+import { toast } from "sonner";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import type { PaymentInitializationRequest } from "@/lib/payment/client-types";
+import { useAuth } from "@/context/AuthContext";
+import { z } from "zod";
+import { PhoneNumberUtil } from "google-libphonenumber";
 
 interface BillDetail {
     id: string;
@@ -23,15 +37,28 @@ interface BillDetail {
     periodStart: string | null;
     periodEnd: string | null;
     percentage: number | null;
+    currency?: string;
+    region?: "USA" | "KEN" | "NGA" | "GHA";
+    invoiceId?: string | null;
 }
 
 export default function BillDetailPage() {
     const params = useParams();
     const billId = params.billId as string;
+    const { user } = useAuth();
 
     const [bill, setBill] = useState<BillDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [phoneError, setPhoneError] = useState<string | null>(null);
+    const [isAwaitingMpesa, setIsAwaitingMpesa] = useState(false);
+    const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+    const [showPaymentFailure, setShowPaymentFailure] = useState(false);
+    const [isSuccessClosing, setIsSuccessClosing] = useState(false);
+    const [isFailureClosing, setIsFailureClosing] = useState(false);
+
+    const { mutate: initializePayment, isPending } = useInitializePayment();
 
     useEffect(() => {
         const loadBill = async () => {
@@ -60,6 +87,42 @@ export default function BillDetailPage() {
 
         loadBill();
     }, [billId]);
+
+    const phoneUtil = useMemo(() => PhoneNumberUtil.getInstance(), []);
+
+    const mpesaPhoneSchema = useMemo(
+        () =>
+            z
+                .string()
+                .transform((value) => value.trim().replace(/[^\d+]/g, ""))
+                .transform((value) => (value.startsWith("+") ? value.slice(1) : value))
+                .refine((value) => /^254[71]\d{8}$/.test(value), {
+                    message: "Enter a valid M-Pesa number (2547XXXXXXXX or 2541XXXXXXXX).",
+                })
+                .refine((value) => {
+                    try {
+                        const parsed = phoneUtil.parse(`+${value}`, "KE");
+                        return phoneUtil.isValidNumberForRegion(parsed, "KE");
+                    } catch {
+                        return false;
+                    }
+                }, {
+                    message: "Enter a valid Kenyan mobile number.",
+                }),
+        [phoneUtil]
+    );
+
+    const validatePhone = (value: string) => {
+        const result = mpesaPhoneSchema.safeParse(value);
+        if (result.success) {
+            setPhoneError(null);
+            return result.data;
+        }
+
+        const message = result.error.issues[0]?.message || "Enter a valid M-Pesa number.";
+        setPhoneError(message);
+        return null;
+    };
 
     const getStatusStyles = (status: string) => {
         switch (status) {
@@ -98,8 +161,163 @@ export default function BillDetailPage() {
         }
     };
 
+    const billRegion = useMemo(() => {
+        if (bill?.region) return bill.region;
+        if (user?.organization?.region) return user.organization.region;
+        if (user?.region) return user.region;
+
+        if (bill?.currency) {
+            switch (bill.currency) {
+                case "USD":
+                    return "USA";
+                case "NGN":
+                    return "NGA";
+                case "GHS":
+                    return "GHA";
+                case "KES":
+                    return "KEN";
+                default:
+                    return null;
+            }
+        }
+
+        return null;
+    }, [bill, user]);
+
+    const billCurrency = useMemo(() => {
+        if (bill?.currency) return bill.currency;
+        if (user?.organization?.currency) return user.organization.currency;
+        if (user?.currency) return user.currency;
+
+        switch (billRegion) {
+            case "USA":
+                return "USD";
+            case "NGA":
+                return "NGN";
+            case "GHA":
+                return "GHS";
+            case "KEN":
+                return "KES";
+            default:
+                return null;
+        }
+    }, [bill, user, billRegion]);
+
+    const displayCurrency = billCurrency || "USD";
+
+    const invoiceId = bill?.invoiceId || null;
+
+    const [activePaymentId, setActivePaymentId] = useState<string | null>(null);
+
+    const { data: paymentData } = usePaymentStatus(
+        activePaymentId,
+        isAwaitingMpesa
+    );
+
+    useEffect(() => {
+        if (isAwaitingMpesa && paymentData?.status === "SETTLED") {
+            setIsAwaitingMpesa(false);
+            setActivePaymentId(null);
+            setShowPaymentSuccess(true);
+            setShowPaymentFailure(false);
+            setIsSuccessClosing(false);
+            setIsFailureClosing(false);
+        }
+        if (paymentData?.status === "FAILED") {
+            setIsAwaitingMpesa(false);
+            setActivePaymentId(null);
+            setShowPaymentSuccess(false);
+            setShowPaymentFailure(true);
+            setIsSuccessClosing(false);
+            setIsFailureClosing(false);
+            toast.error("Payment failed. Please try again.");
+        }
+        if (paymentData?.status === "SETTLED" && bill?.status !== "PAID") {
+            setBill((prev) => (prev ? { ...prev, status: "PAID" } : prev));
+        }
+    }, [paymentData?.status, isAwaitingMpesa, bill?.status]);
+
+    const dismissSuccess = () => {
+        setIsSuccessClosing(true);
+        setTimeout(() => {
+            setShowPaymentSuccess(false);
+            setIsSuccessClosing(false);
+        }, 300);
+    };
+
+    const dismissFailure = () => {
+        setIsFailureClosing(true);
+        setTimeout(() => {
+            setShowPaymentFailure(false);
+            setIsFailureClosing(false);
+        }, 300);
+    };
+
+    useEffect(() => {
+        if (showPaymentSuccess) {
+            const timer = setTimeout(() => dismissSuccess(), 6000);
+            return () => clearTimeout(timer);
+        }
+        return undefined;
+    }, [showPaymentSuccess]);
+
+    useEffect(() => {
+        if (showPaymentFailure) {
+            const timer = setTimeout(() => dismissFailure(), 6000);
+            return () => clearTimeout(timer);
+        }
+        return undefined;
+    }, [showPaymentFailure]);
+
     const handlePayNow = () => {
-        alert("Payment integration coming soon!");
+        if (!bill) return;
+
+        if (!billRegion || !billCurrency) {
+            toast.error("We could not determine your region or currency. Please contact support.");
+            return;
+        }
+
+        let normalizedPhone: string | null = null;
+        if (billRegion === "KEN") {
+            normalizedPhone = validatePhone(phoneNumber);
+            if (!normalizedPhone) {
+                toast.error("Please enter a valid M-Pesa phone number.");
+                return;
+            }
+        }
+
+        setIsAwaitingMpesa(false);
+
+        const payload: PaymentInitializationRequest = {
+            invoiceId: invoiceId || bill.id,
+            amount: bill.amountDue,
+            currency: billCurrency,
+            region: billRegion,
+            phoneNumber: billRegion === "KEN" ? normalizedPhone : undefined,
+        };
+
+        initializePayment(payload, {
+            onSuccess: (data) => {
+                if (data.checkoutUrl) {
+                    window.location.href = data.checkoutUrl;
+                    return;
+                }
+
+                if (data.gateway === "MPESA" && data.requiresAction) {
+                    setIsAwaitingMpesa(true);
+                    setActivePaymentId(data.paymentId);
+                    toast.success("STK Push sent! Please check your phone to enter your M-Pesa PIN.");
+                    return;
+                }
+
+                if (data.clientSecret) {
+                    toast.message("Payment requires additional steps. Please follow the on-screen instructions.");
+                    return;
+                }
+
+                toast.message(data.message || "Payment initialized. Follow the next steps provided.");
+            },
+        });
     };
 
     const handleDownloadInvoice = () => {
@@ -160,7 +378,7 @@ export default function BillDetailPage() {
             : new Date(bill.billDate).toLocaleDateString();
 
         doc.text(`${bill.utilityType} Charges (${period})`, 14, 108);
-        doc.text(formatCurrency(bill.amountDue), 196, 108, { align: 'right' });
+        doc.text(formatCurrency(bill.amountDue, displayCurrency), 196, 108, { align: 'right' });
 
         if (bill.percentage) {
             doc.setFontSize(9);
@@ -178,7 +396,7 @@ export default function BillDetailPage() {
         doc.setFont("helvetica", "bold");
         doc.setTextColor(15, 23, 42);
         doc.text("TOTAL DUE", 125, 140);
-        doc.text(formatCurrency(bill.amountDue), 190, 147, { align: 'right' });
+        doc.text(formatCurrency(bill.amountDue, displayCurrency), 190, 147, { align: 'right' });
 
         // Footer
         doc.setFontSize(8);
@@ -188,8 +406,8 @@ export default function BillDetailPage() {
         doc.save(`RentFlow360_Bill_${bill.id.slice(0, 8)}.pdf`);
     };
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    const formatCurrency = (amount: number, currency = "USD") => {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
     };
 
     const formatDate = (dateStr: string) => {
@@ -273,9 +491,25 @@ export default function BillDetailPage() {
                     {bill.status === "PENDING" && (
                         <Button
                             onClick={handlePayNow}
+                            disabled={
+                                isPending ||
+                                isAwaitingMpesa ||
+                                !billRegion ||
+                                !billCurrency ||
+                                (billRegion === "KEN" && !phoneNumber.trim())
+                            }
                             className="h-10 px-6 text-sm font-semibold bg-[#003b73] hover:bg-[#002b5b] text-white shadow-md"
                         >
-                            Pay Now
+                            {isPending ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Processing...
+                                </>
+                            ) : isAwaitingMpesa ? (
+                                "Awaiting M-Pesa PIN..."
+                            ) : (
+                                "Pay Now"
+                            )}
                         </Button>
                     )}
                 </div>
@@ -291,9 +525,53 @@ export default function BillDetailPage() {
                 </div>
                 <div className="text-right">
                     <span className="text-xs text-slate-500 block">Total Amount Due</span>
-                    <span className="text-xl font-bold text-slate-900">{formatCurrency(bill.amountDue)}</span>
+                    <span className="text-xl font-bold text-slate-900">{formatCurrency(bill.amountDue, displayCurrency)}</span>
                 </div>
             </div>
+
+            {showPaymentSuccess && (
+                <div
+                    className={`rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 animate-in fade-in-0 duration-200 ${
+                        isSuccessClosing ? "animate-out fade-out-0 duration-300" : ""
+                    }`}
+                >
+                    <div className="flex items-center justify-between gap-3">
+                        <span>Payment successful. Your receipt will update shortly.</span>
+                        <Button
+                            variant="outline"
+                            className="h-8 px-3 text-xs border-emerald-200 text-emerald-800 hover:bg-emerald-100"
+                            onClick={dismissSuccess}
+                        >
+                            Dismiss
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {showPaymentFailure && (
+                <div
+                    className={`rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-in fade-in-0 duration-200 ${
+                        isFailureClosing ? "animate-out fade-out-0 duration-300" : ""
+                    }`}
+                >
+                    <div className="flex items-center justify-between gap-3">
+                        <span>Payment failed or was cancelled. Please try again.</span>
+                        <Button
+                            variant="outline"
+                            className="h-8 px-3 text-xs border-red-200 text-red-700 hover:bg-red-100"
+                            onClick={dismissFailure}
+                        >
+                            Dismiss
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {bill.status === "PENDING" && (!billRegion || !billCurrency) && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    We cannot determine your payment region or currency. Please contact support or refresh your profile details.
+                </div>
+            )}
 
             {/* Bill Summary Card */}
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -350,7 +628,7 @@ export default function BillDetailPage() {
                             </div>
                             <div>
                                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Allocated Amount</p>
-                                <p className="text-sm font-semibold text-slate-900">{formatCurrency(bill.amountDue)}</p>
+                            <p className="text-sm font-semibold text-slate-900">{formatCurrency(bill.amountDue, displayCurrency)}</p>
                             </div>
                         </div>
                     </div>
@@ -363,6 +641,62 @@ export default function BillDetailPage() {
                     This bill applies only to your unit.
                 </p>
             )}
+
+            {bill.status === "PENDING" && billRegion === "KEN" && (
+                <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-6">
+                    <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">
+                        M-Pesa Payment Details
+                    </h3>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                        M-Pesa Phone Number
+                    </label>
+                    <input
+                        type="tel"
+                        placeholder="2547..."
+                        value={phoneNumber}
+                        onChange={(event) => {
+                            const value = event.target.value;
+                            setPhoneNumber(value);
+                            if (phoneError) {
+                                validatePhone(value);
+                            }
+                        }}
+                        onBlur={(event) => validatePhone(event.target.value)}
+                        className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-[#003b73]/30 ${
+                            phoneError ? "border-red-300" : "border-slate-200"
+                        }`}
+                    />
+                    {phoneError ? (
+                        <p className="text-xs text-red-600 mt-2">{phoneError}</p>
+                    ) : (
+                        <p className="text-xs text-slate-500 mt-2">
+                            We will send an STK Push to this number when you click Pay Now.
+                        </p>
+                    )}
+                </div>
+            )}
+
+            <Dialog open={isAwaitingMpesa} onOpenChange={setIsAwaitingMpesa}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Check Your Phone</DialogTitle>
+                        <DialogDescription>
+                            We have sent an M-Pesa STK Push to {phoneNumber || "your phone"}. Enter your PIN to complete the payment.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                        If you do not see the prompt, confirm the number and try again. Payments usually confirm within a minute.
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsAwaitingMpesa(false)}
+                        >
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
