@@ -28,6 +28,11 @@ export async function GET(request: NextRequest) {
                             select: {
                                 name: true,
                                 address: true,
+                                organization: {
+                                    select: {
+                                        region: true,
+                                    },
+                                },
                             },
                         },
                     },
@@ -35,6 +40,7 @@ export async function GET(request: NextRequest) {
                 unit: {
                     select: {
                         unitNumber: true,
+                        currency: true,
                         leases: {
                             where: { leaseStatus: "ACTIVE" },
                             select: {
@@ -43,6 +49,7 @@ export async function GET(request: NextRequest) {
                                         id: true,
                                         firstName: true,
                                         lastName: true,
+                                        region: true,
                                     },
                                 },
                             },
@@ -64,6 +71,8 @@ export async function GET(request: NextRequest) {
             const unit = alloc.unit;
             const lease = unit.leases[0];
             const tenant = lease?.tenant;
+            const organizationRegion = bill.property.organization?.region || null;
+            const tenantRegion = tenant?.region || null;
 
             const amount = Number(alloc.amount);
             const percentage = alloc.percentage ? Number(alloc.percentage) : null;
@@ -84,6 +93,9 @@ export async function GET(request: NextRequest) {
                 periodEnd: bill.periodEnd?.toISOString() || null,
                 isAllocated: true,
                 percentage: percentage,
+                region: organizationRegion || tenantRegion,
+                currency: unit.currency || null,
+                invoiceId: alloc.invoiceId || null,
             };
         });
 
