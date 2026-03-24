@@ -1,0 +1,51 @@
+services:
+  migrate:
+    build:
+      context: .
+      target: development
+    container_name: rentflow360_migrate
+    env_file:
+      - .env.production
+    command: ["npx", "prisma", "migrate", "deploy"]
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runner
+    container_name: rentflow360_app
+    init: true
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    
+    # --- DEVSECOPS HARDENING ---
+    read_only: true # The entire container file system is immutable
+    tmpfs:
+      - /tmp # Allow Next.js to write temp files into memory
+      - /app/.next/cache # Allow Next.js image optimization/ISR cache
+    security_opt:
+      - no-new-privileges:true # Prevents privilege escalation (sudo)
+    cap_drop:
+      - ALL # Strips all Linux kernel capabilities
+    
+    # --- RESOURCE ALLOCATION (Preventing OOM Crashes) ---
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0' # Max 1 CPU core
+          memory: 2G  # Increased from 1G to prevent Next.js OOM crashes
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

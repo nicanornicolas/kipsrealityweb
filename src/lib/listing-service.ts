@@ -871,14 +871,15 @@ export class ListingService {
             errors.push('Price seems unusually high, please verify');
         }
 
-        // Validate availability date
+        // Validate availability date - past dates are allowed (listing becomes ACTIVE immediately)
         if (listingData.availabilityDate) {
             const availDate = new Date(listingData.availabilityDate);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            if (availDate < today) {
-                errors.push('Availability date cannot be in the past');
+            // Past availability dates are allowed - listing becomes ACTIVE immediately
+            // Only validate if date is unreasonably far in the past (more than 1 year)
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+            if (availDate < oneYearAgo) {
+                errors.push('Availability date cannot be more than 1 year in the past');
             }
         }
 
@@ -1134,7 +1135,7 @@ export class ListingService {
                 };
             }
 
-            // Check user permissions
+            // Always check user permissions
             if (!unit.property?.organization?.users.length) {
                 return {
                     valid: false,
@@ -1997,7 +1998,7 @@ export class ListingService {
             const expiringSoon = await prisma.listing.findMany({
                 where: {
                     expirationDate: {
-                        gte: now,
+                        gt: now,  // Must be in the future (not just >= which includes now)
                         lte: futureDate
                     }
                 },
@@ -2015,9 +2016,9 @@ export class ListingService {
                 unitNumber: listing.unit?.unitNumber || 'Unknown',
                 title: listing.title,
                 expirationDate: listing.expirationDate!,
-                daysUntilExpiration: Math.ceil(
+                daysUntilExpiration: Math.max(0, Math.ceil(
                     (listing.expirationDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-                )
+                ))
             }));
 
             return {

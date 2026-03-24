@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
     if (dryRun) {
       // Perform a dry run to show what would be cleaned up
-      const orphanedApplications = await prisma.tenantapplication.findMany({
+      const orphanedApplications = await prisma.tenantApplication.findMany({
         where: {
           unit: {
             listing: null

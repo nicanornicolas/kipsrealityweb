@@ -141,7 +141,6 @@ async function seedTestimonialsIfMissing() {
 async function main() {
     // Run this seed when setting up a new database or environment.
     // Uses upsert to prevent duplicates - safe to run multiple times.
-    console.log('Seeding Property Types...');
     const propertyTypes = [
         { id: "1", name: "House", description: "Single family home" },
         { id: "2", name: "Apartment", description: "Apartment unit" },
@@ -157,19 +156,13 @@ async function main() {
             create: type,
         });
     }
-    console.log('Property types seeded!');
 
     const backupDir = path.join(process.cwd(), 'backup');
     const hasBackupDir = fs.existsSync(backupDir);
 
-    if (!hasBackupDir) {
-        console.log(`⚠️ Backup directory not found at ${backupDir}. Skipping restore.`);
-    }
-
     try {
         if (hasBackupDir) {
             await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS=0;');
-            console.log('🔄 Foreign key checks disabled.');
 
             const PRIORITY = ['Organization', 'User', 'Property', 'Unit', 'Lease'];
 
@@ -190,34 +183,34 @@ async function main() {
                 const rawModelName = file.replace('.json', '');
                 let clientKey = rawModelName;
 
-                // Map common plural/casing issues
-                if (clientKey === 'vendors') clientKey = 'vendor';
-                if (clientKey === 'services') clientKey = 'service';
-                if (clientKey === 'categories') clientKey = 'category';
-                if (clientKey === 'invoice') clientKey = 'invoice';
-                if (clientKey === 'payment') clientKey = 'payment';
-                if (clientKey === 'receipt') clientKey = 'receipt';
-                if (clientKey === 'utility') clientKey = 'utility';
-                if (clientKey === 'lease_utility') clientKey = 'leaseUtility';
-                if (clientKey === 'utility_reading') clientKey = 'utilityReading';
-                if (clientKey === 'payment_reversal') clientKey = 'paymentReversal';
-                if (clientKey === 'Tenantapplication') clientKey = 'tenantapplication';
-                if (clientKey === 'PropertyImage') clientKey = 'propertyImage';
+            // Map common plural/casing issues
+            if (clientKey === 'vendors') clientKey = 'vendor';
+            if (clientKey === 'services') clientKey = 'service';
+            if (clientKey === 'categories') clientKey = 'serviceCategory';
+            if (clientKey === 'invoice') clientKey = 'invoice';
+            if (clientKey === 'payment') clientKey = 'payment';
+            if (clientKey === 'receipt') clientKey = 'receipt';
+            if (clientKey === 'utility') clientKey = 'utility';
+            if (clientKey === 'lease_utility') clientKey = 'leaseUtility';
+            if (clientKey === 'utility_reading') clientKey = 'utilityReading';
+            if (clientKey === 'payment_reversal') clientKey = 'paymentReversal';
+            if (clientKey === 'Tenantapplication') clientKey = 'tenantApplication';
+            if (clientKey === 'PropertyImage') clientKey = 'propertyImage';
 
                 clientKey = clientKey.charAt(0).toLowerCase() + clientKey.slice(1);
 
                 if (processedModels.has(clientKey)) continue;
                 processedModels.add(clientKey);
 
+            // @ts-ignore
+            if (!prisma[clientKey]) {
+                const pascalKey = rawModelName.charAt(0).toUpperCase() + rawModelName.slice(1);
                 // @ts-ignore
-                if (!prisma[clientKey]) {
-                    const pascalKey = rawModelName.charAt(0).toUpperCase() + rawModelName.slice(1);
-                    // @ts-ignore
-                    if (prisma[pascalKey]) clientKey = pascalKey;
-                    else {
-                        continue;
-                    }
+                if (prisma[pascalKey]) clientKey = pascalKey;
+                else {
+                    continue;
                 }
+            }
 
                 const filePath = path.join(backupDir, file);
                 const rawData = JSON.parse(fs.readFileSync(filePath, 'utf-8'), (key, value) => {
@@ -261,15 +254,15 @@ async function main() {
                 });
 
 
-                try {
-                    // @ts-ignore
-                    await prisma[clientKey].createMany({
-                        data: cleanData,
-                        skipDuplicates: true
-                    });
-                } catch (err: any) {
-                }
+            try {
+                // @ts-ignore
+                await prisma[clientKey].createMany({
+                    data: cleanData,
+                    skipDuplicates: true
+                });
+            } catch (err: any) {
             }
+        }
         }
 
         // Always ensure navbar items exist for the website top nav
@@ -278,7 +271,6 @@ async function main() {
         // Ensure the marketing testimonials section has content
         await seedTestimonialsIfMissing();
     } catch (e) {
-        console.error(e);
     } finally {
         if (hasBackupDir) {
             await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS=1;');

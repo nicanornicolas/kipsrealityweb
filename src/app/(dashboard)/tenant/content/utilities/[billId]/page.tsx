@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Zap, Droplets, Flame, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { jsPDF } from "jspdf";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInitializePayment, usePaymentStatus } from "@/hooks/usePayment";
 import { toast } from "sonner";
@@ -320,9 +319,10 @@ export default function BillDetailPage() {
         });
     };
 
-    const handleDownloadInvoice = () => {
+    const handleDownloadInvoice = async () => {
         if (!bill) return;
 
+        const { jsPDF } = await import("jspdf");
         const doc = new jsPDF();
 
         // 1. Header / Logo Area

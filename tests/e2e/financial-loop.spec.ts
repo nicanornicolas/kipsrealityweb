@@ -1,18 +1,81 @@
 import { test, expect } from '@playwright/test';
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+// Seed function to ensure test user exists (non-destructive for parallel E2E runs)
+async function seedTestUser() {
+    const dbUrl = process.env.DATABASE_URL;
+    const isTestDb = !!dbUrl && (dbUrl.includes('rentflow_test') || dbUrl.includes('rentflow360_test'));
+    if (!isTestDb) {
+        console.log('⚠️  Not running seed - DATABASE_URL not set to test DB');
+        return;
+    }
+
+    // Upsert Organization
+    const org = await prisma.organization.upsert({
+        where: { slug: 'e2e-test-org' },
+        update: { isActive: true },
+        create: {
+            name: 'E2E Test Org',
+            slug: 'e2e-test-org',
+            isActive: true,
+        },
+    });
+
+    // Upsert Manager User with verified email
+    const hashedPassword = await bcrypt.hash('password123', 12);
+    const user = await prisma.user.upsert({
+        where: { email: 'manager@test.com' },
+        update: {
+            passwordHash: hashedPassword,
+            status: 'ACTIVE',
+            emailVerified: new Date(),
+        },
+        create: {
+            email: 'manager@test.com',
+            passwordHash: hashedPassword,
+            firstName: 'Test',
+            lastName: 'Manager',
+            status: 'ACTIVE',
+            emailVerified: new Date(), // Already verified
+        },
+    });
+
+    // Upsert Organization User link
+    await prisma.organizationUser.upsert({
+        where: {
+            userId_organizationId: {
+                userId: user.id,
+                organizationId: org.id,
+            },
+        },
+        update: { role: 'PROPERTY_MANAGER' },
+        create: {
+            userId: user.id,
+            organizationId: org.id,
+            role: 'PROPERTY_MANAGER',
+        },
+    });
+
+    console.log('✅ Ensured manager@test.com user is seeded and verified');
+}
+
 test.describe('Financial Core Workflow', () => {
-    // Setup: Create a clean user & property before test starts
+    // Setup: Seed the database before tests
     test.beforeAll(async () => {
-        // Run your 'seed' script logic here or hit a setup API endpoint
-        // For now, we assume the seeded DB is sufficient as requested, or we can add specific setup logic later.
-        // Ideally, we'd want to ensure a clean slate or specific test data exists.
+        await seedTestUser();
+    });
+
+    // Cleanup: Disconnect Prisma after all tests to prevent connection leaks
+    test.afterAll(async () => {
+        await prisma.$disconnect();
     });
 
     test('Manager can create invoice and record payment', async ({ page }) => {
         test.setTimeout(90000); // Give it plenty of time for GL posting + toast
+        
         // 1. Verification Bypass (The "Magic" Step)
         // Poll for user creation (seed may still be committing)
         let user = null;
@@ -53,22 +116,54 @@ test.describe('Financial Core Workflow', () => {
         console.log('DEBUG: Filling credentials and clicking sign-in');
         await page.click('button[type="submit"]');
 
-        // Check for any error toast or message if navigation doesn't happen
-        const errorLocator = page.locator('div.bg-red-50 p, .toast-error, [role="alert"]');
-        if (await errorLocator.isVisible({ timeout: 5000 })) {
-            const errorMsg = await errorLocator.textContent();
-            console.error('DEBUG: Login Error found in UI:', errorMsg);
+        // Enhanced error handling - check for multiple error indicators
+        const errorSelectors =[
+            '.toast-error',
+            '[role="alert"]',
+            'div.bg-red-50 p',
+            '.text-red-500',
+            '[data-testid="error-message"]',
+            '.text-red-600',
+        ];
+        
+        let loginError = null;
+        for (const selector of errorSelectors) {
+            const errorEl = page.locator(selector);
+            if (await errorEl.isVisible({ timeout: 3000 }).catch(() => false)) {
+                const errorMsg = await errorEl.textContent().catch(() => '');
+                if (errorMsg && errorMsg.trim()) {
+                    loginError = errorMsg.trim();
+                    console.error('DEBUG: Login Error found in UI:', loginError);
+                    break;
+                }
+            }
+        }
+        
+        if (loginError) {
+            throw new Error(`Login failed with error: ${loginError}`);
         }
 
         // Wait for navigation to dashboard - adjust timeout to 30s to be safe
         await expect(page).toHaveURL(/\/property-manager/, { timeout: 30000 });
 
-        // 2. Navigate to Invoices
-        await page.click('text=View Invoices');
+        // Wait for sidebar to fully load before navigating
+        const sidebar = page.locator('aside, [class*="sidebar"]');
+        await expect(sidebar).toBeVisible({ timeout: 10000 });
+
+        // Wait for the Invoices link to be visible in the sidebar (Finance category)
+        // Highly resilient locator searching for a link element containing "invoices" (case insensitive)
+        const invoicesLink = page.getByRole('link', { name: /invoices/i }).first();
+        await expect(invoicesLink).toBeVisible({ timeout: 10000 });
+        
+        // Click the Invoices navigation link
+        await invoicesLink.click();
+        
+        // Wait for URL to change to invoices page
         await expect(page).toHaveURL(/\/property-manager\/finance\/invoices/);
 
         // 3. Create Invoice
-        await page.click('text=Create Invoice');
+        // Look specifically for a button containing the text "Create Invoice"
+        await page.getByRole('button', { name: /create invoice/i }).click();
 
         // Wait for the modal or page to load
         await expect(page.locator('text=Create Manual Invoice')).toBeVisible();
@@ -79,15 +174,16 @@ test.describe('Financial Core Workflow', () => {
         // Amount input uses placeholder 0.00
         await page.fill('input[placeholder="0.00"]', '1500');
 
-        await page.click('text=Generate Invoice');
+        await page.getByRole('button', { name: /generate invoice/i }).click();
 
-        // 4. Verify Toast & List
         // 4. Verify Toast & List
         await expect(page.getByText('Invoice Created & Posted to GL!')).toBeVisible({ timeout: 20000 });
 
         // 5. Verify Dashboard Update
-        // Re-navigate to dashboard to check arrears or just verified logout/login loop
-        await page.click('text=Dashboard Overview');
+        // Navigate back using resilient locator
+        await page.getByRole('link', { name: /dashboard/i }).first().click();
         await expect(page).toHaveURL(/\/property-manager/, { timeout: 10000 });
     });
 });
+
+

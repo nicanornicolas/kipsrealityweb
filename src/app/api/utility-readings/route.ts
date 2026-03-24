@@ -4,12 +4,12 @@ import { prisma } from "@/lib/db";
 // GET /api/utility-readings
 export async function GET() {
   try {
-    const readings = await prisma.utility_reading.findMany({
+    const readings = await prisma.utilityReading.findMany({
       include: {
-        lease_utility: {
+        leaseUtility: {
           include: {
             utility: true,
-            Lease: {
+            lease: {
               include: {
                 tenant: true,
                 unit: true,
@@ -24,19 +24,19 @@ export async function GET() {
 
     const formatted = readings.map((r: any) => ({
       id: r.id,
-      readingValue: r.reading_value,
+      readingValue: r.readingValue,
       amount: r.amount,
       readingDate: r.readingDate,
       leaseUtility: {
-        id: r.lease_utility_id,
-        leaseUtility: r.lease_utility,
+        id: r.leaseUtilityId,
+        leaseUtility: r.leaseUtility,
         lease: {
-          id: r.lease_utility.Lease?.id,
-          tenantName: r.lease_utility.Lease?.tenant
-            ? `${r.lease_utility.Lease.tenant.firstName ?? ""} ${r.lease_utility.Lease.tenant.lastName ?? ""}`.trim() || "Unknown Tenant"
+          id: r.leaseUtility.lease?.id,
+          tenantName: r.leaseUtility.lease?.tenant
+            ? `${r.leaseUtility.lease.tenant.firstName ?? ""} ${r.leaseUtility.lease.tenant.lastName ?? ""}`.trim() || "Unknown Tenant"
             : "Unknown Tenant",
-          unitNumber: r.lease_utility.Lease?.unit?.unitNumber || "N/A",
-          propertyName: r.lease_utility.Lease?.property?.name || "N/A",
+          unitNumber: r.leaseUtility.lease?.unit?.unitNumber || "N/A",
+          propertyName: r.leaseUtility.lease?.property?.name || "N/A",
         },
       },
     }));
@@ -64,12 +64,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const previous = await prisma.utility_reading.findFirst({
-      where: { lease_utility_id: leaseUtilityId },
+    const previous = await prisma.utilityReading.findFirst({
+      where: { leaseUtilityId },
       orderBy: { readingDate: "desc" }
     });
 
-    const leaseUtility = await prisma.lease_utility.findUnique({
+    const leaseUtility = await prisma.leaseUtility.findUnique({
       where: { id: leaseUtilityId },
       include: { utility: true }
     });
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const prevVal = previous?.reading_value ?? 0;
+    const prevVal = previous?.readingValue ?? 0;
     const consumption = readingValue - prevVal;
 
     if (consumption < 0) {
@@ -93,10 +93,10 @@ export async function POST(req: NextRequest) {
 
     const amount = consumption * (leaseUtility.utility.unitPrice ?? 0);
 
-    const newReading = await prisma.utility_reading.create({
+    const newReading = await prisma.utilityReading.create({
       data: {
-        lease_utility_id: leaseUtilityId,
-        reading_value: readingValue,
+        leaseUtilityId,
+        readingValue,
         readingDate: readingDate ? new Date(readingDate) : new Date(),
         amount,
       },
@@ -107,3 +107,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+

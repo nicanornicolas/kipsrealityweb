@@ -34,10 +34,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
                 },
               },
             },
-            lease_utility: {
+            leaseUtilities: {
               include: {
                 utility: true,
-                utility_reading: {
+                utilityReadings: {
                   orderBy: { readingDate: "desc" },
                   take: 1,
                 },
@@ -54,13 +54,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // optionally map the utilities to a simpler structure
-    const utilities = invoice.Lease?.lease_utility?.map((lu) => ({
+    const utilities = invoice.Lease?.leaseUtilities?.map((lu) => ({
       id: lu.utility.id,
       name: lu.utility.name,
       type: lu.utility.type,
       fixedAmount: lu.utility.fixedAmount ?? 0,
       unitPrice: lu.utility.unitPrice ?? 0,
-      isTenantResponsible: lu.is_tenant_responsible,
+      isTenantResponsible: lu.isTenantResponsible,
     }));
 
     const buildingName =
@@ -77,3 +77,4 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Failed to fetch invoice" }, { status: 500 });
   }
 }
+

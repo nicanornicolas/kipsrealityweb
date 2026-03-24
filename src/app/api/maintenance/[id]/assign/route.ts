@@ -39,11 +39,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         id: requestId,
         organizationId: payload.organizationId,
         status: "OPEN",
-        assigned_vendor_id: null,
+        assignedVendorId: null,
       },
       data: {
-        assigned_vendor_id: vendorId,
-        assigned_at: new Date(),
+        assignedVendorId: vendorId,
+        assignedAt: new Date(),
         // status is NOT updated here
       },
     });
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         property: { select: { id: true, name: true } },
         unit: { select: { id: true, unitNumber: true, unitName: true } },
         requestedBy: { include: { user: { select: { firstName: true, lastName: true } } } },
-        vendors: { include: { user: { select: { firstName: true, lastName: true } } } },
+        vendor: { include: { user: { select: { firstName: true, lastName: true } } } },
       },
     });
 

@@ -5,10 +5,10 @@ import { prisma } from "@/lib/db";
 // GET /api/lease-utilities -> List all lease utilities with relations
 export async function GET() {
   try {
-    const leaseUtilities = await prisma.lease_utility.findMany({
+    const leaseUtilities = await prisma.leaseUtility.findMany({
       include: {
         utility: true, // Include utility details
-        Lease: {
+        lease: {
           include: {
             tenant: true,
             unit: true,
@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if the assignment already exists
-    const existing = await prisma.lease_utility.findFirst({
-      where: { lease_id: leaseId, utility_id: utilityId },
+    const existing = await prisma.leaseUtility.findFirst({
+      where: { leaseId, utilityId },
     });
     if (existing) {
       return NextResponse.json(
@@ -53,10 +53,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const assignment = await prisma.lease_utility.create({
-      data: { lease_id: leaseId, utility_id: utilityId, is_tenant_responsible: isTenantResponsible },
+    const assignment = await prisma.leaseUtility.create({
+      data: { leaseId, utilityId, isTenantResponsible },
       include: {
-        Lease: {
+        lease: {
           include: {
             tenant: true,
             unit: true,

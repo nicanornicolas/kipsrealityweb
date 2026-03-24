@@ -1,0 +1,293 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { 
+  FolderOpen, 
+  FileText, 
+  File, 
+  Search, 
+  Upload,
+  MoreHorizontal,
+  Download,
+  Eye,
+  Trash2,
+  Filter,
+  Grid,
+  List,
+  Home,
+  Building2
+} from "lucide-react";
+
+interface Document {
+  id: string;
+  name: string;
+  type: string;
+  category: string;
+  size: string;
+  uploadedAt: string;
+  property?: string;
+  unit?: string;
+  status: "active" | "archived";
+}
+
+interface Folder {
+  id: string;
+  name: string;
+  count: number;
+  icon: string;
+}
+
+export default function DocumentsPage() {
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch documents from API
+        const res = await fetch('/api/dss/documents');
+        if (!res.ok) throw new Error('Failed to fetch documents');
+        const data = await res.json();
+        
+        const docs: Document[] = Array.isArray(data) ? data.map((d: any) => ({
+          id: d.id,
+          name: d.name || d.fileName || 'Untitled',
+          type: d.type || 'PDF',
+          category: d.category || 'Other',
+          size: d.size || '0 KB',
+          uploadedAt: d.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0],
+          property: d.property?.name || '',
+          unit: d.unit?.unitNumber || '',
+          status: d.status || 'active'
+        })) : [];
+        
+        setDocuments(docs);
+        
+        // Generate folders from document categories
+        const categories = [...new Set(docs.map(d => d.category))];
+        const folderData: Folder[] = categories.map(cat => ({
+          id: cat.toLowerCase(),
+          name: cat,
+          count: docs.filter(d => d.category === cat).length,
+          icon: 'FileText'
+        }));
+        setFolders(folderData);
+        
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load documents');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
+
+  const filteredDocuments = documents.filter(doc => {
+    const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || doc.category.toLowerCase() === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case "Leases": return "bg-blue-100 text-blue-700";
+      case "Invoices": return "bg-green-100 text-green-700";
+      case "Maintenance": return "bg-orange-100 text-orange-700";
+      case "Applications": return "bg-purple-100 text-purple-700";
+      case "ID Documents": return "bg-teal-100 text-teal-700";
+      case "Insurance": return "bg-red-100 text-red-700";
+      default: return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  return (
+    <div className="container mx-auto py-10 max-w-6xl">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Documents</h1>
+          <p className="text-gray-500 mt-1">
+            Manage all your property documents in one place.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline">
+            <Filter className="h-4 w-4 mr-2" />
+            Filter
+          </Button>
+          <Button>
+            <Upload className="h-4 w-4 mr-2" />
+            Upload Document
+          </Button>
+        </div>
+      </div>
+
+      {/* Folders Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        {folders.map(folder => (
+          <Card 
+            key={folder.id} 
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setSelectedCategory(folder.name.toLowerCase())}
+          >
+            <CardContent className="p-4">
+              <div className="flex flex-col items-center text-center">
+                <div className="p-3 bg-blue-100 rounded-lg mb-3">
+                  <FolderOpen className="h-6 w-6 text-blue-600" />
+                </div>
+                <h3 className="font-medium text-sm">{folder.name}</h3>
+                <p className="text-xs text-gray-500">{folder.count} files</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Search and View Toggle */}
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search documents..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                size="icon"
+                onClick={() => setViewMode("grid")}
+              >
+                <Grid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="icon"
+                onClick={() => setViewMode("list")}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Documents Display */}
+      {viewMode === "grid" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {filteredDocuments.map(doc => (
+            <Card key={doc.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <FileText className="h-6 w-6 text-gray-600" />
+                  </div>
+                  <Badge className={getCategoryColor(doc.category)}>
+                    {doc.category}
+                  </Badge>
+                </div>
+                <h4 className="font-medium text-sm mb-1 truncate">{doc.name}</h4>
+                <p className="text-xs text-gray-500 mb-3">{doc.size} • {doc.uploadedAt}</p>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <Home className="h-3 w-3" />
+                  {doc.property}
+                  {doc.unit && ` / ${doc.unit}`}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Name</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Category</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Property</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Size</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Date</th>
+                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-500">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {filteredDocuments.map(doc => (
+                  <tr key={doc.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-gray-400" />
+                        <span className="font-medium">{doc.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge className={getCategoryColor(doc.category)}>
+                        {doc.category}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Building2 className="h-4 w-4 text-gray-400" />
+                        {doc.property}
+                        {doc.unit && <span className="text-gray-400">/ {doc.unit}</span>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{doc.size}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{doc.uploadedAt}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon">
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State */}
+      {filteredDocuments.length === 0 && (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <File className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No documents found</h3>
+            <p className="text-gray-500 mb-4">
+              {searchTerm ? "Try adjusting your search terms" : "Upload your first document to get started"}
+            </p>
+            <Button>
+              <Upload className="h-4 w-4 mr-2" />
+              Upload Document
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

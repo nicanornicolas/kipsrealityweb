@@ -4,7 +4,7 @@
  * Requirements: 3.4, 3.5
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { prisma } from '@/lib/db';
 import { listingService } from '@/lib/listing-service';
@@ -16,7 +16,7 @@ import { BulkListingActions } from '@/components/Dashboard/listing/BulkListingAc
 import { ListingDetailsForm } from '@/components/Dashboard/listing/ListingDetailsForm';
 
 // Mock fetch for network error simulation
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 describe('Network Failure Handling and Recovery', () => {
@@ -245,7 +245,7 @@ describe('Validation Error Display and User Guidance', () => {
     };
 
     it('should display validation errors for empty required fields in ListingDecisionModal', async () => {
-        const mockOnDecision = jest.fn();
+        const mockOnDecision = vi.fn();
         
         render(
             <ListingDecisionModal
@@ -273,7 +273,7 @@ describe('Validation Error Display and User Guidance', () => {
     });
 
     it('should display validation errors for invalid price in ListingDetailsForm', async () => {
-        const mockOnSubmit = jest.fn();
+        const mockOnSubmit = vi.fn();
         
         render(
             <ListingDetailsForm
@@ -302,7 +302,7 @@ describe('Validation Error Display and User Guidance', () => {
     });
 
     it('should display validation errors for invalid date ranges', async () => {
-        const mockOnSubmit = jest.fn();
+        const mockOnSubmit = vi.fn();
         
         render(
             <ListingDetailsForm
@@ -339,7 +339,7 @@ describe('Validation Error Display and User Guidance', () => {
             bathrooms: 1
         }));
 
-        const mockOnBulkAction = jest.fn();
+        const mockOnBulkAction = vi.fn();
         
         render(
             <BulkListingActions
@@ -370,7 +370,7 @@ describe('Validation Error Display and User Guidance', () => {
             leaseEndDate: '2024-12-31'
         };
 
-        const mockOnDecision = jest.fn();
+        const mockOnDecision = vi.fn();
         
         render(
             <ListingDecisionModal
@@ -419,7 +419,7 @@ describe('Permission Denial Scenarios and Feedback', () => {
             permissions: []
         };
 
-        const mockOnStatusChange = jest.fn();
+        const mockOnStatusChange = vi.fn();
         
         render(
             <UnitListingStatusCard
@@ -453,7 +453,7 @@ describe('Permission Denial Scenarios and Feedback', () => {
             permissions: ['VIEW_LISTINGS']
         };
 
-        const mockOnBulkAction = jest.fn();
+        const mockOnBulkAction = vi.fn();
         
         render(
             <BulkListingActions
@@ -489,7 +489,7 @@ describe('Permission Denial Scenarios and Feedback', () => {
             permissions: ['MANAGE_LISTINGS']
         };
 
-        const mockOnDecision = jest.fn();
+        const mockOnDecision = vi.fn();
         
         render(
             <ListingDecisionModal

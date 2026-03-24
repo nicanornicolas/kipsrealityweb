@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Ensure the tenant application exists and is approved
-    const app = await prisma.tenantapplication.findUnique({
+    const app = await prisma.tenantApplication.findUnique({
       where: { id: applicationId },
       include: { property: true, unit: true },
     });
@@ -157,13 +157,13 @@ export async function GET(req: NextRequest) {
     // Add financial summary
     const leasesWithFinancials = leases.map((lease) => {
       const totalInvoiced =
-        lease.invoices?.reduce((sum, inv) => sum + toNumber(inv.totalAmount), 0) ?? 0;
+        lease.invoices?.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) ?? 0;
 
       const totalPaid =
         lease.invoices?.reduce(
           (sum, inv) =>
             sum +
-            inv.payments.reduce((paySum, pay) => paySum + toNumber(pay.amount), 0),
+            inv.payments.reduce((paySum, pay) => paySum + Number(pay.amount), 0),
           0
         ) ?? 0;
 

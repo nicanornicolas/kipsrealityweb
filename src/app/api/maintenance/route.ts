@@ -22,13 +22,13 @@ export async function GET(req: NextRequest) {
       where.status = status;
     }
     if (unassigned === "true") {
-      where.assigned_vendor_id = null;
+      where.assignedVendorId = null;
     }
     if (propertyId) {
       where.propertyId = propertyId;
     }
     if (vendorId) {
-      where.assigned_vendor_id = vendorId;
+      where.assignedVendorId = vendorId;
     }
 
     const requests = await (prisma as any).maintenanceRequest.findMany({
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
         },
         requestedBy: { include: { user: { select: { firstName: true, lastName: true, email: true } } } },
         unit: { select: { id: true, unitNumber: true, unitName: true } },
-        vendors: { include: { user: { select: { firstName: true, lastName: true } } } },
+        vendor: { include: { user: { select: { firstName: true, lastName: true } } } },
       },
     });
     return NextResponse.json(requests);

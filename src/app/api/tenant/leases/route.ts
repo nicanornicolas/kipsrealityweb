@@ -23,14 +23,12 @@ export async function GET(request: Request) {
       include: {
         property: {
           select: {
-            id: true,
             name: true,
             address: true
           }
         },
         unit: {
           select: {
-            id: true,
             unitNumber: true,
             unitName: true
           }
@@ -45,12 +43,10 @@ export async function GET(request: Request) {
     const transformedLeases = leases.map(lease => ({
       id: lease.id,
       property: {
-        id: lease.property?.id,
         name: lease.property?.name || 'Unnamed Property',
         address: lease.property?.address || ''
       },
       unit: {
-        id: lease.unit?.id,
         unitNumber: lease.unit?.unitNumber || '',
         unitName: lease.unit?.unitName || ''
       },

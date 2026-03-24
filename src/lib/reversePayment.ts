@@ -1,5 +1,6 @@
 import { prisma } from "./db";
 import crypto from "crypto";
+import { InvoiceStatus } from "@prisma/client";
 import { toNumber } from "./decimal-utils";
 
 export async function reversePayment(paymentId: string, userId: string, reason: string) {
@@ -17,11 +18,11 @@ export async function reversePayment(paymentId: string, userId: string, reason: 
     await tx.paymentReversal.create({
       data: {
         id: crypto.randomUUID(), // PaymentReversal has no default @id in schema
-        payment_id: payment.id,
-        invoice_id: payment.invoiceId,
-        amount: toNumber(payment.amount),
+        paymentId: payment.id,
+        invoiceId: payment.invoiceId,
+        amount: Number(payment.amount),
         reason,
-        reversed_by: userId,
+        reversedBy: userId,
       }
     });
 
@@ -36,8 +37,28 @@ export async function reversePayment(paymentId: string, userId: string, reason: 
       }
     });
 
-    // ⚠️ 3) Adjust invoice (BUT your invoice model has NO amountPaid/balance fields)
-    //     So we skip this step until you tell me your invoice structure.
+    const totalPaidAgg = await tx.payment.aggregate({
+      _sum: { amount: true },
+      where: { invoiceId: payment.invoiceId, isReversed: false },
+    });
+    const totalPaid = Number(totalPaidAgg._sum.amount ?? 0);
+    const totalAmount = Number(payment.invoice.totalAmount ?? 0);
+    const balance = totalAmount - totalPaid;
+    const dueDate = payment.invoice.dueDate ? new Date(payment.invoice.dueDate) : new Date();
+
+    let status: InvoiceStatus;
+    if (totalPaid >= totalAmount - 0.01) status = InvoiceStatus.PAID;
+    else if (new Date() > dueDate) status = InvoiceStatus.OVERDUE;
+    else status = InvoiceStatus.PENDING;
+
+    await tx.invoice.update({
+      where: { id: payment.invoiceId },
+      data: {
+        amountPaid: totalPaid,
+        balance,
+        status,
+      },
+    });
 
     return { success: true };
   });

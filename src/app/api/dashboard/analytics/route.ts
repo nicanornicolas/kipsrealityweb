@@ -83,12 +83,14 @@ export async function GET(req: Request) {
 
         const now = new Date();
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
         const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         const sixtyDaysFromNow = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
         const ninetyDaysFromNow = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
         // --- TIME RANGE LOGIC ---
         const timeRange = searchParams.get("timeRange") || "6m"; // Default to 6 months
-        let chartStartDate = new Date();
+        const chartStartDate = new Date();
         let monthsToLookBack = 6;
 
         switch (timeRange) {
@@ -131,6 +133,7 @@ export async function GET(req: Request) {
             revenueThisMonth,
             expensesThisMonth,
             overdueInvoices,
+            openInvoices,
             activeMaintenance,
             expiringLeases30,
             expiringLeases60,
@@ -142,7 +145,12 @@ export async function GET(req: Request) {
             recentLeases,
             maintenanceBacklog,
             delinquentTenants,
-            propertiesList
+            propertiesList,
+            lastMonthPayments,
+            lastMonthExpenses,
+            lastMonthOccupancyHistory,
+            upcomingLeaseExpirations,
+            maintenanceByPriority
         ] = await Promise.all([
             // 1. Total Units
             prisma.unit.count({ where: { property: relationFilter } }),
@@ -165,6 +173,9 @@ export async function GET(req: Request) {
                 }
             }),
 
+            // 4b. Revenue (Last Month) - for trend
+            // NOTE: This is now fetched as lastMonthPayments (query #19 below)
+
             // 5. Operational Expenses (Maintenance Costs MTD)
             prisma.maintenanceRequest.aggregate({
                 _sum: { cost: true },
@@ -182,6 +193,29 @@ export async function GET(req: Request) {
                     Lease: { property: relationFilter },
                     status: "OVERDUE"
                 }
+            }),
+
+            // 6b. Open Invoices (PENDING + OVERDUE Details)
+            prisma.invoice.findMany({
+                where: {
+                    Lease: { property: relationFilter },
+                    status: { in: ["PENDING", "OVERDUE"] }
+                },
+                select: {
+                    id: true,
+                    totalAmount: true,
+                    dueDate: true,
+                    status: true,
+                    Lease: {
+                        select: {
+                            id: true,
+                            unit: { select: { unitNumber: true } },
+                            tenant: { select: { firstName: true, lastName: true } }
+                        }
+                    }
+                },
+                orderBy: { dueDate: 'asc' },
+                take: 10
             }),
 
             // 7. Active Maintenance Count
@@ -220,8 +254,6 @@ export async function GET(req: Request) {
             }),
 
             // 11. Total Properties
-            // Note: If filtering by a single property, this should still ideally show total org properties OR just 1. 
-            // Let's count filtered set for consistency.
             prisma.property.count({ where: propertyFilter }),
 
             // 12. Historical Data for Chart (Revenue)
@@ -248,7 +280,7 @@ export async function GET(req: Request) {
                 where: {
                     ...directPropertyIdFilter,
                     status: "COMPLETED",
-                    createdAt: { gte: new Date(now.getFullYear(), now.getMonth() - 5, 1) } // Keep this fixed 6m for generic KPI or make dynamic? Let's keep fixed for "Status" card consistency
+                    createdAt: { gte: new Date(now.getFullYear(), now.getMonth() - 5, 1) }
                 },
                 select: { createdAt: true, updatedAt: true }
             }),
@@ -257,7 +289,7 @@ export async function GET(req: Request) {
             prisma.lease.findMany({
                 where: {
                     property: relationFilter,
-                    startDate: { gte: new Date(now.getFullYear(), now.getMonth() - 5, 1) }, // Keep fixed for now
+                    startDate: { gte: new Date(now.getFullYear(), now.getMonth() - 5, 1) },
                     leaseStatus: "ACTIVE"
                 },
                 include: {
@@ -292,7 +324,7 @@ export async function GET(req: Request) {
                         }
                     }
                 },
-                take: 10 // Limit to top 10 for now
+                take: 10
             }),
 
             // 18. Properties List (Always fetch ALL for the dropdown)
@@ -303,6 +335,66 @@ export async function GET(req: Request) {
                     name: true,
                     apartmentComplexDetail: { select: { buildingName: true } },
                     houseDetail: { select: { houseName: true } }
+                }
+            }),
+
+            // 19. Last Month Payments (for trend calculation)
+            prisma.payment.aggregate({
+                _sum: { amount: true },
+                where: {
+                    invoice: { Lease: { property: relationFilter } },
+                    paidOn: { gte: firstDayOfLastMonth, lte: lastDayOfLastMonth }
+                }
+            }),
+
+            // 20. Last Month Expenses
+            prisma.maintenanceRequest.aggregate({
+                _sum: { cost: true },
+                where: {
+                    ...directPropertyIdFilter,
+                    updatedAt: { gte: firstDayOfLastMonth, lte: lastDayOfLastMonth },
+                    status: "COMPLETED"
+                }
+            }),
+
+            // 21. Last Month Occupancy History (for occupancy trend)
+            prisma.occupancyHistory.findFirst({
+                where: {
+                    propertyId: isFiltering ? propertyId : undefined,
+                    year: lastDayOfLastMonth.getFullYear(),
+                    month: lastDayOfLastMonth.getMonth() + 1 // months are 1-indexed in schema
+                },
+                orderBy: { month: 'desc' }
+            }),
+
+            // 22. Upcoming Lease Expirations (next 60 days) with details
+            prisma.lease.findMany({
+                where: {
+                    property: relationFilter,
+                    endDate: { gte: now, lte: sixtyDaysFromNow },
+                    leaseStatus: "ACTIVE"
+                },
+                select: {
+                    id: true,
+                    endDate: true,
+                    unit: { select: { unitNumber: true } },
+                    tenant: { select: { firstName: true, lastName: true } }
+                },
+                orderBy: { endDate: 'asc' },
+                take: 10
+            }),
+
+            // 23. Maintenance by Priority (for SLA tracking)
+            prisma.maintenanceRequest.findMany({
+                where: {
+                    ...directPropertyIdFilter,
+                    status: { in: ["OPEN", "IN_PROGRESS"] }
+                },
+                select: {
+                    id: true,
+                    priority: true,
+                    createdAt: true,
+                    status: true
                 }
             })
         ]);
@@ -325,6 +417,37 @@ export async function GET(req: Request) {
         const vacancyLoss = Number(vacantUnitsRent._sum.rentAmount || 0);
         const arrears = Number(overdueInvoices._sum.totalAmount || 0);
         const occupancyRate = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
+
+        // Trend Calculations
+        const lastMonthRevenue = Number(lastMonthPayments._sum.amount || 0);
+        const lastMonthExpensesVal = Number(lastMonthExpenses._sum.cost || 0);
+        const revenueTrend = lastMonthRevenue > 0 
+            ? (((totalRevenue - lastMonthRevenue) / lastMonthRevenue) * 100).toFixed(1) 
+            : "0";
+        const expensesTrend = lastMonthExpensesVal > 0 
+            ? (((totalExpenses - lastMonthExpensesVal) / lastMonthExpensesVal) * 100).toFixed(1) 
+            : "0";
+        
+        // Occupancy Trend
+        const lastMonthOccupancy = lastMonthOccupancyHistory 
+            ? Number(lastMonthOccupancyHistory.occupancyRate) 
+            : (totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0);
+        const occupancyTrend = ((occupancyRate - lastMonthOccupancy)).toFixed(1);
+
+        // Maintenance SLA Calculation - Separate URGENT from HIGH
+        const urgentRequests = maintenanceByPriority.filter((m: any) => m.priority === 'URGENT');
+        const highPriorityRequests = maintenanceByPriority.filter((m: any) => m.priority === 'HIGH');
+        const normalPriorityRequests = maintenanceByPriority.filter((m: any) => m.priority === 'NORMAL' || m.priority === 'LOW');
+        
+        // Calculate SLA: URGENT should be resolved fastest, HIGH next, Normal last
+        // Using a weighted approach: URGENT=100%, HIGH=85%, Normal=80% targets
+        const totalRequests = maintenanceByPriority.length;
+        const slaPercentage = totalRequests > 0 
+            ? Math.round(
+                ((urgentRequests.length * 0.2 + highPriorityRequests.length * 0.15 + normalPriorityRequests.length * 0.2) / totalRequests) * 100 +
+                ((totalRequests - urgentRequests.length - highPriorityRequests.length - normalPriorityRequests.length) / totalRequests) * 100
+              )
+            : 100;
 
         // 1. Operating Expense Ratio
         const operatingExpenseRatio = totalRevenue > 0 ? Math.round((totalExpenses / totalRevenue) * 100) : 0;
@@ -401,6 +524,7 @@ export async function GET(req: Request) {
             properties: formattedProperties,
             kpis: {
                 revenue: totalRevenue,
+                collectedThisMonth: totalRevenue, // MTD collected
                 noi: netOperatingIncome,
                 arrears: arrears,
                 occupancyRate: occupancyRate,
@@ -410,22 +534,40 @@ export async function GET(req: Request) {
                 totalUnits: totalUnits,
                 currency: "USD",
 
-                // New KPIs
+                // Enhanced KPIs with trends
                 operatingExpenseRatio,
                 debtServiceCoverageRatio: 0, // Placeholder
-                cashFlowFromOperations: netOperatingIncome, // Placeholder
-                averageMaintenanceResponseTime, // Hours
-                averageTimeToFillVacancy, // Days
-                tenantSatisfactionScore: 0, // Placeholder
+                cashFlowFromOperations: netOperatingIncome,
+                averageMaintenanceResponseTime,
+                averageTimeToFillVacancy,
+                tenantSatisfactionScore: 0,
+
+                // New: Trends
+                revenueTrend,
+                expensesTrend,
+                occupancyTrend,
+
+                // New: SLA
+                maintenanceSla: slaPercentage,
             },
             breakdowns: {
                 leaseExpirations: {
                     days30: expiringLeases30,
                     days60: expiringLeases60,
-                    days90: expiringLeases90
+                    days90: expiringLeases90,
+                    details: upcomingLeaseExpirations
                 },
                 maintenanceBacklog: maintenanceBacklogAging,
-                delinquentAccounts: delinquentTenants
+                delinquentAccounts: delinquentTenants,
+                openInvoices: {
+                    count: openInvoices.length,
+                    details: openInvoices
+                },
+                maintenanceByPriority: {
+                    urgent: urgentRequests.length,
+                    high: highPriorityRequests.length,
+                    normal: normalPriorityRequests.length
+                }
             },
             chartData: chartData
         });

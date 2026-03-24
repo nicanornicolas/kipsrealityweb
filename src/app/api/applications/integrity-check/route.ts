@@ -79,7 +79,7 @@ export async function GET(request: Request) {
       whereClause.propertyId = propertyId;
     }
 
-    const applications = await prisma.tenantapplication.findMany({
+    const applications = await prisma.tenantApplication.findMany({
       where: whereClause,
       select: {
         id: true,

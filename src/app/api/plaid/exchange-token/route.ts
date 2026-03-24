@@ -2,13 +2,28 @@ import { NextResponse } from "next/server";
 import { plaidClient, createStripeBankAccountToken } from "@/lib/payment/services/plaid-service";
 import { prisma } from "@/lib/db";
 import Stripe from "stripe";
+import crypto from "crypto";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-    apiVersion: "2026-01-28.clover"
-});
+let stripeClient: Stripe | null = null;
+
+function getStripeClient() {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+        throw new Error("Stripe not configured: STRIPE_SECRET_KEY is missing");
+    }
+
+    if (!stripeClient) {
+        stripeClient = new Stripe(stripeSecretKey, {
+            apiVersion: "2026-01-28.clover"
+        });
+    }
+
+    return stripeClient;
+}
 
 export async function POST(req: Request) {
     try {
+        const stripe = getStripeClient();
         const body = await req.json();
         const { publicToken, accountId, userId } = body; // Data from Frontend
 
@@ -45,12 +60,14 @@ export async function POST(req: Request) {
         // NOTE: In production, encrypt `accessToken` before saving.
         await prisma.tenantPaymentMethod.create({
             data: {
+                id: crypto.randomUUID(),
                 userId,
                 type: 'ACH',
                 plaidAccessToken: accessToken, // ENCRYPT THIS
                 plaidAccountId: accountId,
                 stripePaymentMethodId: source.id,
-                isDefault: true
+                isDefault: true,
+                updatedAt: new Date(),
             }
         });
 

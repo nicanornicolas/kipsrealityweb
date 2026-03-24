@@ -29,7 +29,7 @@ export async function GET(
     const dueDate = new Date(dateString);
 
     // Fetch all invoices for this lease and due date
-    const invoices: InvoiceWithRelations[] = await prisma.invoice.findMany({
+    const rawInvoices = await prisma.invoice.findMany({
       where: {
         leaseId: leaseId,
         dueDate: {
@@ -50,6 +50,8 @@ export async function GET(
       },
       orderBy: { type: 'asc' }
     });
+
+    const invoices: InvoiceWithRelations[] = rawInvoices;
 
     if (!invoices.length) {
       return NextResponse.json(

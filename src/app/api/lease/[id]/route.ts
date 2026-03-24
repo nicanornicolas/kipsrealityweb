@@ -106,9 +106,9 @@ export async function GET(
     }
 
     // 🧮 Balance calculation
-    const totalInvoiced = lease.invoices.reduce((sum, inv) => sum + toNumber(inv.totalAmount), 0);
+    const totalInvoiced = lease.invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
     const totalPaid = lease.invoices.reduce(
-      (sum, inv) => sum + inv.payments.reduce((pSum, p) => pSum + toNumber(p.amount), 0),
+      (sum, inv) => sum + inv.payments.reduce((pSum, p) => pSum + Number(p.amount), 0),
       0
     );
     const balance = totalInvoiced - totalPaid;

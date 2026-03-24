@@ -54,13 +54,14 @@ export async function GET(
 
     // Transform invoices to match the expected interface
     const transformedInvoices = invoices.map(invoice => {
-      const totalPaid = invoice.payments.reduce((sum, payment) => sum + toNumber(payment.amount), 0);
-      const balance = toNumber(invoice.totalAmount) - totalPaid;
+      const invoiceTotalAmount = Number(invoice.totalAmount);
+      const totalPaid = invoice.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+      const balance = invoiceTotalAmount - totalPaid;
       
       return {
         id: invoice.id,
         type: invoice.type,
-        totalAmount: toNumber(invoice.totalAmount),
+        totalAmount: invoiceTotalAmount,
         balance: balance,
         amountPaid: totalPaid,
         status: invoice.status || 'PENDING',

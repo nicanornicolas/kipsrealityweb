@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { LeaseStatus } from "@prisma/client";
 
 export async function GET(
     _req: NextRequest,
@@ -25,17 +26,17 @@ export async function GET(
         }
 
         // Get all readings for lease utilities that use this utility
-        const readings = await prisma.utility_reading.findMany({
+        const readings = await prisma.utilityReading.findMany({
             where: {
-                lease_utility: {
-                    utility_id: utilityId,
+                leaseUtility: {
+                    utilityId,
                 },
             },
             include: {
-                lease_utility: {
+                leaseUtility: {
                     include: {
                         utility: true,
-                        Lease: {
+                        lease: {
                             include: {
                                 tenant: true,
                                 unit: true,
@@ -50,23 +51,23 @@ export async function GET(
 
         const formatted = readings.map((r: any) => ({
             id: r.id,
-            leaseUtilityId: r.lease_utility_id,
-            readingValue: r.reading_value,
+            leaseUtilityId: r.leaseUtilityId,
+            readingValue: r.readingValue,
             amount: r.amount,
             readingDate: r.readingDate,
             createdAt: r.createdAt,
             unit: {
-                id: r.lease_utility.Lease?.unit?.id,
-                unitNumber: r.lease_utility.Lease?.unit?.unitNumber,
+                id: r.leaseUtility.lease?.unit?.id,
+                unitNumber: r.leaseUtility.lease?.unit?.unitNumber,
             },
             tenant: {
-                name: r.lease_utility.Lease?.tenant
-                    ? `${r.lease_utility.Lease.tenant?.firstName ?? ""} ${r.lease_utility.Lease.tenant?.lastName ?? ""}`.trim() || "Unknown"
+                name: r.leaseUtility.lease?.tenant
+                    ? `${r.leaseUtility.lease.tenant?.firstName ?? ""} ${r.leaseUtility.lease.tenant?.lastName ?? ""}`.trim() || "Unknown"
                     : "Unknown",
             },
             property: {
-                id: r.lease_utility.Lease?.property?.id,
-                name: r.lease_utility.Lease?.property?.name,
+                id: r.leaseUtility.lease?.property?.id,
+                name: r.leaseUtility.lease?.property?.name,
             },
         }));
 
@@ -97,11 +98,11 @@ export async function POST(
         }
 
         // Verify lease utility exists and uses this utility
-        const leaseUtility = await prisma.lease_utility.findUnique({
+        const leaseUtility = await prisma.leaseUtility.findUnique({
             where: { id: leaseUtilityId },
             include: {
                 utility: true,
-                Lease: { select: { leaseStatus: true } },
+                lease: { select: { leaseStatus: true } },
             },
         });
 
@@ -112,7 +113,7 @@ export async function POST(
             );
         }
 
-        if (leaseUtility.utility_id !== utilityId) {
+        if (leaseUtility.utilityId !== utilityId) {
             return NextResponse.json(
                 { success: false, error: "INVALID_INPUT", message: "Lease utility does not match utility" },
                 { status: 400 }
@@ -120,7 +121,7 @@ export async function POST(
         }
 
         // Check lease is active
-        if (leaseUtility.Lease.leaseStatus !== "ACTIVE") {
+        if (leaseUtility.lease.leaseStatus !== LeaseStatus.ACTIVE) {
             return NextResponse.json(
                 { success: false, error: "LEASE_NOT_ACTIVE" },
                 { status: 400 }
@@ -128,7 +129,7 @@ export async function POST(
         }
 
         // Check tenant responsibility
-        if (!leaseUtility.is_tenant_responsible) {
+        if (!leaseUtility.isTenantResponsible) {
             return NextResponse.json(
                 { success: false, error: "UTILITY_NOT_TENANT_RESPONSIBLE" },
                 { status: 400 }
@@ -144,12 +145,12 @@ export async function POST(
         }
 
         // Get previous reading and validate monotonic increase
-        const previous = await prisma.utility_reading.findFirst({
-            where: { lease_utility_id: leaseUtilityId },
+        const previous = await prisma.utilityReading.findFirst({
+            where: { leaseUtilityId },
             orderBy: { readingDate: "desc" },
         });
 
-        if (previous && readingValue < previous.reading_value) {
+        if (previous && readingValue < previous.readingValue) {
             return NextResponse.json(
                 { success: false, error: "DECREASING_VALUE" },
                 { status: 400 }
@@ -157,15 +158,15 @@ export async function POST(
         }
 
         // Calculate amount based on consumption
-        const prevVal = previous?.reading_value ?? 0;
+        const prevVal = previous?.readingValue ?? 0;
         const consumption = readingValue - prevVal;
         const amount = consumption * (leaseUtility.utility.unitPrice ?? 0);
 
         // Create reading
-        const newReading = await prisma.utility_reading.create({
+        const newReading = await prisma.utilityReading.create({
             data: {
-                lease_utility_id: leaseUtilityId,
-                reading_value: readingValue,
+                leaseUtilityId,
+                readingValue,
                 readingDate: readingDate ? new Date(readingDate) : new Date(),
                 amount,
             },
@@ -183,3 +184,4 @@ export async function POST(
         );
     }
 }
+

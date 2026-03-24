@@ -166,9 +166,20 @@ export default function PaymentsPage() {
     try {
       const res = await fetch("/api/invoices?status=PENDING,OVERDUE");
       if (!res.ok) throw new Error("Failed to fetch invoices");
-      const data: Invoice[] = await res.json();
-      setPendingInvoices(data);
-      setFilteredInvoices(data);
+      const data = await res.json();
+      
+      // Handle both grouped and flat response formats
+      let invoiceList: Invoice[] = [];
+      if (data.invoices && Array.isArray(data.invoices)) {
+        // New format with separate invoices array
+        invoiceList = data.invoices;
+      } else if (Array.isArray(data)) {
+        // Old flat format
+        invoiceList = data;
+      }
+      
+      setPendingInvoices(invoiceList);
+      setFilteredInvoices(invoiceList);
     } catch (error) {
       console.error(error);
       toast.error("Failed to load pending invoices");
