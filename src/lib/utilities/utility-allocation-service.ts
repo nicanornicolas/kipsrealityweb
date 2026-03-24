@@ -31,6 +31,9 @@ import {
     type AllocateBillResult,
     type UtilityAllocationResult,
     type UtilitySplitContext,
+    type UtilityAllocationPayload,
+    type AllocationMethod,
+    type UnitAllocation,
     UtilityBillStatus,
     UtilitySplitMethod,
 } from "./utility-types";
@@ -458,6 +461,123 @@ export async function getAllocationsForBill(
         amount: Number(a.amount),
         percentage: Number(a.percentage ?? 0),
     }));
+}
+
+// =============================================================================
+// AI-READY ALLOCATION FACADE (Future-Proofed)
+// =============================================================================
+
+export class UtilityAllocationService {
+    /**
+     * Calculates utility splits for a property.
+     * In the future, if method === 'AI_SUGGESTED', this will ping the Python FastAPI sidecar.
+     */
+    static async calculateAllocations(
+        propertyId: string,
+        billId: string,
+        providerName: "KPLC" | "NAIROBI_WATER" | "OTHER",
+        totalAmount: number,
+        dueDate: string,
+        method: AllocationMethod
+    ): Promise<UtilityAllocationPayload> {
+        const units = await prisma.unit.findMany({
+            where: { propertyId, isOccupied: true },
+            include: {
+                leases: {
+                    where: { leaseStatus: "ACTIVE" },
+                    take: 1,
+                    include: {
+                        application: { select: { occupants: true } },
+                    },
+                },
+            },
+        });
+
+        if (units.length === 0) {
+            throw new Error("No occupied units found for allocation.");
+        }
+
+        const allocations: UnitAllocation[] = [];
+
+        if (method === "EQUAL_SPLIT") {
+            const splitAmount = totalAmount / units.length;
+            const percentage = (1 / units.length) * 100;
+
+            for (const unit of units) {
+                const lease = unit.leases[0];
+                allocations.push({
+                    unitId: unit.id,
+                    tenantId: lease?.tenantId ?? "UNKNOWN",
+                    amount: Number(splitAmount.toFixed(2)),
+                    percentage: Number(percentage.toFixed(2)),
+                    explanation: `Equal split across ${units.length} occupied units.`,
+                });
+            }
+        } else if (method === "RUBS_OCCUPANCY") {
+            const totalOccupants = units.reduce((sum, unit) => {
+                const headcount = unit.leases[0]?.application?.occupants ?? 1;
+                return sum + headcount;
+            }, 0);
+
+            for (const unit of units) {
+                const headcount = unit.leases[0]?.application?.occupants ?? 1;
+                const percentage = (headcount / totalOccupants) * 100;
+                const amount = (totalAmount * percentage) / 100;
+
+                allocations.push({
+                    unitId: unit.id,
+                    tenantId: unit.leases[0]?.tenantId ?? "UNKNOWN",
+                    amount: Number(amount.toFixed(2)),
+                    percentage: Number(percentage.toFixed(2)),
+                    explanation: `Calculated based on ${headcount} occupant(s) out of ${totalOccupants} total in building.`,
+                });
+            }
+        } else if (method === "SQUARE_FOOTAGE") {
+            const totalSqFt = units.reduce((sum, unit) => sum + (unit.squareFootage ?? 0), 0);
+            if (totalSqFt === 0) {
+                throw new Error("Square footage data missing for allocation.");
+            }
+
+            for (const unit of units) {
+                const sqFt = unit.squareFootage ?? 0;
+                const percentage = (sqFt / totalSqFt) * 100;
+                const amount = (totalAmount * percentage) / 100;
+
+                allocations.push({
+                    unitId: unit.id,
+                    tenantId: unit.leases[0]?.tenantId ?? "UNKNOWN",
+                    amount: Number(amount.toFixed(2)),
+                    percentage: Number(percentage.toFixed(2)),
+                    explanation: `Allocated by square footage (${sqFt.toFixed(0)} sq ft).`,
+                });
+            }
+        } else {
+            const splitAmount = totalAmount / units.length;
+            const percentage = (1 / units.length) * 100;
+
+            for (const unit of units) {
+                const lease = unit.leases[0];
+                allocations.push({
+                    unitId: unit.id,
+                    tenantId: lease?.tenantId ?? "UNKNOWN",
+                    amount: Number(splitAmount.toFixed(2)),
+                    percentage: Number(percentage.toFixed(2)),
+                    explanation: `Defaulted to equal split pending AI method.`,
+                });
+            }
+        }
+
+        return {
+            utilityBillId: billId,
+            propertyId,
+            providerName,
+            totalAmount,
+            dueDate,
+            splitMethod: method,
+            confidenceScore: 1.0,
+            allocations,
+        };
+    }
 }
 
 // allocateCustomRatio is part of future allocation strategies
