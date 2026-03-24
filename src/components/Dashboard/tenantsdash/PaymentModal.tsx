@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,7 @@ export function PaymentModal({
   currency = "KES",
   onPaymentSuccess,
 }: PaymentModalProps) {
+  const router = useRouter();
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("mpesa");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -91,6 +93,7 @@ export function PaymentModal({
       const response = await fetch("/api/payments/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           invoiceId,
           paymentMethod: selectedMethod,
@@ -102,6 +105,15 @@ export function PaymentModal({
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 401) {
+          const returnUrl =
+            typeof window !== "undefined"
+              ? `${window.location.pathname}${window.location.search}`
+              : "/";
+          toast.error("Please sign in to continue with payment.");
+          router.push(`/login?next=${encodeURIComponent(returnUrl)}`);
+          return;
+        }
         throw new Error(data.error || "Payment initialization failed");
       }
 
@@ -150,17 +162,40 @@ export function PaymentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Make Payment</DialogTitle>
-          <DialogDescription>
-            Pay your invoice using your preferred payment method
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="w-[min(100vw-1.5rem,720px)] max-h-[85vh] overflow-y-auto rounded-2xl border-slate-200/70 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950">
+        <div className="border-b border-slate-200/70 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-6 py-5 dark:border-slate-800 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              Make Payment
+            </DialogTitle>
+            <DialogDescription className="text-slate-600 dark:text-slate-300">
+              Pay your invoice using your preferred payment method
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-6 py-4">
+          {/* Mobile-only quick summary */}
+          <div className="mt-4 flex items-center justify-between rounded-lg border border-blue-200/70 bg-blue-50 px-3 py-2 text-blue-900 sm:hidden">
+            <div className="flex flex-col">
+              <span className="text-[11px] uppercase tracking-wide text-blue-700">
+                Amount
+              </span>
+              <span className="text-base font-semibold">{formatAmount()}</span>
+            </div>
+            <div className="h-8 w-px bg-blue-200/80" />
+            <div className="flex flex-col text-right">
+              <span className="text-[11px] uppercase tracking-wide text-blue-700">
+                Invoice
+              </span>
+              <span className="text-sm font-semibold">
+                #{invoiceId ? invoiceId.slice(0, 8) : "—"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6 px-6 py-5">
           {/* Amount Display */}
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
+          <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 p-4">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-blue-800">Amount to Pay</span>
               <span className="text-2xl font-bold text-blue-900">{formatAmount()}</span>
@@ -175,7 +210,7 @@ export function PaymentModal({
           {/* Payment Method Selection */}
           <div className="space-y-4">
             <Label className="text-base font-semibold">Select Payment Method</Label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {paymentMethods.map((method) => {
                 const Icon = method.icon;
                 const isSelected = selectedMethod === method.id;
@@ -192,13 +227,16 @@ export function PaymentModal({
                     />
                     <Label
                       htmlFor={method.id}
-                      className={`flex flex-col items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${method.color} ${isSelected ? 'border-2 ring-2 ring-offset-2 ring-blue-500' : ''}`}
+                      className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] ${method.color} ${isSelected ? "border-2 ring-2 ring-blue-500 ring-offset-2" : ""}`}
                     >
-                      <Icon className={`w-8 h-8 mb-2 ${method.iconColor}`} />
-                      <span className="font-medium text-sm">{method.label}</span>
-                      <span className="text-xs text-center mt-1 opacity-80">
+                      <Icon className={`mb-2 h-8 w-8 transition-transform duration-200 group-hover:scale-110 ${method.iconColor}`} />
+                      <span className="text-sm font-medium transition-colors duration-200 group-hover:text-slate-900">
+                        {method.label}
+                      </span>
+                      <span className="mt-1 text-xs opacity-80">
                         {method.description}
                       </span>
+                      <span className={`mt-2 h-1 w-10 rounded-full bg-current/30 transition-all duration-200 ${isSelected ? "w-16 bg-current/60" : "group-hover:w-12"}`} />
                     </Label>
                   </div>
                 );
@@ -208,12 +246,12 @@ export function PaymentModal({
 
           {/* M-Pesa Phone Number Input */}
           {selectedMethod === "mpesa" && (
-            <div className="space-y-3">
-              <Label htmlFor="phone" className="text-sm font-medium">
+            <div className="space-y-3 rounded-xl border border-blue-200 bg-blue-50/70 p-4">
+              <Label htmlFor="phone" className="text-sm font-medium text-blue-900">
                 Enter M-Pesa Phone Number
               </Label>
               <div className="flex items-center gap-2">
-                <span className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-lg text-gray-700">
+                <span className="rounded-l-lg border border-blue-200 bg-white px-3 py-2 text-blue-700">
                   +254
                 </span>
                 <Input
@@ -222,10 +260,10 @@ export function PaymentModal({
                   placeholder="7XXXXXXXX"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
-                  className="flex-1 rounded-l-none"
+                  className="flex-1 rounded-l-none border-blue-200 bg-white focus-visible:ring-blue-500"
                 />
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-blue-700/80">
                 Enter your Safaricom number to receive STK Push prompt
               </p>
             </div>
@@ -233,7 +271,7 @@ export function PaymentModal({
 
           {/* Card Details Input (for demo) */}
           {selectedMethod === "card" && (
-            <div className="space-y-4 border border-gray-200 rounded-lg p-4">
+            <div className="space-y-4 rounded-lg border border-gray-200 p-4">
               <Label className="text-sm font-medium">Card Details</Label>
               <div className="space-y-3">
                 <Input
@@ -274,42 +312,42 @@ export function PaymentModal({
           )}
 
           {/* Payment Method Notes */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <h4 className="mb-2 text-sm font-medium text-gray-700">
               About {paymentMethods.find(m => m.id === selectedMethod)?.label}:
             </h4>
             {selectedMethod === "mpesa" && (
-              <ul className="text-xs text-gray-600 space-y-1">
-                <li>• You will receive an STK Push prompt on your phone</li>
-                <li>• Enter your M-Pesa PIN to complete payment</li>
-                <li>• Transaction fee: KSh 0 (waived for rent payments)</li>
+              <ul className="list-disc space-y-1 pl-4 text-xs text-gray-600">
+                <li>You will receive an STK Push prompt on your phone</li>
+                <li>Enter your M-Pesa PIN to complete payment</li>
+                <li>Transaction fee: KSh 0 (waived for rent payments)</li>
               </ul>
             )}
             {selectedMethod === "paystack" && (
-              <ul className="text-xs text-gray-600 space-y-1">
-                <li>• Redirect to Paystack for secure payment</li>
-                <li>• Supports cards, bank transfers, and mobile money</li>
-                <li>• Available for Nigeria and Ghana residents</li>
+              <ul className="list-disc space-y-1 pl-4 text-xs text-gray-600">
+                <li>Redirect to Paystack for secure payment</li>
+                <li>Supports cards, bank transfers, and mobile money</li>
+                <li>Available for Nigeria and Ghana residents</li>
               </ul>
             )}
             {selectedMethod === "stripe" && (
-              <ul className="text-xs text-gray-600 space-y-1">
-                <li>• Secure international card payments</li>
-                <li>• Supports Visa, Mastercard, American Express</li>
-                <li>• 3D Secure authentication required</li>
+              <ul className="list-disc space-y-1 pl-4 text-xs text-gray-600">
+                <li>Secure international card payments</li>
+                <li>Supports Visa, Mastercard, American Express</li>
+                <li>3D Secure authentication required</li>
               </ul>
             )}
             {selectedMethod === "plaid" && (
-              <ul className="text-xs text-gray-600 space-y-1">
-                <li>• Connect directly to your US bank account</li>
-                <li>• No card details needed</li>
-                <li>• ACH transfers with 2-3 business day settlement</li>
+              <ul className="list-disc space-y-1 pl-4 text-xs text-gray-600">
+                <li>Connect directly to your US bank account</li>
+                <li>No card details needed</li>
+                <li>ACH transfers with 2-3 business day settlement</li>
               </ul>
             )}
           </div>
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-3">
+        <DialogFooter className="flex flex-col gap-3 border-t border-slate-200/70 px-6 py-5 sm:flex-row dark:border-slate-800">
           <Button
             type="button"
             variant="outline"
