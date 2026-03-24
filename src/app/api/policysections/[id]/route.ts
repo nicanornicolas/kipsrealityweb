@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { requireSystemAdmin } from "@/lib/rbac/requireRole";
 
 const prisma = new PrismaClient();
 
@@ -15,6 +16,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Role check: Only SYSTEM_ADMIN can update policy sections
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -29,6 +34,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Role check: Only SYSTEM_ADMIN can delete policy sections
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     await prisma.section.delete({ where: { id: Number(id) } });
