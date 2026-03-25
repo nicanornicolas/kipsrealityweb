@@ -50,7 +50,13 @@ export default function DashboardChartTooltip({
 					const color = item.color || item.stroke || item.fill || "#111827";
 					const name = item.name ?? "Value";
 					const displayName = nameFormatter ? nameFormatter(name) : name;
-					const displayValue = valueFormatter ? valueFormatter(item.value ?? "-", item) : formatValue(item.value);
+					const rawValue = item.value;
+					const displayValue =
+						rawValue === null || rawValue === undefined
+							? "-"
+							: valueFormatter
+								? valueFormatter(rawValue, item)
+								: formatValue(rawValue);
 					return (
 						<p key={idx} className="flex justify-between gap-4 font-semibold" style={{ color }}>
 							<span>{displayName}</span>
