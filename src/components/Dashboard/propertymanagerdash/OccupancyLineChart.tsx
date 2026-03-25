@@ -84,14 +84,14 @@ const OccupancyLineChart: React.FC<OccupancyLineChartProps> = ({ selectedPropert
 	}));
 
 	return (
-		<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-			<CardContent className="p-0 flex flex-col justify-center min-h-[300px]">
+		<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 min-h-[350px]">
+			<CardContent className="p-0 flex flex-col min-h-[300px] h-full w-full relative">
 				<div className="mb-4">
 					<h3 className="text-lg font-semibold text-gray-900">Occupancy Rate</h3>
 				</div>
-				<div className="w-full overflow-x-auto custom-scrollbar pb-2">
-					<div style={{ minWidth: "100%", width: Math.max(600, chartData.length * 60) }}>
-						<ResponsiveContainer width="100%" height={300}>
+				<div className="flex-1 w-full overflow-x-auto custom-scrollbar pb-2">
+					<div style={{ minWidth: "100%", width: Math.max(600, chartData.length * 60), height: "100%" }}>
+						<ResponsiveContainer width="100%" height="100%">
 							<LineChart
 								data={chartData}
 								margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
@@ -106,7 +106,10 @@ const OccupancyLineChart: React.FC<OccupancyLineChartProps> = ({ selectedPropert
 									padding={{ left: 10, right: 10 }}
 								/>
 								<YAxis domain={[0, 100]} tickFormatter={tick => `${tick}%`} />
-								<Tooltip />
+								<Tooltip
+									wrapperStyle={{ zIndex: 50 }}
+									contentStyle={{ backgroundColor: "white", borderRadius: "8px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+								/>
 								<Legend formatter={(value) => {
 									const prop = myproperties.find(p => p.id === value);
 									return prop ? getPropertyDisplayName(prop) : value;
@@ -137,7 +140,7 @@ const OccupancyLineChart: React.FC<OccupancyLineChartProps> = ({ selectedPropert
 					</div>
 				</div>
 			</CardContent>
-			<div className="h-full min-h-[300px]">
+			<div className="h-full min-h-[300px] w-full relative">
 				<RentUtilitiesChart selectedProperty={selectedProperty} myproperties={safeMyProperties} />
 			</div>
 		</div>

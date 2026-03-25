@@ -79,7 +79,10 @@ export default function RentUtilitiesChart({ myproperties, selectedProperty }: R
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis />
-          <Tooltip />
+          <Tooltip
+            wrapperStyle={{ zIndex: 50 }}
+            contentStyle={{ backgroundColor: "white", borderRadius: "8px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+          />
           <Legend />
           <Bar dataKey="rentCollected" name="Rent Collected" />
           <Bar dataKey="utilitiesPaid" name="Utilities Paid" />
