@@ -321,7 +321,7 @@ export default function Dashboard() {
 						<h4 className="text-sm font-semibold text-slate-800">Occupancy Trend</h4>
 						<span className="text-[10px] text-slate-400 uppercase tracking-wider">Last 7 months</span>
 					</div>
-					<div className="flex-1 bg-slate-50/50 rounded-lg flex items-stretch justify-stretch border-2 border-dashed border-slate-100">
+					<div className="flex-1 bg-slate-50/50 rounded-lg flex items-stretch border-2 border-dashed border-slate-100">
 						{isZeroDataState ? (
 							<div className="w-full h-full flex items-center justify-center">
 								<p className="text-xs text-slate-400">Add properties to see trends</p>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { CardContent } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import RentUtilitiesChart from "./RentUtilitiesChart";
+import DashboardChartTooltip, { DASHBOARD_TOOLTIP_WRAPPER_STYLE } from "./DashboardChartTooltip";
 
 // Utility: generate color palette
 const COLORS = [
@@ -107,8 +108,15 @@ const OccupancyLineChart: React.FC<OccupancyLineChartProps> = ({ selectedPropert
 								/>
 								<YAxis domain={[0, 100]} tickFormatter={tick => `${tick}%`} />
 								<Tooltip
-									wrapperStyle={{ zIndex: 50 }}
-									contentStyle={{ backgroundColor: "white", borderRadius: "8px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+									content={
+										<DashboardChartTooltip
+											valueFormatter={(value) => {
+												if (typeof value === "number") return `${value.toFixed(1)}%`;
+												return `${value}%`;
+											}}
+										/>
+									}
+									wrapperStyle={DASHBOARD_TOOLTIP_WRAPPER_STYLE}
 								/>
 								<Legend formatter={(value) => {
 									const prop = myproperties.find(p => p.id === value);

@@ -1,5 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import React, { useEffect, useState, useMemo } from 'react';
+import DashboardChartTooltip, { DASHBOARD_TOOLTIP_WRAPPER_STYLE } from "./DashboardChartTooltip";
 
 interface Property {
   id: string;
@@ -80,8 +81,15 @@ export default function RentUtilitiesChart({ myproperties, selectedProperty }: R
           <XAxis dataKey="name" />
           <YAxis />
           <Tooltip
-            wrapperStyle={{ zIndex: 50 }}
-            contentStyle={{ backgroundColor: "white", borderRadius: "8px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+            content={
+              <DashboardChartTooltip
+                valueFormatter={(value) => {
+                  if (typeof value === "number") return `$${value.toLocaleString()}`;
+                  return `$${value}`;
+                }}
+              />
+            }
+            wrapperStyle={DASHBOARD_TOOLTIP_WRAPPER_STYLE}
           />
           <Legend />
           <Bar dataKey="rentCollected" name="Rent Collected" />
