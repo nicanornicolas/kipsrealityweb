@@ -121,9 +121,9 @@ export default function TenantInvoices() {
     setReference("");
   }
 
-  async function viewReceipt(paymentId: string) {
+  async function viewReceipt(receiptId: string) {
     try {
-      const res = await fetch(`/api/receipt/${paymentId}`);
+      const res = await fetch(`/api/receipt/${receiptId}`);
       if (!res.ok) throw new Error("Receipt not found");
       const receipt: Receipt = await res.json();
       setViewingReceipt(receipt); // store receipt for modal
@@ -780,8 +780,8 @@ export default function TenantInvoices() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col gap-2">
-                            {/* Show Pay Now button only if invoice is pending */}
-                            {inv.status === "PENDING" && (
+                            {/* Show Pay Now button when a balance remains */}
+                            {remaining > 0 && inv.status !== "PAID" && (
                               <Button
                                 onClick={() => openPaymentModal(inv.id)}
                                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm"
@@ -797,7 +797,7 @@ export default function TenantInvoices() {
                                 pmt.receipt!.map(rcpt => (
                                   <Button
                                     key={rcpt.id}
-                                    onClick={() => viewReceipt(pmt.id)}
+                                    onClick={() => viewReceipt(rcpt.id)}
                                     variant="outline"
                                     className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                                   >
@@ -888,7 +888,7 @@ export default function TenantInvoices() {
                     </div>
 
                     <div className="flex flex-col gap-2 pt-2">
-                      {inv.status === "PENDING" && (
+                      {remaining > 0 && inv.status !== "PAID" && (
                         <Button
                           onClick={() => openPaymentModal(inv.id)}
                           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
@@ -903,7 +903,7 @@ export default function TenantInvoices() {
                           pmt.receipt!.map(rcpt => (
                             <Button
                               key={rcpt.id}
-                              onClick={() => viewReceipt(pmt.id)}
+                              onClick={() => viewReceipt(rcpt.id)}
                               variant="outline"
                               className="w-full border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                             >
