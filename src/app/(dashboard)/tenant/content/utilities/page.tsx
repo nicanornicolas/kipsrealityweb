@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
     Table,
     TableBody,
@@ -170,8 +171,8 @@ export default function TenantUtilitiesPage() {
                 </Select>
             </div>
 
-            {/* Table */}
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            {/* Table (Desktop) */}
+            <div className="hidden md:block rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                 <Table>
                     <TableHeader className="bg-slate-50/50">
                         <TableRow className="hover:bg-transparent border-b border-slate-100">
@@ -247,6 +248,88 @@ export default function TenantUtilitiesPage() {
                         )}
                     </TableBody>
                 </Table>
+            </div>
+
+            {/* Cards (Mobile) */}
+            <div className="grid grid-cols-1 gap-4 md:hidden">
+                {isLoading ? (
+                    [...Array(4)].map((_, i) => (
+                        <Card key={i} className="shadow-sm">
+                            <CardContent className="p-4">
+                                <Skeleton className="h-4 w-3/4 bg-slate-100 mb-3" />
+                                <Skeleton className="h-4 w-1/2 bg-slate-100 mb-2" />
+                                <Skeleton className="h-9 w-full bg-slate-100 mt-3" />
+                            </CardContent>
+                        </Card>
+                    ))
+                ) : filteredBills.length === 0 ? (
+                    <Card className="shadow-sm">
+                        <CardContent className="p-6 text-center">
+                            <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                            <p className="text-slate-400 text-sm">
+                                No utility bills available for this period.
+                            </p>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    filteredBills.map((bill) => (
+                        <Card key={bill.id} className="shadow-sm">
+                            <CardContent className="p-4 flex flex-col gap-3">
+                                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                                    <div
+                                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-semibold uppercase tracking-wide ${getUtilityStyles(
+                                            bill.utilityType
+                                        )}`}
+                                    >
+                                        {getUtilityIcon(bill.utilityType)}
+                                        {bill.utilityType}
+                                    </div>
+                                    <div
+                                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${getStatusStyles(
+                                            bill.status
+                                        )}`}
+                                    >
+                                        {bill.status}
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-slate-500">
+                                        {formatPeriod(bill)}
+                                    </span>
+                                    <span className="font-mono font-bold text-base text-slate-900">
+                                        {new Intl.NumberFormat("en-US", {
+                                            style: "currency",
+                                            currency: "USD",
+                                        }).format(bill.amountDue)}
+                                    </span>
+                                </div>
+                                <div className="text-xs text-slate-500">
+                                    {bill.providerName}
+                                </div>
+                                <div className="flex flex-col gap-2 pt-2">
+                                    <Link href={`/tenant/content/utilities/${bill.id}`}>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-9 w-full text-xs font-medium border-slate-200 hover:bg-slate-50 text-slate-600"
+                                        >
+                                            <Eye className="w-3.5 h-3.5 mr-1.5" />
+                                            View Bill
+                                        </Button>
+                                    </Link>
+                                    {bill.status === "PENDING" && (
+                                        <Button
+                                            size="sm"
+                                            className="h-9 w-full text-xs font-semibold bg-[#003b73] hover:bg-[#002b5b] text-white"
+                                        >
+                                            Pay Now
+                                        </Button>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))
+                )}
             </div>
         </div>
     );

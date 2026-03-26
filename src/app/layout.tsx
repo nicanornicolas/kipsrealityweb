@@ -49,7 +49,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1, // Prevents input zoom-in on iOS, making it feel native
-  userScalable: false,
+  userScalable: true, // Allow accessibility zoom for users with visual impairments
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
