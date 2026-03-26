@@ -6,8 +6,9 @@ const prisma = new PrismaClient();
 async function main() {
   // 🛡️ SAFETY CHECK
   const dbUrl = process.env['DATABASE_URL'];
-  if (!dbUrl || !dbUrl.includes('rentflow360_test')) {
+  if (!dbUrl || !dbUrl.includes('rentflow_test')) {
     console.error('🚨 DANGER: Attempting to seed E2E data into a non-test database!');
+    console.error('Database URL:', dbUrl);
     process.exit(1);
   }
 

@@ -4,69 +4,62 @@ import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-// Seed function to ensure test user exists
+// Seed function to ensure test user exists (non-destructive for parallel E2E runs)
 async function seedTestUser() {
     const dbUrl = process.env.DATABASE_URL;
-    if (!dbUrl || !dbUrl.includes('rentflow360_test')) {
+    const isTestDb = !!dbUrl && (dbUrl.includes('rentflow_test') || dbUrl.includes('rentflow360_test'));
+    if (!isTestDb) {
         console.log('⚠️  Not running seed - DATABASE_URL not set to test DB');
         return;
     }
 
-    // Clean up existing test user if exists
-    await prisma.payment.deleteMany({
-        where: { invoice: { Lease: { unit: { property: { organization: { name: 'E2E Test Org' } } } } } }
-    }).catch(() => {});
-    await prisma.invoice.deleteMany({
-        where: { Lease: { unit: { property: { organization: { name: 'E2E Test Org' } } } } }
-    }).catch(() => {});
-    await prisma.lease.deleteMany({
-        where: { unit: { property: { organization: { name: 'E2E Test Org' } } } }
-    }).catch(() => {});
-    await prisma.unit.deleteMany({
-        where: { property: { organization: { name: 'E2E Test Org' } } }
-    }).catch(() => {});
-    await prisma.property.deleteMany({
-        where: { organization: { name: 'E2E Test Org' } }
-    }).catch(() => {});
-    await prisma.organizationUser.deleteMany({
-        where: { user: { email: 'manager@test.com' } }
-    }).catch(() => {});
-    await prisma.user.deleteMany({
-        where: { email: 'manager@test.com' }
-    }).catch(() => {});
-    await prisma.organization.deleteMany({
-        where: { name: 'E2E Test Org' }
-    }).catch(() => {});
-
-    // Create Organization
-    const org = await prisma.organization.create({
-        data: {
+    // Upsert Organization
+    const org = await prisma.organization.upsert({
+        where: { slug: 'e2e-test-org' },
+        update: { isActive: true },
+        create: {
             name: 'E2E Test Org',
             slug: 'e2e-test-org',
             isActive: true,
         },
     });
 
-    // Create Manager User with verified email
+    // Upsert Manager User with verified email
     const hashedPassword = await bcrypt.hash('password123', 12);
-    await prisma.user.create({
-        data: {
+    const user = await prisma.user.upsert({
+        where: { email: 'manager@test.com' },
+        update: {
+            passwordHash: hashedPassword,
+            status: 'ACTIVE',
+            emailVerified: new Date(),
+        },
+        create: {
             email: 'manager@test.com',
             passwordHash: hashedPassword,
             firstName: 'Test',
             lastName: 'Manager',
             status: 'ACTIVE',
             emailVerified: new Date(), // Already verified
-            organizationUsers: {
-                create: {
-                    organizationId: org.id,
-                    role: 'PROPERTY_MANAGER',
-                },
-            },
         },
     });
 
-    console.log('✅ Seeded manager@test.com user');
+    // Upsert Organization User link
+    await prisma.organizationUser.upsert({
+        where: {
+            userId_organizationId: {
+                userId: user.id,
+                organizationId: org.id,
+            },
+        },
+        update: { role: 'PROPERTY_MANAGER' },
+        create: {
+            userId: user.id,
+            organizationId: org.id,
+            role: 'PROPERTY_MANAGER',
+        },
+    });
+
+    console.log('✅ Ensured manager@test.com user is seeded and verified');
 }
 
 test.describe('Financial Core Workflow', () => {
@@ -192,3 +185,5 @@ test.describe('Financial Core Workflow', () => {
         await expect(page).toHaveURL(/\/property-manager/, { timeout: 10000 });
     });
 });
+
+

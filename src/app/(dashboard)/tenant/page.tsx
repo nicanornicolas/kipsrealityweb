@@ -165,10 +165,10 @@ const DashboardPage = () => {
   // Calculate lease duration in days
   const leaseDurationDays = activeLease
     ? Math.ceil(
-        (new Date(activeLease.endDate).getTime() -
-          new Date(activeLease.startDate).getTime()) /
-          (1000 * 60 * 60 * 24)
-      )
+      (new Date(activeLease.endDate).getTime() -
+        new Date(activeLease.startDate).getTime()) /
+      (1000 * 60 * 60 * 24)
+    )
     : 365;
 
   const leasePercentComplete =
@@ -374,7 +374,7 @@ const DashboardPage = () => {
                     <span className="font-bold text-2xl text-blue-600">{daysRemaining}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div 
+                    <div
                       className="bg-blue-600 h-3 rounded-full transition-all duration-500"
                       style={{ width: `${Math.min(Math.max(leasePercentComplete, 0), 100)}%` }}
                     ></div>
@@ -414,14 +414,14 @@ const DashboardPage = () => {
                     <p className="font-semibold text-gray-900">
                       {new Date(paymentInfo.nextPaymentDue).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
-                    
+
                     {paymentInfo.paymentStatus === 'upcoming' && paymentInfo.daysUntilPayment > 0 && (
                       <div className="flex items-center gap-2 mt-2 text-sm text-blue-600">
                         <Clock className="w-4 h-4" />
                         <span>{paymentInfo.daysUntilPayment} days remaining</span>
                       </div>
                     )}
-                    
+
                     {paymentInfo.paymentStatus === 'overdue' && (
                       <div className="flex items-center gap-2 mt-2 text-sm text-red-600">
                         <AlertCircle className="w-4 h-4" />

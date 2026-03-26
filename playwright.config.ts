@@ -1,80 +1,75 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
+import dotenv from "dotenv";
 
 /**
  * Playwright E2E Test Configuration
  * 
  * This configuration is designed for refocused E2E testing that:
  * - Uses a dedicated test database via docker-compose.test.yml
- * - Runs against the local development server
+ * - Uses dev server locally (npm run dev) for hot-reloading
+ * - Uses production build in CI (build happens in CI workflow, webServer runs 'npm run start')
+ * - Runs Chromium only on PRs, all browsers on main branch merges
  * - Provides proper CI/CD integration
  * - Includes trace and screenshot support for debugging
  */
 
+// Load test env vars
+const envResult = dotenv.config({ path: ".env.test" });
+if (envResult.error) {
+  console.warn("Warning: .env.test not found, using process.env only");
+}
+
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: "./tests/e2e",
   
-  /* Run tests in files in parallel - safe for E2E since each test should be independent */
-  fullyParallel: true,
+  // Fail the build on CI if you accidentally left test.only in the source code.
+  forbidOnly: !!process.env.CI,
   
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env['CI'],
+  // Retry on CI only
+  retries: process.env.CI ? 2 : 0,
   
-  /* Retry failed tests - 2 retries on CI, 0 locally */
-  retries: process.env['CI'] ? 2 : 0,
+  // E2E tests share seeded accounts (manager@test.com, tenant@test.com) and perform DB mutations.
+  // Keep workers at 1 to avoid cross-test interference/flakiness in both CI and local.
+  workers: 1,
   
-  /* Workers - 1 for local to avoid database conflicts, CI can use more */
-  workers: process.env['CI'] ? 2 : 1,
+  reporter: process.env.CI ? [["html"], ["json", { outputFile: "playwright-results/results.json" }]] : "list",
   
-  /* Reporter to use - HTML for local, JUnit for CI */
-  reporter: process.env['CI'] 
-    ? [['junit', { outputFile: 'playwright-results.xml' }], ['html']] 
-    : 'html',
-  
-  /* Timeout configurations */
-  timeout: 30000,
-  expect: {
-    timeout: 5000,
-  },
-  
-  /* Shared settings for all the projects below. */
   use: {
-    /* Base URL to use in actions like `await page.goto('')`. */
-    baseURL: process.env['E2E_BASE_URL'] || 'http://localhost:3000',
-    
-    /* Collect trace when retrying the failed test. */
-    trace: 'on-first-retry',
-    
-    /* Collect screenshots on failure for debugging */
-    screenshot: 'only-on-failure',
-    
-    /* Record video for failed tests */
-    video: 'retain-on-failure',
-    
-    /* Use test ID attribute for better test selectors */
-    testIdAttribute: 'data-testid',
+    baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    trace: "on-first-retry",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
+    actionTimeout: 10000, // Explicitly timeout actions after 10s to fail fast
   },
-  
-  /* Configure projects for major browsers - All browsers on CI, Chromium only locally for speed */
-  projects: process.env.CI
-    ? [
-        // CI RUNS EVERYTHING (Maximum Coverage)
-        { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-        { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-        { name: 'webkit', use: { ...devices['Desktop Safari'] } },
-      ]
-    : [
-        // LOCAL RUNS ONLY CHROME (Maximum Speed for Developers)
-        { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-      ],
-  
-  /* Run your local dev server before starting the tests */
+
+  // Only run Chromium in CI for PRs to save time. Run all on 'main'.
+  // Use explicit string comparison because RUN_ALL_BROWSERS is set to 'true'/'false' strings in CI.
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    // Conditionally add Firefox and Webkit only when RUN_ALL_BROWSERS is explicitly 'true'
+    ...(process.env.RUN_ALL_BROWSERS === 'true' ? [
+      {
+        name: "firefox",
+        use: { ...devices["Desktop Firefox"] },
+      },
+      {
+        name: "webkit",
+        use: { ...devices["Desktop Safari"] },
+      }
+    ] : []),
+  ],
+
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env['CI'],
-    stdout: process.env['CI'] ? 'pipe' : 'ignore',
-    stderr: 'pipe',
+    // If CI, run the already-built production server (build happens in CI workflow before this)
+    // If local, run the dev server for hot-reloading while writing tests
+    command: process.env.CI ? "npm run start" : "npm run dev",
+    url: "http://localhost:3000",
+    reuseExistingServer: !process.env.CI,
+    stdout: process.env.CI ? "pipe" : "ignore",
+    stderr: "pipe",
     timeout: 120000, // 2 minutes to start the server
   },
-  
 });

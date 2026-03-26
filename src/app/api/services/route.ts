@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireSystemAdmin } from "@/lib/rbac/requireRole";
 
 // GET all services or by categoryId (supports both categoryId and category_id for compatibility)
 export async function GET(req: NextRequest) {
@@ -16,6 +17,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // Role check: Only SYSTEM_ADMIN can create services
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { categoryId, name, description, features, impact, icon } = body;

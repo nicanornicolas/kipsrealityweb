@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireSystemAdmin } from "@/lib/rbac/requireRole";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -26,6 +27,10 @@ export async function GET(req: Request, context: RouteContext) {
 
 // app/api/sidebarItem/[id]/route.ts
 export async function PUT(req: Request, context: RouteContext) {
+  // Role check: Only SYSTEM_ADMIN can update sidebar items
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   const { id: idStr } = await context.params;
   const id = Number(idStr);
   if (isNaN(id)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
@@ -75,6 +80,10 @@ export async function PUT(req: Request, context: RouteContext) {
   }
 }
 export async function DELETE(req: Request, context: RouteContext) {
+  // Role check: Only SYSTEM_ADMIN can delete sidebar items
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   const { id: idStr } = await context.params;
   const id = Number(idStr);
   if (isNaN(id)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });

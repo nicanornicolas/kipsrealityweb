@@ -33,7 +33,7 @@ export default defineConfig({
     // V8 coverage provider with text, json, and html reporters
     coverage: {
       provider: 'v8',
-      reporters: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html'],
       exclude: [
         'node_modules',
         'tests',

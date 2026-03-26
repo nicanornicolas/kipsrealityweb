@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
+import { QueryProvider } from "@/context/QueryProvider";
 import { LoadingBar } from "@/components/ui/loading-bar";
 import { Suspense } from "react";
 
@@ -53,27 +54,29 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${plusJakartaSans.variable} ${inter.variable} ${sen.variable} font-sans antialiased min-h-screen transition-colors duration-500`}
       >
-        <AuthProvider>
-          <Suspense
-            fallback={
-              <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-gray-600">Loading...</p>
+        <QueryProvider>
+          <AuthProvider>
+            <Suspense
+              fallback={
+                <div className="min-h-screen flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-gray-600">Loading...</p>
+                  </div>
                 </div>
-              </div>
-            }
-          >
-            <LoadingBar />
-            {children}
-            <Toaster
-              position="top-center"
-              expand={false}
-              richColors
-              closeButton
-            />
-          </Suspense>
-        </AuthProvider>
+              }
+            >
+              <LoadingBar />
+              {children}
+              <Toaster
+                position="top-center"
+                expand={false}
+                richColors
+                closeButton
+              />
+            </Suspense>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );
