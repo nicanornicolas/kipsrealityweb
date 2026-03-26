@@ -14,8 +14,9 @@ vi.mock("@/lib/notifications/sms-factory", () => ({
 }));
 
 const prismaMock = prisma as unknown as {
+  user: { findUnique: ReturnType<typeof vi.fn> };
   notificationPreference: { findUnique: ReturnType<typeof vi.fn> };
-  smsNotification: { create: ReturnType<typeof vi.fn> };
+  smsNotification: { create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
 };
 
 describe("NotificationService.sendSmsNotification", () => {
@@ -27,13 +28,20 @@ describe("NotificationService.sendSmsNotification", () => {
   };
 
   beforeEach(() => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      consentNotifications: true,
+      consentTransactional: true,
+    });
     prismaMock.notificationPreference.findUnique.mockResolvedValue(null);
     prismaMock.smsNotification.create.mockResolvedValue({});
+    prismaMock.smsNotification.update.mockResolvedValue({});
     sendSmsMock.mockResolvedValue({ success: true, messageId: "sid-1" });
     getProviderMock.mockClear();
     sendSmsMock.mockClear();
+    prismaMock.user.findUnique.mockClear();
     prismaMock.notificationPreference.findUnique.mockClear();
     prismaMock.smsNotification.create.mockClear();
+    prismaMock.smsNotification.update.mockClear();
     delete process.env.SMS_DRY_RUN;
   });
 
@@ -74,5 +82,56 @@ describe("NotificationService.sendSmsNotification", () => {
     expect(logLine).toContain(baseParams.phoneNumber.slice(-4));
     expect(logLine).not.toContain(baseParams.phoneNumber);
     expect(logLine).not.toContain(baseParams.message);
+  });
+
+  it("sends via provider and logs success status", async () => {
+    prismaMock.smsNotification.create.mockResolvedValueOnce({ id: "notif-1" });
+    sendSmsMock.mockResolvedValueOnce({ success: true, messageId: "sid-123" });
+
+    const result = await NotificationService.sendSmsNotification(baseParams);
+
+    expect(result).toBe(true);
+    expect(getProviderMock).toHaveBeenCalledTimes(1);
+    expect(sendSmsMock).toHaveBeenCalledWith(
+      baseParams.phoneNumber,
+      baseParams.message
+    );
+    expect(prismaMock.smsNotification.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: baseParams.userId,
+        phoneNumber: baseParams.phoneNumber,
+        message: baseParams.message,
+        category: baseParams.category,
+        provider: "TWILIO",
+        status: "QUEUED",
+      }),
+    });
+    expect(prismaMock.smsNotification.update).toHaveBeenCalledWith({
+      where: { id: "notif-1" },
+      data: {
+        status: "SENT",
+        providerMsgId: "sid-123",
+        failureReason: undefined,
+        sentAt: expect.any(Date),
+      },
+    });
+  });
+
+  it("logs failure status when provider fails", async () => {
+    prismaMock.smsNotification.create.mockResolvedValueOnce({ id: "notif-2" });
+    sendSmsMock.mockResolvedValueOnce({ success: false, error: "oops" });
+
+    const result = await NotificationService.sendSmsNotification(baseParams);
+
+    expect(result).toBe(false);
+    expect(prismaMock.smsNotification.update).toHaveBeenCalledWith({
+      where: { id: "notif-2" },
+      data: {
+        status: "FAILED",
+        providerMsgId: undefined,
+        failureReason: "oops",
+        sentAt: null,
+      },
+    });
   });
 });
