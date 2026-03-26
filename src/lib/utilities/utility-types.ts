@@ -178,3 +178,35 @@ export type PostBillResult = Result<
     },
     PostError
 >;
+
+// =============================================================================
+// AI/OCR-READY ALLOCATION CONTRACTS (Future-Proofed)
+// =============================================================================
+
+export type UtilityBillState = "DRAFT" | "PROCESSING_AI" | "PENDING_REVIEW" | "APPROVED" | "POSTED";
+
+export type AllocationMethod =
+    | "RUBS_OCCUPANCY"
+    | "SQUARE_FOOTAGE"
+    | "EQUAL_SPLIT"
+    | "AI_SUGGESTED";
+
+export interface UnitAllocation {
+    unitId: string;
+    tenantId: string;
+    amount: number;
+    percentage: number;
+    explanation: string;
+}
+
+export interface UtilityAllocationPayload {
+    utilityBillId: string;
+    propertyId: string;
+    providerName: "KPLC" | "NAIROBI_WATER" | "OTHER";
+    totalAmount: number;
+    dueDate: string;
+    splitMethod: AllocationMethod;
+    confidenceScore: number;
+    allocations: UnitAllocation[];
+    flags?: Array<{ type: "WARNING" | "INFO"; message: string }>;
+}

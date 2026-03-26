@@ -43,7 +43,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     PROPERTY_MANAGER: "/property-manager",
     TENANT: "/tenant",
     VENDOR: "/vendor",
-    // Add default roles if needed or handle fallback
+    AGENT: "/agent",
   } as const;
 
   useEffect(() => {

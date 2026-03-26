@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const protectedRoutes = ['/admin', '/property-manager', '/tenant', '/vendor', '/dashboard'];
+const protectedRoutes = ['/admin', '/property-manager', '/tenant', '/vendor', '/agent', '/dashboard'];
 const publicRoutes = ['/login', '/signup', '/', '/services', '/plans', '/blog', '/marketplace', '/unauthorized'];
 
 const roleDashboards = {
@@ -9,6 +9,7 @@ const roleDashboards = {
   PROPERTY_MANAGER: '/property-manager',
   TENANT: '/tenant',
   VENDOR: '/vendor',
+  AGENT: '/agent',
 };
 
 const routePermissions = {
@@ -16,6 +17,7 @@ const routePermissions = {
   '/property-manager': ['PROPERTY_MANAGER'],
   '/tenant': ['TENANT'],
   '/vendor': ['VENDOR'],
+  '/agent': ['AGENT'],
 };
 
 // Decode JWT safely

@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "postinstall": "prisma generate",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=6144 next build --webpack",
     "// --- DEPLOYMENT SCRIPTS ---": "",
