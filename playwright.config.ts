@@ -28,9 +28,9 @@ export default defineConfig({
   // Retry on CI only
   retries: process.env.CI ? 2 : 0,
   
-  // Opt out of parallel tests in CI if database mutations clash, 
-  // but use available cores locally
-  workers: process.env.CI ? 1 : undefined,
+  // E2E tests share seeded accounts (manager@test.com, tenant@test.com) and perform DB mutations.
+  // Keep workers at 1 to avoid cross-test interference/flakiness in both CI and local.
+  workers: 1,
   
   reporter: process.env.CI ? [["html"], ["json", { outputFile: "playwright-results/results.json" }]] : "list",
   
@@ -43,13 +43,14 @@ export default defineConfig({
   },
 
   // Only run Chromium in CI for PRs to save time. Run all on 'main'.
+  // Use explicit string comparison because RUN_ALL_BROWSERS is set to 'true'/'false' strings in CI.
   projects: [
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
-    // Conditionally add Firefox and Webkit only if we pass a specific flag or aren't in CI
-    ...(process.env.RUN_ALL_BROWSERS || !process.env.CI ? [
+    // Conditionally add Firefox and Webkit only when RUN_ALL_BROWSERS is explicitly 'true'
+    ...(process.env.RUN_ALL_BROWSERS === 'true' ? [
       {
         name: "firefox",
         use: { ...devices["Desktop Firefox"] },

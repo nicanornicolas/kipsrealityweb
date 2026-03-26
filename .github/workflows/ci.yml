@@ -34,34 +34,29 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Setup Node.js
+      - name: Setup npm
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "pnpm"
+          cache: "npm"
 
       - name: Install Dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: npm install --no-frozen-lockfile
         env:
           DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
 
       # 1. FAST FEEDBACK: Unit Tests (Fails in < 5 seconds if logic is broken)
       - name: Run Unit Tests (Vitest)
-        run: pnpm run test:unit
+        run: npm run test:unit
 
       # 2. DATABASE PREP: Integration Tests
       - name: Prepare Database for Integration Tests
-        run: pnpm exec prisma db push --accept-data-loss
+        run: npm exec prisma db push --accept-data-loss
         env:
           DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
 
       - name: Run Integration Tests (Vitest)
-        run: pnpm run test:integration
+        run: npm run test:integration
         env:
           DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
           INTEGRATION_TEST_DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
@@ -70,15 +65,15 @@ jobs:
       # 3. NUKE AND PAVE: Isolate E2E from Integration Test pollution
       - name: Reset and Seed E2E Database
         run: |
-          pnpm exec prisma db push --accept-data-loss --force-reset
-          pnpm run db:seed:test
+          npm exec prisma db push --accept-data-loss --force-reset
+          npm run db:seed:test
         env:
           DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
 
       # 4. COMPILE: Prevent the "Next.js Dev Server Trap"
       # Build BEFORE running Playwright so webServer can just use "npm run start"
       - name: Build Next.js Production Binary
-        run: pnpm run build
+        run: npm run build
         env:
           # Next.js needs these during build time to safely compile
           DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
@@ -87,10 +82,10 @@ jobs:
 
       # 5. EXECUTE: The Optimized Playwright Run
       - name: Install Playwright Browsers
-        run: pnpm exec playwright install --with-deps
+        run: npm exec playwright install --with-deps
 
       - name: Run E2E Tests (Playwright)
-        run: pnpm run test:e2e:ci
+        run: npm run test:e2e:ci
         env:
           CI: true
           DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
