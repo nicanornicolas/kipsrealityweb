@@ -12,7 +12,7 @@ env:
 
 jobs:
   test-and-scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write
@@ -82,7 +82,9 @@ jobs:
 
       # 5. EXECUTE: The Optimized Playwright Run
       - name: Install Playwright Browsers
-        run: npm exec playwright install --with-deps
+        run: |
+          npx playwright install --with-deps
+          npx playwright install-deps
 
       - name: Run E2E Tests (Playwright)
         run: npm run test:e2e:ci
@@ -90,6 +92,8 @@ jobs:
           CI: true
           DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
           NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXTAUTH_SECRET: "test-secret-key-do-not-use-in-prod"
+          NEXTAUTH_URL: "http://localhost:3000"
           # Magic Flag: If this is a merge to 'main', run Chromium, Firefox, and WebKit.
           # If it's just a PR, run Chromium only to save time.
           RUN_ALL_BROWSERS: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
