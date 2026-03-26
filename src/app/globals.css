@@ -15,6 +15,28 @@ body {
   min-height: 100vh;
 }
 
+@media (max-width: 768px) {
+  * {
+    /* Removes the blue flash when tapping buttons on iOS/Android */
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+html {
+  /* Enables native momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Respect user preferences for animations */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Prevent white flash on overscroll */
 @media (prefers-color-scheme: light) {
   html {
