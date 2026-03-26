@@ -2,6 +2,14 @@ import twilio from "twilio";
 import AfricasTalking from "africastalking";
 import { PhoneNumberUtil } from "google-libphonenumber";
 
+function requireEnv(name: string) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
 // 1. The Standard Interface
 export interface ISmsProvider {
   sendSms(
@@ -12,20 +20,34 @@ export interface ISmsProvider {
 
 // 2. Twilio Implementation
 class TwilioProvider implements ISmsProvider {
-  private client: ReturnType<typeof twilio>;
+  private client?: ReturnType<typeof twilio>;
+  private from?: string;
+  private configError?: string;
 
   constructor() {
-    if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
-      throw new Error("Missing TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN environment variables");
+    try {
+      const sid = requireEnv("TWILIO_ACCOUNT_SID");
+      const token = requireEnv("TWILIO_AUTH_TOKEN");
+      const from = requireEnv("TWILIO_PHONE_NUMBER");
+      this.client = twilio(sid, token);
+      this.from = from;
+    } catch (error) {
+      this.configError =
+        error instanceof Error ? error.message : "Twilio configuration error";
     }
-    this.client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
   }
 
   async sendSms(to: string, message: string) {
+    if (this.configError || !this.client || !this.from) {
+      return {
+        success: false,
+        error: this.configError || "Twilio is not configured",
+      };
+    }
     try {
       const res = await this.client.messages.create({
         body: message,
-        from: process.env.TWILIO_PHONE_NUMBER,
+        from: this.from,
         to,
       });
       return { success: true, messageId: res.sid };
@@ -37,26 +59,42 @@ class TwilioProvider implements ISmsProvider {
 
 // 3. Africa's Talking Implementation (For +254)
 class AfricasTalkingProvider implements ISmsProvider {
-  private client: ReturnType<typeof AfricasTalking>;
+  private client?: ReturnType<typeof AfricasTalking>;
+  private configError?: string;
 
   constructor() {
-    if (!process.env.AT_API_KEY || !process.env.AT_USERNAME) {
-      throw new Error("Missing AT_API_KEY or AT_USERNAME environment variables");
+    try {
+      const apiKey = requireEnv("AT_API_KEY");
+      const username = requireEnv("AT_USERNAME");
+      this.client = AfricasTalking({ apiKey, username });
+    } catch (error) {
+      this.configError =
+        error instanceof Error
+          ? error.message
+          : "Africa's Talking configuration error";
     }
-    this.client = AfricasTalking({
-      apiKey: process.env.AT_API_KEY as string,
-      username: process.env.AT_USERNAME as string,
-    });
   }
 
   async sendSms(to: string, message: string) {
+    if (this.configError || !this.client) {
+      return {
+        success: false,
+        error: this.configError || "Africa's Talking is not configured",
+      };
+    }
     try {
       const res = await this.client.SMS.send({
         to: [to],
         message,
         from: process.env.AT_SENDER_ID, // Optional: e.g., 'RENTFLOW'
       });
-      const recipient = res.SMSMessageData.Recipients[0];
+      const recipient = res?.SMSMessageData?.Recipients?.[0];
+      if (!recipient) {
+        return {
+          success: false,
+          error: "Africa's Talking returned no recipients",
+        };
+      }
       if (recipient.statusCode === 100 || recipient.statusCode === 101) {
         return { success: true, messageId: recipient.messageId };
       }
@@ -69,25 +107,50 @@ class AfricasTalkingProvider implements ISmsProvider {
 
 // 4. The Factory Router
 export class SmsFactory {
+  private static phoneUtil = PhoneNumberUtil.getInstance();
+  private static twilioProvider: TwilioProvider | null = null;
+  private static africasTalkingProvider: AfricasTalkingProvider | null = null;
+
+  private static getTwilioProvider() {
+    if (!this.twilioProvider) {
+      this.twilioProvider = new TwilioProvider();
+    }
+    return this.twilioProvider;
+  }
+
+  private static getAfricasTalkingProvider() {
+    if (!this.africasTalkingProvider) {
+      this.africasTalkingProvider = new AfricasTalkingProvider();
+    }
+    return this.africasTalkingProvider;
+  }
+
+  static resetForTests() {
+    this.twilioProvider = null;
+    this.africasTalkingProvider = null;
+  }
+
   static getProvider(phoneNumber: string): {
     provider: ISmsProvider;
     name: string;
   } {
-    const phoneUtil = PhoneNumberUtil.getInstance();
     try {
-      const parsedNumber = phoneUtil.parse(phoneNumber);
+      const parsedNumber = this.phoneUtil.parse(phoneNumber);
       const countryCode = parsedNumber.getCountryCode();
 
       // 254 is Kenya. Route through Africa's Talking.
       if (countryCode === 254) {
-        return { provider: new AfricasTalkingProvider(), name: "AFRICASTALKING" };
+        return {
+          provider: this.getAfricasTalkingProvider(),
+          name: "AFRICASTALKING",
+        };
       }
 
       // Default fallback to Twilio for US (+1) and others
-      return { provider: new TwilioProvider(), name: "TWILIO" };
+      return { provider: this.getTwilioProvider(), name: "TWILIO" };
     } catch {
       // If parsing fails, fallback to Twilio
-      return { provider: new TwilioProvider(), name: "TWILIO" };
+      return { provider: this.getTwilioProvider(), name: "TWILIO" };
     }
   }
 }

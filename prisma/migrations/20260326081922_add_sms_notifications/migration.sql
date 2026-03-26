@@ -4,6 +4,8 @@
   - A unique constraint covering the columns `[invited_agent_id]` on the table `AgentInvite` will be added. If there are existing duplicate values, this will fail.
 
 */
+-- NOTE: This migration also adds a UNIQUE constraint on AgentInvite.invited_agent_id.
+-- Ensure duplicates are deduplicated before applying in production.
 -- AlterTable
 ALTER TABLE `AgentInvite` ADD COLUMN `invited_agent_id` VARCHAR(191) NULL;
 

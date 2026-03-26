@@ -22,11 +22,6 @@ body {
   }
 }
 
-html {
-  /* Enables native momentum scrolling on iOS */
-  -webkit-overflow-scrolling: touch;
-}
-
 /* Respect user preferences for animations */
 @media (prefers-reduced-motion: reduce) {
   * {

@@ -48,8 +48,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1, // Prevents input zoom-in on iOS, making it feel native
-  userScalable: true, // Allow accessibility zoom for users with visual impairments
+  maximumScale: 1, // Disables user zoom (native-app feel). Set higher if you want zoom.
+  userScalable: false,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0f172a" },

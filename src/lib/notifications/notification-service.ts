@@ -3,6 +3,13 @@ import { SmsFactory } from "./sms-factory";
 import { NotificationCategory } from "@prisma/client";
 
 export class NotificationService {
+  private static maskPhone(phoneNumber: string) {
+    if (!phoneNumber) return "****";
+    const visible = phoneNumber.slice(-4);
+    const maskedPrefix = phoneNumber.slice(0, -4).replace(/[0-9]/g, "*");
+    return `${maskedPrefix}${visible}`;
+  }
+
   /**
    * Sends an SMS and logs the exact status to the database for auditing/billing.
    */
@@ -29,8 +36,11 @@ export class NotificationService {
 
     // --- DRY RUN INTERCEPTOR ---
     if (process.env.SMS_DRY_RUN === "true") {
-      console.log(`[SMS DRY RUN] To: ${phoneNumber} | Category: ${category}`);
-      console.log(`[Message]: ${message}`);
+      const maskedPhone = NotificationService.maskPhone(phoneNumber);
+      const messageLength = message?.length ?? 0;
+      console.log(
+        `[SMS DRY RUN] To: ${maskedPhone} | Category: ${category} | Message length: ${messageLength}`
+      );
 
       await prisma.smsNotification.create({
         data: {

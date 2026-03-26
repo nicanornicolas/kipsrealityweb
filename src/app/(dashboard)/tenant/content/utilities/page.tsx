@@ -318,12 +318,14 @@ export default function TenantUtilitiesPage() {
                                         </Button>
                                     </Link>
                                     {bill.status === "PENDING" && (
-                                        <Button
-                                            size="sm"
-                                            className="h-9 w-full text-xs font-semibold bg-[#003b73] hover:bg-[#002b5b] text-white"
-                                        >
-                                            Pay Now
-                                        </Button>
+                                        <Link href={`/tenant/content/utilities/${bill.id}`} className="w-full">
+                                            <Button
+                                                size="sm"
+                                                className="h-9 w-full text-xs font-semibold bg-[#003b73] hover:bg-[#002b5b] text-white"
+                                            >
+                                                Pay Now
+                                            </Button>
+                                        </Link>
                                     )}
                                 </div>
                             </CardContent>
