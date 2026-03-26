@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { financeActions } from "@/lib/finance/actions";
-import { PaymentMethod, Prisma, TransactionStatus, Payment } from "@prisma/client";
+import { NotificationCategory, PaymentMethod, Prisma, TransactionStatus, Payment } from "@prisma/client";
+import { NotificationService } from "@/lib/notifications/notification-service";
 import type Stripe from "stripe";
 
 export async function processMpesaWebhook(payload: unknown) {
@@ -85,6 +86,64 @@ export async function processMpesaWebhook(payload: unknown) {
       `Failed to post payment to GL: ${glError instanceof Error ? glError.message : "Unknown error"}`
     );
   }
+
+  // Fire-and-forget SMS receipt notification (do not block webhook processing)
+  void (async () => {
+    try {
+      const paymentWithInvoice = await prisma.payment.findUnique({
+        where: { id: updatedPayment.id },
+        select: {
+          amount: true,
+          currency: true,
+          invoice: {
+            select: {
+              id: true,
+              Lease: {
+                select: {
+                  tenant: {
+                    select: {
+                      id: true,
+                      phone: true,
+                      firstName: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const tenant = paymentWithInvoice?.invoice?.Lease?.tenant;
+      if (!tenant?.phone) return;
+
+      const receipt = await prisma.receipt.findFirst({
+        where: { paymentId: updatedPayment.id },
+        orderBy: { issuedOn: "desc" },
+        select: { receiptNo: true },
+      });
+
+      const amountNumber = paymentWithInvoice?.amount
+        ? Number(paymentWithInvoice.amount)
+        : 0;
+      const currency = paymentWithInvoice?.currency || "KES";
+      const formattedAmount = new Intl.NumberFormat("en-KE", {
+        style: "currency",
+        currency,
+      }).format(amountNumber);
+
+      const receiptRef = receipt?.receiptNo ?? updatedPayment.id;
+
+      await NotificationService.sendSmsNotification({
+        userId: tenant.id,
+        phoneNumber: tenant.phone,
+        message: `Confirmed: RentFlow360 has received your M-Pesa payment of ${formattedAmount}. Receipt Ref: ${receiptRef}. Thank you!`,
+        category: NotificationCategory.PAYMENT_RECEIPT,
+      });
+    } catch (error) {
+      console.error("SMS Dispatch Failed:", error);
+    }
+  })();
 }
 
 export async function processPaystackWebhook(payload: unknown) {
