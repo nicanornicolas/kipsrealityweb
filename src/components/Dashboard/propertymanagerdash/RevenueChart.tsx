@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3 } from "lucide-react";
+import DashboardChartTooltip, { DASHBOARD_TOOLTIP_WRAPPER_STYLE } from "./DashboardChartTooltip";
 
 // Define the shape of data expected
 interface ChartData {
@@ -24,28 +25,6 @@ interface RevenueChartProps {
     data: ChartData[];
     isLoading?: boolean;
 }
-
-// Custom Tooltip to show currency nicely
-const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-        return (
-            <div className="bg-white p-4 border border-gray-100 shadow-xl rounded-xl text-sm">
-                <p className="font-bold text-gray-900 mb-2 border-b pb-1">{label}</p>
-                <div className="space-y-1">
-                    <p className="flex justify-between gap-4 text-emerald-600 font-semibold">
-                        <span>Income:</span>
-                        <span>${payload[0].value.toLocaleString()}</span>
-                    </p>
-                    <p className="flex justify-between gap-4 text-red-500 font-semibold">
-                        <span>Expenses:</span>
-                        <span>${payload[1].value.toLocaleString()}</span>
-                    </p>
-                </div>
-            </div>
-        );
-    }
-    return null;
-};
 
 export default function RevenueChart({ data, isLoading }: RevenueChartProps) {
     if (isLoading) {
@@ -83,7 +62,23 @@ export default function RevenueChart({ data, isLoading }: RevenueChartProps) {
                         tick={{ fill: '#9ca3af', fontSize: 12, fontWeight: 500 }}
                         tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                     />
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f9fafb' }} />
+                    <Tooltip
+                        content={
+                            <DashboardChartTooltip
+                                nameFormatter={(name) => {
+                                    if (name.toLowerCase().includes("income")) return "Income";
+                                    if (name.toLowerCase().includes("operating")) return "Expenses";
+                                    return name;
+                                }}
+                                valueFormatter={(value) => {
+                                    if (typeof value === "number") return `$${value.toLocaleString()}`;
+                                    return `$${value}`;
+                                }}
+                            />
+                        }
+                        wrapperStyle={DASHBOARD_TOOLTIP_WRAPPER_STYLE}
+                        cursor={{ fill: '#f9fafb' }}
+                    />
                     <Legend
                         verticalAlign="top"
                         align="right"

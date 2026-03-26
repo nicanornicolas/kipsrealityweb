@@ -313,19 +313,23 @@ export default function Dashboard() {
 				/>
 			</div>
 
-			{/* 4. Trends Section (3 Columns) */}
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+			{/* 4. Trends Section (2 Columns on Large) */}
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 				{/* Occupancy Trend */}
-				<div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col h-64">
+				<div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col lg:col-span-2 min-h-[380px]">
 					<div className="flex justify-between mb-4">
 						<h4 className="text-sm font-semibold text-slate-800">Occupancy Trend</h4>
 						<span className="text-[10px] text-slate-400 uppercase tracking-wider">Last 7 months</span>
 					</div>
-					<div className="flex-1 bg-slate-50/50 rounded-lg flex items-center justify-center border-2 border-dashed border-slate-100">
+					<div className="flex-1 bg-slate-50/50 rounded-lg flex items-stretch border-2 border-dashed border-slate-100">
 						{isZeroDataState ? (
-							<p className="text-xs text-slate-400">Add properties to see trends</p>
+							<div className="w-full h-full flex items-center justify-center">
+								<p className="text-xs text-slate-400">Add properties to see trends</p>
+							</div>
 						) : (
-							<OccupancyLineChart selectedProperty={selectedProperty} myproperties={data?.properties || []} />
+							<div className="w-full h-full">
+								<OccupancyLineChart selectedProperty={selectedProperty} myproperties={data?.properties || []} />
+							</div>
 						)}
 					</div>
 					<p className="mt-4 text-xs text-slate-500">Current occupancy <span className="font-bold text-slate-900">{kpis.occupancyRate}%</span></p>
