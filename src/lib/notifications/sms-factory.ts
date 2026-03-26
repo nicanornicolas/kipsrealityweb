@@ -37,6 +37,10 @@ class TwilioProvider implements ISmsProvider {
     }
   }
 
+  isConfigured() {
+    return Boolean(this.client && this.from && !this.configError);
+  }
+
   async sendSms(to: string, message: string) {
     if (this.configError || !this.client || !this.from) {
       return {
@@ -73,6 +77,10 @@ class AfricasTalkingProvider implements ISmsProvider {
           ? error.message
           : "Africa's Talking configuration error";
     }
+  }
+
+  isConfigured() {
+    return Boolean(this.client && !this.configError);
   }
 
   async sendSms(to: string, message: string) {
@@ -140,9 +148,16 @@ export class SmsFactory {
 
       // 254 is Kenya. Route through Africa's Talking.
       if (countryCode === 254) {
+        const atProvider = this.getAfricasTalkingProvider();
+        if (atProvider.isConfigured()) {
+          return {
+            provider: atProvider,
+            name: "AFRICASTALKING",
+          };
+        }
         return {
-          provider: this.getAfricasTalkingProvider(),
-          name: "AFRICASTALKING",
+          provider: this.getTwilioProvider(),
+          name: "TWILIO",
         };
       }
 
