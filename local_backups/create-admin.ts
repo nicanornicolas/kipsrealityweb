@@ -41,7 +41,7 @@ async function createAdmin() {
           passwordHash: hashedPassword,
           firstName,
           lastName,
-          emailVerified: true,
+          emailVerified: new Date(),
           status: 'ACTIVE',
         }
       })

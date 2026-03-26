@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { requireSystemAdmin } from '@/lib/rbac/requireRole'
 
 interface Context {
   params: Promise<{ id: string }>
@@ -23,6 +24,10 @@ export async function GET(req: Request, context: Context) {
 }
 
 export async function PUT(req: Request, context: Context) {
+  // Role check: Only SYSTEM_ADMIN can update hero sections
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
     const { id: idStr } = await context.params;
     const id = Number(idStr);
@@ -41,6 +46,10 @@ export async function PUT(req: Request, context: Context) {
 }
 
 export async function DELETE(req: Request, context: Context) {
+  // Role check: Only SYSTEM_ADMIN can delete hero sections
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
     const { id: idStr } = await context.params;
     const id = Number(idStr);
