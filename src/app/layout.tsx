@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { QueryProvider } from "@/context/QueryProvider";
 import { LoadingBar } from "@/components/ui/loading-bar";
 import { Suspense } from "react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { Inter, Plus_Jakarta_Sans, Sen } from "next/font/google";
 
@@ -90,6 +91,7 @@ export default function RootLayout({
             </Suspense>
           </AuthProvider>
         </QueryProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
