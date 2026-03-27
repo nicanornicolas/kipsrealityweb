@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireSystemAdmin } from "@/lib/rbac/requireRole";
 
 type RouteContext = {
   params: Promise<{ id: string }> | { id: string };
@@ -29,6 +30,10 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
 //  PUT to update service
 export async function PUT(req: NextRequest, context: RouteContext) {
+  // Role check: Only SYSTEM_ADMIN can update services
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   const params = await context.params;
   const id = parseInt(params.id);
 
@@ -51,6 +56,10 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
 //  DELETE a service
 export async function DELETE(req: NextRequest, context: RouteContext) {
+  // Role check: Only SYSTEM_ADMIN can delete services
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   const params = await context.params;
   const id = parseInt(params.id);
 

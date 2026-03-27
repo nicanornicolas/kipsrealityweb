@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "react-hot-toast";
 
 // Types
@@ -31,7 +32,7 @@ interface Tenant {
   lastName?: string;
   email?: string;
 }
-interface Invoice { id: string; leaseId: string; amount: number; dueDate: string; status: "PENDING" | "PAID" | "OVERDUE"; type: string; Lease: Lease; payment: Payment[]; }
+interface Invoice { id: string; leaseId: string; amount: number; dueDate: string; status: "DRAFT" | "PENDING" | "PAID" | "OVERDUE" | "CANCELLED"; type: string; Lease: Lease; payment: Payment[]; }
 
 export default function TenantInvoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -120,9 +121,9 @@ export default function TenantInvoices() {
     setReference("");
   }
 
-  async function viewReceipt(paymentId: string) {
+  async function viewReceipt(receiptId: string) {
     try {
-      const res = await fetch(`/api/receipt/${paymentId}`);
+      const res = await fetch(`/api/receipt/${receiptId}`);
       if (!res.ok) throw new Error("Receipt not found");
       const receipt: Receipt = await res.json();
       setViewingReceipt(receipt); // store receipt for modal
@@ -707,8 +708,8 @@ export default function TenantInvoices() {
           </div>
         </div>
 
-        {/* Invoices Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* Invoices Table (Desktop) */}
+        <div className="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <div className="flex flex-col items-center gap-3">
@@ -779,8 +780,9 @@ export default function TenantInvoices() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col gap-2">
-                            {/* Show Pay Now button only if invoice is pending */}
-                            {inv.status === "PENDING" && (
+                            {/* Show Pay Now button when a balance remains and status is payable */}
+                            {remaining > 0 &&
+                              (inv.status === "PENDING" || inv.status === "OVERDUE") && (
                               <Button
                                 onClick={() => openPaymentModal(inv.id)}
                                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm"
@@ -796,7 +798,7 @@ export default function TenantInvoices() {
                                 pmt.receipt!.map(rcpt => (
                                   <Button
                                     key={rcpt.id}
-                                    onClick={() => viewReceipt(pmt.id)}
+                                    onClick={() => viewReceipt(rcpt.id)}
                                     variant="outline"
                                     className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                                   >
@@ -814,6 +816,109 @@ export default function TenantInvoices() {
                 </tbody>
               </table>
             </div>
+          )}
+        </div>
+
+        {/* Invoices Cards (Mobile) */}
+        <div className="md:hidden space-y-4">
+          {loading ? (
+            [...Array(3)].map((_, i) => (
+              <Card key={i} className="shadow-sm">
+                <CardContent className="p-4 animate-pulse">
+                  <div className="h-4 w-1/2 bg-slate-200 rounded mb-3"></div>
+                  <div className="h-3 w-3/4 bg-slate-200 rounded mb-2"></div>
+                  <div className="h-3 w-2/3 bg-slate-200 rounded mb-4"></div>
+                  <div className="h-9 w-full bg-slate-200 rounded"></div>
+                </CardContent>
+              </Card>
+            ))
+          ) : invoices.length === 0 ? (
+            <Card className="shadow-sm">
+              <CardContent className="p-6 text-center">
+                <svg className="w-12 h-12 mb-3 text-slate-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="text-sm font-medium text-slate-600">No invoices found</p>
+                <p className="text-xs text-slate-500 mt-1">Your invoices will appear here once generated</p>
+              </CardContent>
+            </Card>
+          ) : (
+            invoices.map((inv) => {
+              const paidAmount = inv.payment?.filter(p => !p.isReversed).reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+              const remaining = inv.amount - paidAmount;
+
+              return (
+                <Card key={inv.id} className="shadow-sm">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <div>
+                        <div className="text-sm font-semibold text-slate-900">#{inv.id.slice(0, 8)}</div>
+                        <div className="text-xs text-slate-500">{inv.type}</div>
+                      </div>
+                      <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${inv.status === "PAID"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : inv.status === "OVERDUE"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-amber-100 text-amber-800"
+                        }`}>
+                        {inv.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-xs text-slate-600">
+                      <div>
+                        <div className="text-slate-500">Due Date</div>
+                        <div className="font-medium text-slate-900">
+                          {new Date(inv.dueDate).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-slate-500">Amount</div>
+                        <div className="font-semibold text-slate-900">$ {inv.amount.toFixed(2)}</div>
+                      </div>
+                      <div>
+                        <div className="text-slate-500">Paid</div>
+                        <div className="text-slate-900">$ {paidAmount.toFixed(2)}</div>
+                      </div>
+                      <div>
+                        <div className="text-slate-500">Balance</div>
+                        <div className={`font-semibold ${remaining > 0 ? "text-red-600" : "text-emerald-600"}`}>
+                          $ {remaining.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-2">
+                      {remaining > 0 &&
+                        (inv.status === "PENDING" || inv.status === "OVERDUE") && (
+                        <Button
+                          onClick={() => openPaymentModal(inv.id)}
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                        >
+                          Pay Now
+                        </Button>
+                      )}
+
+                      {inv.payment
+                        ?.filter(pmt => pmt.receipt && pmt.receipt.length > 0)
+                        .map(pmt =>
+                          pmt.receipt!.map(rcpt => (
+                            <Button
+                              key={rcpt.id}
+                              onClick={() => viewReceipt(rcpt.id)}
+                              variant="outline"
+                              className="w-full border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                            >
+                              View Receipt
+                            </Button>
+                          ))
+                        ) || []
+                      }
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
       </div>

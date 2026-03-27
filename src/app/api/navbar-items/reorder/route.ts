@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { NextRequest } from "next/server";
+import { requireSystemAdmin } from "@/lib/rbac/requireRole";
 
 type ReorderBody = {
   items: { id: number; order: number }[];
 };
 
 export async function POST(req: NextRequest) {
+  // Role check: Only SYSTEM_ADMIN can reorder navbar items
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
 
     const body = (await req.json()) as ReorderBody;

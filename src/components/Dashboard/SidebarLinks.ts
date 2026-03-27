@@ -31,7 +31,8 @@ import {
   Book,
   Box,
   Shield,
-  LucideIcon
+  LucideIcon,
+  Mail
 } from 'lucide-react'
 
 // Type definitions for the new structured sidebar
@@ -219,6 +220,7 @@ export const routeConfig = {
     ],
     system: [
       { path: '/admin/users', label: 'User Management', icon: Users, badge: null },
+      { path: '/admin/invites', label: 'Send Invites', icon: Mail, badge: null },
       { path: '/admin/settings', label: 'System Settings', icon: Settings, badge: null },
     ]
   },
@@ -327,6 +329,26 @@ export const routeConfig = {
       { path: '/vendor/profile', label: 'Business Info', icon: User, badge: null },
       { path: '/vendor/certifications', label: 'Certifications & Documents', icon: User, badge: null },
       { path: '/vendor/security', label: 'Security Settings', icon: User, badge: null },
+    ]
+  },
+
+  AGENT: {
+    main: [
+      { path: '/agent', label: 'Overview', icon: LayoutDashboard, badge: null },
+    ],
+    properties: [
+      { path: '/agent/properties', label: 'My Properties', icon: Building2, badge: null },
+      { path: '/agent/listings', label: 'Listings', icon: Store, badge: null },
+    ],
+    tenants: [
+      { path: '/agent/tenants', label: 'My Tenants', icon: Users, badge: null },
+    ],
+    communications: [
+      { path: '/agent/messages', label: 'Messages', icon: MessageSquare, badge: null },
+      { path: '/agent/notifications', label: 'Notifications', icon: Bell, badge: null },
+    ],
+    profile: [
+      { path: '/agent/profile', label: 'Profile', icon: UserCircle, badge: null },
     ]
   }
 }

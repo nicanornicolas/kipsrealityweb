@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { requireSystemAdmin } from '@/lib/rbac/requireRole'
 
 export async function GET(req: Request) {
   try {
@@ -18,6 +19,10 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  // Role check: Only SYSTEM_ADMIN can create hero sections
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
     const data = await req.json()
 

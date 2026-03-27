@@ -581,6 +581,18 @@ const mockPrismaInstance = {
     findMany: vi.fn().mockResolvedValue([{ id: 'utility-123', type: 'WATER', propertyId: 'property-123' }]),
     deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
   },
+
+  notificationPreference: {
+    findUnique: vi.fn().mockResolvedValue(null),
+    create: vi.fn().mockResolvedValue({ id: 'pref-123', userId: 'user-123' }),
+    update: vi.fn().mockResolvedValue({ id: 'pref-123', userId: 'user-123' }),
+  },
+
+  smsNotification: {
+    create: vi.fn().mockResolvedValue({ id: 'sms-123', status: 'SENT' }),
+    update: vi.fn().mockResolvedValue({ id: 'sms-123', status: 'SENT' }),
+    findMany: vi.fn().mockResolvedValue([]),
+  },
   
   // LeaseAuditLog model
   leaseAuditLog: {
@@ -590,6 +602,26 @@ const mockPrismaInstance = {
     deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
   },
 };
+
+function assertPrismaMockShape() {
+  const requiredDelegates: Array<[string, string]> = [
+    ["user", "findUnique"],
+    ["notificationPreference", "findUnique"],
+    ["smsNotification", "create"],
+    ["smsNotification", "update"],
+  ];
+
+  for (const [delegate, method] of requiredDelegates) {
+    const target = (mockPrismaInstance as Record<string, any>)[delegate];
+    if (!target || typeof target[method] !== "function") {
+      throw new Error(
+        `tests/unit/setup.ts prisma mock missing ${delegate}.${method} delegate`
+      );
+    }
+  }
+}
+
+assertPrismaMockShape();
 
 // ============================================================================
 // STEP 2: Module-level vi.mock calls
@@ -669,6 +701,14 @@ vi.mock('@prisma/client', () => {
       EMERGENCY: 'EMERGENCY',
       ROUTINE: 'ROUTINE',
       PREVENTATIVE: 'PREVENTATIVE',
+    },
+    NotificationCategory: {
+      RENT_REMINDER: 'RENT_REMINDER',
+      PAYMENT_RECEIPT: 'PAYMENT_RECEIPT',
+      MAINTENANCE_UPDATE: 'MAINTENANCE_UPDATE',
+      LEASE_DOCUMENT: 'LEASE_DOCUMENT',
+      UTILITY_BILL: 'UTILITY_BILL',
+      SYSTEM_ALERT: 'SYSTEM_ALERT',
     },
   };
 });
