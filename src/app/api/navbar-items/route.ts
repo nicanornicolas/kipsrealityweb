@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireSystemAdmin } from "@/lib/rbac/requireRole";
 
 // Optional: define body type for type safety
 interface CreateNavbarItemBody {
@@ -50,6 +51,10 @@ export async function GET(req: NextRequest) {
 
 
 export async function POST(req: NextRequest) {
+  // Role check: Only SYSTEM_ADMIN can create navbar items
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
     const body = (await req.json()) as CreateNavbarItemBody;
 

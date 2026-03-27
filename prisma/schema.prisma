@@ -77,25 +77,10 @@ model User {
 
   // Relation to OTPs
   otps Otp[]
+  smsNotifications SmsNotification[]
+  notificationPreference NotificationPreference?
 
   @@map("users")
-}
-
-model TenantPaymentMethod {
-  id                    String   @id @default(uuid())
-  userId                String   @map("user_id")
-  type                  String // 'ACH', 'CARD'
-  plaidAccessToken      String?  @map("plaid_access_token") // Encrypted
-  plaidAccountId        String?  @map("plaid_account_id")
-  stripePaymentMethodId String   @map("stripe_payment_method_id")
-  isDefault             Boolean  @default(false) @map("is_default")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("tenant_payment_methods")
 }
 
 model OrganizationUser {
@@ -130,6 +115,45 @@ model Otp {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([phone])
+}
+
+model SmsNotification {
+  id              String               @id @default(uuid())
+  userId          String
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneNumber     String               // Stored in E.164 (+254...)
+  message         String               @db.Text
+  category        NotificationCategory
+  status          SmsStatus            @default(QUEUED)
+  provider        String               // 'TWILIO' or 'AFRICASTALKING'
+  providerMsgId   String?              // The ID returned by Twilio/AT for delivery tracking
+  failureReason   String?              @db.Text
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model NotificationPreference {
+  id               String               @id @default(uuid())
+  userId           String               @unique
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Granular opt-ins
+  rentReminders    Boolean              @default(true)
+  paymentReceipts  Boolean              @default(true)
+  maintenance      Boolean              @default(true)
+  utilityAlerts    Boolean              @default(true)
+  marketing        Boolean              @default(false)
+
+  // Channel preferences
+  preferredChannel NotificationChannel  @default(SMS)
+
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
 }
 
 model Vendor {
@@ -728,8 +752,6 @@ model Payment {
   @@index([gatewayReference])
   @@index([status])
   @@index([invoiceId])
-  @@index([gatewayReference])
-  @@index([status])
   @@map("payment")
 }
 model PaymentReversal {
@@ -1790,6 +1812,29 @@ enum OrganizationUserRole {
 enum OtpType {
   TWO_FACTOR
   PHONE_VERIFICATION
+}
+
+enum NotificationChannel {
+  SMS
+  EMAIL
+  PUSH
+  IN_APP
+}
+
+enum SmsStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum NotificationCategory {
+  RENT_REMINDER
+  PAYMENT_RECEIPT
+  MAINTENANCE_UPDATE
+  LEASE_DOCUMENT
+  UTILITY_BILL
+  SYSTEM_ALERT
 }
 
 enum SidebarItemRole {

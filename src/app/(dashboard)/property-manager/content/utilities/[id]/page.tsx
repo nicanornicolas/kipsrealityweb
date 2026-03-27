@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Loader2, ArrowLeft, AlertCircle, Gauge, FileText, PieChart, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UtilityAllocationProcessor } from "@/components/utilities/UtilityAllocationProcessor";
+import { MeterReadingsTable } from "@/components/utilities/MeterReadingsTable";
 
 // Tab type
 type TabId = "overview" | "readings" | "bills" | "allocations";
@@ -24,7 +27,6 @@ export default function UtilityDetailsPage() {
   // Keep [id] in route, use utilityId in code
   const { id } = useParams();
   const utilityId = id as string;
-  const router = useRouter();
 
   const [utility, setUtility] = useState<Utility | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
@@ -192,42 +194,43 @@ export default function UtilityDetailsPage() {
           </CardContent>
         </Card>
 
-        {/* Tabs */}
-        <div className="border-b border-slate-200">
-          <nav className="flex gap-1" aria-label="Tabs">
+        <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as TabId)}>
+          <TabsList className="mb-6 w-full justify-start border-b rounded-none bg-transparent h-auto p-0">
             {tabs.map((tab) => (
-              <button
+              <TabsTrigger
                 key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors ${activeTab === tab.id
-                  ? "bg-white text-[#0b1f3a] border-t border-l border-r border-slate-200 -mb-px"
-                  : "text-[#15386a]/70 hover:text-[#0b1f3a] hover:bg-slate-50"
-                  }`}
+                value={tab.id}
+                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none pb-3"
               >
-                {tab.icon}
-                {tab.label}
-              </button>
+                <span className="flex items-center gap-2">
+                  {tab.icon}
+                  {tab.label}
+                </span>
+              </TabsTrigger>
             ))}
-          </nav>
-        </div>
+          </TabsList>
 
-        {/* Tab Content */}
-        <Card className="border-slate-200 shadow-xl rounded-2xl overflow-hidden">
-          <CardContent className="p-6">
-            {activeTab === "overview" && (
-              <OverviewTab utility={utility} />
-            )}
-            {activeTab === "readings" && (
-              <ReadingsTab utilityId={utilityId} utilityType={utility.type} />
-            )}
-            {activeTab === "bills" && (
-              <BillsTab utilityId={utilityId} />
-            )}
-            {activeTab === "allocations" && (
-              <AllocationsTab utilityId={utilityId} />
-            )}
-          </CardContent>
-        </Card>
+          <Card className="border-slate-200 shadow-xl rounded-2xl overflow-hidden">
+            <CardContent className="p-6">
+              <TabsContent value="overview">
+                <OverviewTab utility={utility} />
+              </TabsContent>
+              <TabsContent value="readings">
+                <ReadingsTab
+                  utilityId={utilityId}
+                  utilityType={utility.type}
+                  propertyId={utility.propertyId}
+                />
+              </TabsContent>
+              <TabsContent value="bills">
+                <BillsTab utilityId={utilityId} />
+              </TabsContent>
+              <TabsContent value="allocations">
+                <AllocationsTab utilityId={utilityId} propertyId={utility.propertyId} />
+              </TabsContent>
+            </CardContent>
+          </Card>
+        </Tabs>
       </div>
     </div>
   );
@@ -274,7 +277,15 @@ function OverviewTab({ utility }: { utility: Utility }) {
   );
 }
 
-function ReadingsTab({ utilityId, utilityType }: { utilityId: string; utilityType: "FIXED" | "METERED" }) {
+function ReadingsTab({
+  utilityId,
+  utilityType,
+  propertyId,
+}: {
+  utilityId: string;
+  utilityType: "FIXED" | "METERED";
+  propertyId?: string;
+}) {
   if (utilityType === "FIXED") {
     return (
       <div className="text-center py-12 space-y-4">
@@ -288,20 +299,10 @@ function ReadingsTab({ utilityId, utilityType }: { utilityId: string; utilityTyp
     );
   }
 
-  // TODO: Implement ReadingsTab content
-  // This will be replaced with the full readings module
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-bold text-[#0b1f3a]">Meter Readings</h3>
-        <Button className="bg-[#30D5C8] hover:bg-[#30D5C8]/90 text-white">
-          Add Reading
-        </Button>
-      </div>
-      <div className="text-center py-12 text-[#15386a]/70">
-        <p>Readings module placeholder - will be implemented in Phase 3</p>
-        <p className="text-sm mt-2">Utility ID: {utilityId}</p>
-      </div>
+      <MeterReadingsTable propertyId={propertyId ?? "property-unknown"} />
+      <p className="text-xs text-slate-500">Utility ID: {utilityId}</p>
     </div>
   );
 }
@@ -325,20 +326,17 @@ function BillsTab({ utilityId }: { utilityId: string }) {
   );
 }
 
-function AllocationsTab({ utilityId }: { utilityId: string }) {
-  // TODO: Implement AllocationsTab content
-  // This will be replaced with the full allocations module
+function AllocationsTab({ utilityId, propertyId }: { utilityId: string; propertyId?: string }) {
+  const resolvedPropertyId = propertyId ?? "property-unknown";
+
   return (
     <div className="space-y-6">
       <h3 className="text-xl font-bold text-[#0b1f3a]">Bill Allocations</h3>
       <p className="text-[#15386a]/70">
-        View how utility costs are allocated across units.
-        Allocations are calculated by the backend and displayed here for transparency.
+        Review and approve allocations generated from master bills before posting to the ledger.
       </p>
-      <div className="text-center py-12 text-[#15386a]/70">
-        <p>Allocations module placeholder - will be implemented in Phase 5</p>
-        <p className="text-sm mt-2">Utility ID: {utilityId}</p>
-      </div>
+      <UtilityAllocationProcessor utilityId={utilityId} propertyId={resolvedPropertyId} />
+      <p className="text-xs text-slate-500">Utility ID: {utilityId}</p>
     </div>
   );
 }

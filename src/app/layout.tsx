@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -6,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { QueryProvider } from "@/context/QueryProvider";
 import { LoadingBar } from "@/components/ui/loading-bar";
 import { Suspense } from "react";
+import { Analytics } from "@vercel/analytics/next";
 
 import { Inter, Plus_Jakarta_Sans, Sen } from "next/font/google";
 
@@ -43,6 +45,16 @@ export const metadata: Metadata = {
   },
 };
 
+// This forces the browser to treat your site like a native app screen
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -77,6 +89,7 @@ export default function RootLayout({
             </Suspense>
           </AuthProvider>
         </QueryProvider>
+        <Analytics />
       </body>
     </html>
   );

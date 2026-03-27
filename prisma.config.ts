@@ -6,7 +6,15 @@ if (process.env.NODE_ENV === "test") {
   config({ path: ".env.local" });
   config();
 }
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
+
+function requireEnv(name: string) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -15,6 +23,6 @@ export default defineConfig({
   },
   engine: "classic",
   datasource: {
-    url: env("DATABASE_URL"),
+    url: requireEnv("DATABASE_URL"),
   },
 });
