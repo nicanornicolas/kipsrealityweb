@@ -1,10 +1,13 @@
 import { prisma } from "@/lib/db";
-import { SmsFactory } from "./sms-factory";
+import { SmsFactory } from "@/lib/notifications/sms-factory";
 import { NotificationCategory } from "@prisma/client";
 
 export class NotificationService {
   private static maskPhone(phoneNumber: string) {
     if (!phoneNumber) return "****";
+    if (phoneNumber.length <= 4) {
+      return phoneNumber.replace(/[0-9]/g, "*");
+    }
     const visible = phoneNumber.slice(-4);
     const maskedPrefix = phoneNumber.slice(0, -4).replace(/[0-9]/g, "*");
     return `${maskedPrefix}${visible}`;
@@ -22,6 +25,23 @@ export class NotificationService {
     const { userId, phoneNumber, message, category } = params;
 
     // 1. Check Tenant Preferences (Don't spam tenants who opted out!)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        consentNotifications: true,
+        consentTransactional: true,
+      },
+    });
+
+    if (!user) {
+      console.warn(`[SMS] User not found: ${userId}`);
+      return false;
+    }
+
+    if (!user.consentNotifications || !user.consentTransactional) {
+      return false;
+    }
+
     const prefs = await prisma.notificationPreference.findUnique({
       where: { userId },
     });
@@ -61,17 +81,25 @@ export class NotificationService {
     // 2. Get the optimal gateway based on the phone number
     const { provider, name: providerName } = SmsFactory.getProvider(phoneNumber);
 
-    // 3. Send the SMS
-    const result = await provider.sendSms(phoneNumber, message);
-
-    // 4. Log the result to the database (Crucial for dispute resolution)
-    await prisma.smsNotification.create({
+    // 3. Persist queued notification before sending
+    const queuedNotification = await prisma.smsNotification.create({
       data: {
         userId,
         phoneNumber,
         message,
         category,
         provider: providerName,
+        status: "QUEUED",
+      },
+    });
+
+    // 4. Send the SMS
+    const result = await provider.sendSms(phoneNumber, message);
+
+    // 5. Update the result in the database (Crucial for dispute resolution)
+    await prisma.smsNotification.update({
+      where: { id: queuedNotification.id },
+      data: {
         status: result.success ? "SENT" : "FAILED",
         providerMsgId: result.messageId,
         failureReason: result.error,

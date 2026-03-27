@@ -590,6 +590,7 @@ const mockPrismaInstance = {
 
   smsNotification: {
     create: vi.fn().mockResolvedValue({ id: 'sms-123', status: 'SENT' }),
+    update: vi.fn().mockResolvedValue({ id: 'sms-123', status: 'SENT' }),
     findMany: vi.fn().mockResolvedValue([]),
   },
   
@@ -601,6 +602,26 @@ const mockPrismaInstance = {
     deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
   },
 };
+
+function assertPrismaMockShape() {
+  const requiredDelegates: Array<[string, string]> = [
+    ["user", "findUnique"],
+    ["notificationPreference", "findUnique"],
+    ["smsNotification", "create"],
+    ["smsNotification", "update"],
+  ];
+
+  for (const [delegate, method] of requiredDelegates) {
+    const target = (mockPrismaInstance as Record<string, any>)[delegate];
+    if (!target || typeof target[method] !== "function") {
+      throw new Error(
+        `tests/unit/setup.ts prisma mock missing ${delegate}.${method} delegate`
+      );
+    }
+  }
+}
+
+assertPrismaMockShape();
 
 // ============================================================================
 // STEP 2: Module-level vi.mock calls

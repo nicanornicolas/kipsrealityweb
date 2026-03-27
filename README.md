@@ -53,7 +53,7 @@ Property operations and finance are often fragmented across disconnected tools. 
 
 ### Prerequisites
 
-* Node.js ≥ 18
+* Node.js ≥ 20
 * npm or yarn
 * MySQL database (local or remote)
 
