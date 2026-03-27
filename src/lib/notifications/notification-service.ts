@@ -33,7 +33,12 @@ export class NotificationService {
       },
     });
 
-    if (!user?.consentNotifications || !user?.consentTransactional) {
+    if (!user) {
+      console.warn(`[SMS] User not found: ${userId}`);
+      return false;
+    }
+
+    if (!user.consentNotifications || !user.consentTransactional) {
       return false;
     }
 
