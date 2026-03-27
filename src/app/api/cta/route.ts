@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireSystemAdmin } from "@/lib/rbac/requireRole";
 
 export async function GET() {
   try {
@@ -11,6 +12,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  // Role check: Only SYSTEM_ADMIN can create CTAs
+  const authError = await requireSystemAdmin();
+  if (authError) return authError;
+
   try {
     const { page, title, subtitle, buttonText, buttonUrl, gradient } =
       await req.json();
