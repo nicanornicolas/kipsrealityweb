@@ -63,9 +63,12 @@ export default defineConfig({
   ],
 
   webServer: {
-    // If CI, run the already-built production server (build happens in CI workflow before this)
-    // If local, run the dev server for hot-reloading while writing tests
-    command: process.env.CI ? "npm run start" : "npm run dev",
+    // FORCE Next.js to use the test environment variables at runtime
+    // In CI: npm run start uses production build; in local: npm run dev uses dev server
+    // Wrap with dotenv to inject .env.test variables into the running process
+    command: process.env.CI
+      ? "npx dotenv -e .env.test -- npm run start"
+      : "npx dotenv -e .env.test -- npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     stdout: process.env.CI ? "pipe" : "ignore",
