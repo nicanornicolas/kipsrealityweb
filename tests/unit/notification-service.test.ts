@@ -2,16 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NotificationCategory } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { NotificationService } from "@/lib/notifications/notification-service";
-
-const sendSmsMock = vi.fn();
-const getProviderMock = vi.fn(() => ({
-  provider: { sendSms: sendSmsMock },
-  name: "TWILIO",
-}));
-
-vi.mock("@/lib/notifications/sms-factory", () => ({
-  SmsFactory: { getProvider: getProviderMock },
-}));
+import { SmsFactory } from "@/lib/notifications/sms-factory";
 
 const prismaMock = prisma as unknown as {
   user: { findUnique: ReturnType<typeof vi.fn> };
@@ -20,6 +11,9 @@ const prismaMock = prisma as unknown as {
 };
 
 describe("NotificationService.sendSmsNotification", () => {
+  const sendSmsMock = vi.fn();
+  let getProviderSpy: ReturnType<typeof vi.spyOn>;
+
   const baseParams = {
     userId: "user-1",
     phoneNumber: "+254712345678",
@@ -28,6 +22,10 @@ describe("NotificationService.sendSmsNotification", () => {
   };
 
   beforeEach(() => {
+    getProviderSpy = vi.spyOn(SmsFactory, "getProvider").mockReturnValue({
+      provider: { sendSms: sendSmsMock },
+      name: "TWILIO",
+    });
     prismaMock.user.findUnique.mockResolvedValue({
       consentNotifications: true,
       consentTransactional: true,
@@ -36,7 +34,7 @@ describe("NotificationService.sendSmsNotification", () => {
     prismaMock.smsNotification.create.mockResolvedValue({});
     prismaMock.smsNotification.update.mockResolvedValue({});
     sendSmsMock.mockResolvedValue({ success: true, messageId: "sid-1" });
-    getProviderMock.mockClear();
+    getProviderSpy.mockClear();
     sendSmsMock.mockClear();
     prismaMock.user.findUnique.mockClear();
     prismaMock.notificationPreference.findUnique.mockClear();
@@ -46,6 +44,7 @@ describe("NotificationService.sendSmsNotification", () => {
   });
 
   afterEach(() => {
+    getProviderSpy.mockRestore();
     vi.clearAllMocks();
   });
 
@@ -64,7 +63,7 @@ describe("NotificationService.sendSmsNotification", () => {
     });
 
     expect(result).toBe(false);
-    expect(getProviderMock).not.toHaveBeenCalled();
+    expect(getProviderSpy).not.toHaveBeenCalled();
     expect(prismaMock.smsNotification.create).not.toHaveBeenCalled();
   });
 
@@ -75,13 +74,38 @@ describe("NotificationService.sendSmsNotification", () => {
     const result = await NotificationService.sendSmsNotification(baseParams);
 
     expect(result).toBe(true);
-    expect(getProviderMock).not.toHaveBeenCalled();
+    expect(getProviderSpy).not.toHaveBeenCalled();
     expect(prismaMock.smsNotification.create).toHaveBeenCalledTimes(1);
 
     const logLine = logSpy.mock.calls[0]?.[0] as string;
     expect(logLine).toContain(baseParams.phoneNumber.slice(-4));
     expect(logLine).not.toContain(baseParams.phoneNumber);
     expect(logLine).not.toContain(baseParams.message);
+  });
+
+  it("returns false when user is missing", async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce(null);
+
+    const result = await NotificationService.sendSmsNotification(baseParams);
+
+    expect(result).toBe(false);
+    expect(getProviderSpy).not.toHaveBeenCalled();
+    expect(prismaMock.smsNotification.create).not.toHaveBeenCalled();
+    expect(prismaMock.smsNotification.update).not.toHaveBeenCalled();
+  });
+
+  it("returns false when user consent is disabled", async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce({
+      consentNotifications: false,
+      consentTransactional: true,
+    });
+
+    const result = await NotificationService.sendSmsNotification(baseParams);
+
+    expect(result).toBe(false);
+    expect(getProviderSpy).not.toHaveBeenCalled();
+    expect(prismaMock.smsNotification.create).not.toHaveBeenCalled();
+    expect(prismaMock.smsNotification.update).not.toHaveBeenCalled();
   });
 
   it("sends via provider and logs success status", async () => {
@@ -91,7 +115,7 @@ describe("NotificationService.sendSmsNotification", () => {
     const result = await NotificationService.sendSmsNotification(baseParams);
 
     expect(result).toBe(true);
-    expect(getProviderMock).toHaveBeenCalledTimes(1);
+    expect(getProviderSpy).toHaveBeenCalledTimes(1);
     expect(sendSmsMock).toHaveBeenCalledWith(
       baseParams.phoneNumber,
       baseParams.message

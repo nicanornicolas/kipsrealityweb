@@ -16,6 +16,15 @@ describe("SmsFactory.getProvider", () => {
     expect(name).toBe("AFRICASTALKING");
   });
 
+  it("falls back to Twilio when Africa's Talking is not configured", () => {
+    delete process.env.AT_API_KEY;
+    delete process.env.AT_USERNAME;
+    SmsFactory.resetForTests();
+
+    const { name } = SmsFactory.getProvider("+254712345678");
+    expect(name).toBe("TWILIO");
+  });
+
   it("routes US (+1) numbers to Twilio", () => {
     const { name } = SmsFactory.getProvider("+14155550123");
     expect(name).toBe("TWILIO");
