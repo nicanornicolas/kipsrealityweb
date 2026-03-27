@@ -32,7 +32,7 @@ interface Tenant {
   lastName?: string;
   email?: string;
 }
-interface Invoice { id: string; leaseId: string; amount: number; dueDate: string; status: "PENDING" | "PAID" | "OVERDUE"; type: string; Lease: Lease; payment: Payment[]; }
+interface Invoice { id: string; leaseId: string; amount: number; dueDate: string; status: "DRAFT" | "PENDING" | "PAID" | "OVERDUE" | "CANCELLED"; type: string; Lease: Lease; payment: Payment[]; }
 
 export default function TenantInvoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -780,8 +780,9 @@ export default function TenantInvoices() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col gap-2">
-                            {/* Show Pay Now button when a balance remains */}
-                            {remaining > 0 && inv.status !== "PAID" && (
+                            {/* Show Pay Now button when a balance remains and status is payable */}
+                            {remaining > 0 &&
+                              (inv.status === "PENDING" || inv.status === "OVERDUE") && (
                               <Button
                                 onClick={() => openPaymentModal(inv.id)}
                                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm"
@@ -888,7 +889,8 @@ export default function TenantInvoices() {
                     </div>
 
                     <div className="flex flex-col gap-2 pt-2">
-                      {remaining > 0 && inv.status !== "PAID" && (
+                      {remaining > 0 &&
+                        (inv.status === "PENDING" || inv.status === "OVERDUE") && (
                         <Button
                           onClick={() => openPaymentModal(inv.id)}
                           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
