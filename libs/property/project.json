@@ -1,0 +1,9 @@
+{
+  "name": "property",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/property/src",
+  "projectType": "library",
+  "tags": ["scope:property"],
+  "// targets": "to see all targets run: nx show project property --web",
+  "targets": {}
+}
