@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { enforceFeatureLimit } from "@/lib/guards/requireFeature";
+import { UsageService } from '@rentflow/payments';
 
 const prisma = new PrismaClient();
+const usageService = new UsageService();
 
 export async function POST(req: Request) {
   try {
@@ -28,6 +31,15 @@ export async function POST(req: Request) {
       isFurnished,
       availabilityStatus,
     } = data;
+
+    if (!organizationId) {
+      return NextResponse.json({ error: "organizationId is required" }, { status: 400 });
+    }
+
+    // === THE MONETIZATION GATE ===
+    // Stops the request immediately if they've hit their tier limit
+    const limitError = await enforceFeatureLimit(organizationId, 'property.create');
+    if (limitError) return limitError;
 
     // ✅ 1. Fetch category for "Property"
     const propertyCategory = await prisma.categoryMarketplace.findUnique({
@@ -64,6 +76,9 @@ export async function POST(req: Request) {
         location: true,
       },
     });
+
+    // === RECORD USAGE (Only charge them if the DB write succeeded!) ===
+    await usageService.recordUsage(organizationId, 'property.create', 1);
 
     return NextResponse.json({
       success: true,
