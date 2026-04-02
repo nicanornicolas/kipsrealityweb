@@ -4,6 +4,10 @@ import { createDocument } from "@/lib/dss/document-service";
 import { verifyAccessToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { DssParticipantRole } from "@prisma/client";
+import { enforceFeatureLimit } from "@/lib/guards/requireFeature";
+import { UsageService } from '@rentflow/payments';
+
+const usageService = new UsageService();
 
 // Helper function to get authenticated user
 async function getAuthenticatedUser() {
@@ -114,6 +118,11 @@ export async function POST(req: Request) {
             );
         }
 
+        // === THE MONETIZATION GATE ===
+        // Stops the request immediately if they've hit their tier limit
+        const limitError = await enforceFeatureLimit(orgId, 'dss.documents.monthly');
+        if (limitError) return limitError;
+
         // 2. Parse FormData
         const formData = await req.formData();
         const file = formData.get("file") as File;
@@ -136,12 +145,15 @@ export async function POST(req: Request) {
             title,
             organizationId: orgId,
             fileBuffer,
-            participants: participants.map((p: any) => ({
+            participants: participants.map((p: { email: string; fullName: string; role: string }) => ({
                 email: p.email,
                 name: p.fullName,
                 role: p.role as DssParticipantRole,
             }))
         });
+
+        // === RECORD USAGE (Only charge them if the DB write succeeded!) ===
+        await usageService.recordUsage(orgId, 'dss.documents.monthly', 1);
 
         return NextResponse.json({ success: true, data: newDoc });
 
