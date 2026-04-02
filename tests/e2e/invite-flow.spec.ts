@@ -49,7 +49,19 @@ test.describe('Tenant Invitation Flow', () => {
         await page.waitForSelector('input[name="email"]');
         await page.fill('input[name="email"]', 'manager@test.com');
         await page.fill('input[name="password"]', 'password123');
-        await page.click('button[type="submit"]');
+
+        // WAIT FOR THE NETWORK RESPONSE - prevents flakiness
+        const [loginResponse] = await Promise.all([
+            page.waitForResponse(resp =>
+                resp.url().includes('/api/auth') && resp.request().method() === 'POST'
+            ),
+            page.click('button[type="submit"]'),
+        ]);
+
+        // Assert the backend actually accepted the credentials
+        if (!loginResponse.ok()) {
+            throw new Error(`Login request failed: ${loginResponse.status()} ${loginResponse.statusText()}`);
+        }
 
         // Enhanced error handling - check for multiple error indicators
         const errorSelectors = [
@@ -58,6 +70,7 @@ test.describe('Tenant Invitation Flow', () => {
             'div.bg-red-50 p',
             '.text-red-500',
             '[data-testid="error-message"]',
+            '[data-testid="toast-error"]',
             '.text-red-600',
         ];
 
@@ -78,16 +91,7 @@ test.describe('Tenant Invitation Flow', () => {
             throw new Error(`Login failed with error: ${loginError}`);
         }
 
-        if (!page.url().includes('/property-manager')) {
-            const currentUrl = page.url();
-            console.error('Actual URL after login:', currentUrl);
-            const content = await page.content();
-            if (content.toLowerCase().includes('error')) {
-                console.error('Page contains error snippet:', content);
-            }
-        }
-
-        // Wait for navigation
+        // Now it is safe to wait for the redirect
         await expect(page).toHaveURL(/\/property-manager/, { timeout: 30000 });
 
         // 3. Navigate to "My tenants"
