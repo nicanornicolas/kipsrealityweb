@@ -218,8 +218,37 @@ export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillI
   };
 
   const handleApproveAndPost = async () => {
-    toast.success('Allocations Approved! Invoices generated and posted to GL.');
-    setStep('POSTED');
+    if (!activeBillId) {
+      toast.error('No bill ID found to approve.');
+      return;
+    }
+
+    try {
+      setStep('PROCESSING_AI'); // Reuse loading state while approving
+
+      const res = await fetch(`/api/utilities/allocations/${activeBillId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || 'Failed to approve allocation');
+      }
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success(`Allocations Approved! ${data.result.invoicesGenerated} invoice(s) generated and posted to GL.`);
+        setStep('POSTED');
+      } else {
+        throw new Error('Approval response was not successful');
+      }
+    } catch (error) {
+      console.error('Approval error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to approve allocations. Please try again.');
+      setStep('PENDING_REVIEW'); // Return to review state on error
+    }
   };
 
   return (
