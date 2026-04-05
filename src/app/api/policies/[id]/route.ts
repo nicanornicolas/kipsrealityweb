@@ -64,10 +64,11 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     });
 
     return NextResponse.json({ message: "Policy and its sections deleted successfully" });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("DELETE /api/policies/[id] error:", error);
+    const details = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to delete policy", details: error.message },
+      { error: "Failed to delete policy", details },
       { status: 500 }
     );
   }

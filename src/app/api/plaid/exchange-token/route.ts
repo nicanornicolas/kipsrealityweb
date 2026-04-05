@@ -73,8 +73,9 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: true });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error connecting bank account:", error);
-        return NextResponse.json({ error: error.message || "Failed to connect bank account" }, { status: 500 });
+        const message = error instanceof Error ? error.message : "Failed to connect bank account";
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

@@ -25,18 +25,16 @@ export async function PATCH(
 
     return NextResponse.json(lease);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Lease update error:", error);
+    const err = error as { code?: string; message?: string };
 
-    if (error.code === "P2025") {
-      return NextResponse.json(
-        { error: "Lease not found" },
-        { status: 404 }
-      );
+    if (err.code === "P2025") {
+      return NextResponse.json({ error: "Lease not found" }, { status: 404 });
     }
 
     return NextResponse.json(
-      { error: error.message },
+      { error: err.message ?? "Failed to update lease" },
       { status: 500 }
     );
   }

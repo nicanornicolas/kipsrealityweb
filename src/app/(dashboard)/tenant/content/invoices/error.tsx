@@ -23,7 +23,7 @@ export default function TenantInvoiceError({
       </div>
 
       <p className="text-slate-600 text-center max-w-md">
-        We're having trouble reaching the billing server at the moment. Your payment history and balances are safe.
+        {"We're"} having trouble reaching the billing server at the moment. Your payment history and balances are safe.
       </p>
 
       <div className="flex gap-4">
