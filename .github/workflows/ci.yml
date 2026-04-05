@@ -9,6 +9,8 @@ on:
 env:
   DATABASE_URL: 'mysql://root:password@localhost:3306/testdb'
   JWT_SECRET: 'test-secret'
+  NX_CLOUD: 'false'
+  NX_NO_CLOUD: 'true'
 
 jobs:
   validate:
