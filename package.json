@@ -16,6 +16,9 @@
     "postbuild": "node scripts/build-standalone.mjs",
     "start": "nx start",
     "start:standalone": "node .next/standalone/server.js",
+    "worker:dev": "nx serve background-worker",
+    "worker:build": "nx build background-worker",
+    "worker:start": "nx serve background-worker --configuration=production",
     "// --- DATABASE SCRIPTS ---": "",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
@@ -220,3 +223,4 @@
     "seed": "tsx prisma/seed.ts"
   }
 }
+
