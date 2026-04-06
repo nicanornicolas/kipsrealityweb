@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db';
 import Stripe from 'stripe';
-import { stripeWebhookQueue } from '@/lib/queue';
+import { webhookQueue } from '@rentflow/utilities';
 
 // Force Next.js to use the Node runtime so Stripe's crypto signature verification works
 export const dynamic = 'force-dynamic';
-
-const prisma = new PrismaClient();
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecretKey) {
@@ -41,14 +39,12 @@ export async function POST(req: Request) {
       },
     });
 
-    await stripeWebhookQueue.add('stripe-webhook', {
-      eventType: event.type,
-      payload: JSON.parse(JSON.stringify(event)) as Record<string, unknown>,
+    await webhookQueue.add(event.type, {
       webhookEventId: webhookEvent.id,
-      receivedAt: new Date().toISOString(),
+      stripeEventId: event.id,
     });
 
-    return NextResponse.json({ received: true }, { status: 202 });
+    return NextResponse.json({ received: true, id: webhookEvent.id });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Stripe Webhook Error]', message);
