@@ -1,5 +1,5 @@
-import { withSentryConfig } from "@sentry/nextjs";
-import type { NextConfig } from "next";
+import { withSentryConfig } from '@sentry/nextjs';
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /*
@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
    * Essential for VPS/Docker deployments.
    * It creates a small 'standalone' folder with only necessary files for production.
    */
-  output: "standalone",
+  output: 'standalone',
 
   // Use webpack instead of Turbopack (required for custom webpack config like fflate alias)
   turbopack: {},
@@ -23,39 +23,39 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       // External Image Providers
       {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-        pathname: "/**",
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
       },
       {
-        protocol: "https",
-        hostname: "plus.unsplash.com",
-        pathname: "/**",
+        protocol: 'https',
+        hostname: 'plus.unsplash.com',
+        pathname: '/**',
       },
       {
-        protocol: "https",
-        hostname: "i.postimg.cc",
-        pathname: "/**",
+        protocol: 'https',
+        hostname: 'i.postimg.cc',
+        pathname: '/**',
       },
 
       // Your Production Domain (If you serve uploaded images from the server)
       // Replace with your actual domain or VPS IP if needed
       {
-        protocol: "https",
-        hostname: "rentflow360.com",
-        pathname: "/**",
+        protocol: 'https',
+        hostname: 'rentflow360.com',
+        pathname: '/**',
       },
       // Allow http for IP-based access (common in VPS setups before SSL)
       {
-        protocol: "http",
-        hostname: "184.168.21.114",
-        pathname: "/**",
+        protocol: 'http',
+        hostname: '184.168.21.114',
+        pathname: '/**',
       },
     ],
 
     // Optimization: Compress images for faster page loads
     minimumCacheTTL: 60,
-    formats: ["image/avif", "image/webp"],
+    formats: ['image/avif', 'image/webp'],
   },
 
   // Note: ESLint configuration is handled in eslint.config.mjs, not in NextConfig.
@@ -68,9 +68,9 @@ const nextConfig: NextConfig = {
       config.resolve.alias = {
         ...config.resolve.alias,
         'fflate/lib/node.cjs': 'fflate/browser',
-      }
+      };
     }
-    return config
+    return config;
   },
 };
 
@@ -78,9 +78,9 @@ export default withSentryConfig(nextConfig, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
-  org: "rentflow360",
+  org: 'rentflow360',
 
-  project: "javascript-nextjs",
+  project: 'javascript-nextjs',
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
@@ -91,11 +91,11 @@ export default withSentryConfig(nextConfig, {
   // Upload a larger set of source maps for prettier stack traces (increases build time)
   widenClientFileUpload: true,
 
-  // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
+  // Uncomment to route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
   // This can increase your server load as well as your hosting bill.
   // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
   // side errors will fail.
-  tunnelRoute: "/monitoring",
+  // tunnelRoute: "/monitoring",
 
   webpack: {
     // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
