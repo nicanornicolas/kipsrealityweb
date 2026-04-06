@@ -323,7 +323,7 @@ export default function SettingsPage() {
                   <div className="space-y-2">
                     <h3 className="text-xl font-bold">Verify Phone Number</h3>
                     <p className="text-sm text-gray-500 leading-relaxed">
-                      We've sent a 6-digit verification code to <span className="font-semibold text-gray-700">{phoneNumber}</span>. Enter it below to secure your account.
+                      {"We've"} sent a 6-digit verification code to <span className="font-semibold text-gray-700">{phoneNumber}</span>. Enter it below to secure your account.
                     </p>
                   </div>
 
@@ -345,7 +345,7 @@ export default function SettingsPage() {
 
                   <div className="text-center">
                     <p className="text-sm text-gray-500">
-                      Didn't receive the code?{" "}
+                      {"Didn't"} receive the code?{" "}
                       <button
                         onClick={handleSendVerificationOtp}
                         className="text-primary font-semibold hover:underline decoration-2 underline-offset-4"

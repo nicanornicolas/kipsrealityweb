@@ -33,6 +33,25 @@ interface Tenant {
   balance: number;
 }
 
+type TenantApi = {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  propertyName?: string | null;
+  unitNumber?: string | null;
+  leaseStatus?: "active" | "expiring" | "expired" | null;
+  moveInDate?: string | null;
+  createdAt?: string | null;
+  rentAmount?: number | null;
+  rent?: number | null;
+  balance?: number | null;
+  property?: { name?: string | null } | null;
+  unit?: { unitNumber?: string | null } | null;
+};
+
 export default function DirectoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [propertyFilter, setPropertyFilter] = useState("all");
@@ -54,18 +73,20 @@ export default function DirectoryPage() {
         const tenantsData = await tenantsRes.json();
         
         // Transform API data to match interface
-        const transformedTenants: Tenant[] = Array.isArray(tenantsData) ? tenantsData.map((t: any) => ({
-          id: t.id,
-          name: t.firstName && t.lastName ? `${t.firstName} ${t.lastName}` : t.name || 'Unknown',
-          email: t.email || '',
-          phone: t.phone || '',
-          property: t.property?.name || t.propertyName || '',
-          unit: t.unit?.unitNumber || t.unitNumber || '',
-          leaseStatus: t.leaseStatus || 'active',
-          moveInDate: t.moveInDate || t.createdAt?.split('T')[0] || '',
-          rentAmount: t.rentAmount || t.rent || 0,
-          balance: t.balance || 0
-        })) : [];
+        const transformedTenants: Tenant[] = Array.isArray(tenantsData)
+          ? (tenantsData as TenantApi[]).map((t) => ({
+              id: t.id,
+              name: t.firstName && t.lastName ? `${t.firstName} ${t.lastName}` : t.name || "Unknown",
+              email: t.email || "",
+              phone: t.phone || "",
+              property: t.property?.name || t.propertyName || "",
+              unit: t.unit?.unitNumber || t.unitNumber || "",
+              leaseStatus: t.leaseStatus || "active",
+              moveInDate: t.moveInDate || t.createdAt?.split("T")[0] || "",
+              rentAmount: t.rentAmount || t.rent || 0,
+              balance: t.balance || 0
+            }))
+          : [];
         
         setTenants(transformedTenants);
         

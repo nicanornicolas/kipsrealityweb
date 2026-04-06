@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { financeActions } from "@/lib/finance/actions";
+import { InvoiceStatus, PaymentMethod } from "@prisma/client";
 
-const VALID_PAYMENT_METHODS = ["CASH", "BANK", "CREDIT_CARD"] as const;
+const VALID_PAYMENT_METHODS = [
+  PaymentMethod.CASH,
+  PaymentMethod.BANK,
+  PaymentMethod.CREDIT_CARD
+] as const;
+
+function isPaymentMethod(value: unknown): value is PaymentMethod {
+  return (VALID_PAYMENT_METHODS as readonly PaymentMethod[]).includes(value as PaymentMethod);
+}
 
 export async function POST(
   req: Request,
@@ -29,7 +38,7 @@ export async function POST(
       return NextResponse.json({ error: "Payment method is required" }, { status: 400 });
     }
 
-    if (!VALID_PAYMENT_METHODS.includes(method as any)) {
+    if (!isPaymentMethod(method)) {
       return NextResponse.json({
         error: `Invalid payment method: ${method}. Must be one of: ${VALID_PAYMENT_METHODS.join(", ")}`
       }, { status: 400 });
@@ -78,7 +87,7 @@ export async function POST(
       data: {
         invoiceId: invoiceId,
         amount: numericAmount,
-        method: method as any,
+        method: method,
         reference: reference || null,
         postingStatus: 'PENDING',
       },
@@ -87,7 +96,7 @@ export async function POST(
     const newTotalPaid = paidAmount + numericAmount;
     const isPaidInFull = newTotalPaid >= invoiceTotalAmount - 0.01;
 
-    let newStatus = invoice.status;
+    let newStatus: InvoiceStatus = invoice.status ?? InvoiceStatus.PENDING;
 
     if (isPaidInFull) {
       newStatus = "PAID";
@@ -100,7 +109,7 @@ export async function POST(
     await prisma.invoice.update({
       where: { id: invoiceId },
       data: {
-        status: newStatus as any,
+        status: newStatus,
         amountPaid: newTotalPaid,
         balance: invoiceTotalAmount - newTotalPaid,
       },

@@ -11,7 +11,7 @@ export const Logo = ({ className }: LogoProps) => {
     return (
         <div className="flex items-center justify-center mb-2">
             <div className="flex items-center gap-3">
-                <a href="/">
+                <Link href="/" aria-label="RentFlow360 Home">
                     <div className={`${sizeClass} relative`}>
                         <Image
                             src={logo}
@@ -21,7 +21,7 @@ export const Logo = ({ className }: LogoProps) => {
                             priority
                         />
                     </div>
-                </a>
+                </Link>
             </div>
         </div>
     );

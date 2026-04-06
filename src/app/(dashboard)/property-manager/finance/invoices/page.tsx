@@ -7,6 +7,11 @@ import { GroupedInvoice } from "@/app/data/FinanceData";
 import { toast } from "sonner";
 import CreateInvoiceModal from "@/components/Dashboard/propertymanagerdash/CreateInvoiceModal";
 
+type InvoiceFilters = {
+  status?: string;
+  type?: string;
+};
+
 export default function InvoicesPage() {
   const [invoiceGroups, setInvoiceGroups] = useState<GroupedInvoice[]>([]);
   const [status, setStatus] = useState<string>("");
@@ -15,7 +20,7 @@ export default function InvoicesPage() {
 
   const loadInvoices = async () => {
     try {
-      const filters: any = {};
+      const filters: InvoiceFilters = {};
       if (status) filters.status = status;
       if (type) filters.type = type;
 
@@ -47,7 +52,7 @@ export default function InvoicesPage() {
     doc.text("Grouped Invoice List", 14, 22);
 
     const tableColumn = ["Lease ID", "Invoice Count", "Total Amount"];
-    const tableRows: any[] = [];
+    const tableRows: Array<[string, number, string]> = [];
 
     invoiceGroups.forEach((group) => {
       tableRows.push([
