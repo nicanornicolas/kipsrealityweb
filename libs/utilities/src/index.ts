@@ -49,3 +49,4 @@ export { UtilityService } from './lib/utility-service';
 export type { IFinanceModule } from '@rentflow/finance';
 
 export * from './lib/utilities';
+export * from './lib/queue';
