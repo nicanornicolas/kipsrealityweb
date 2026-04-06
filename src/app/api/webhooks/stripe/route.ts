@@ -1,10 +1,21 @@
 import { NextResponse } from 'next/server';
-import { SubscriptionService } from '@rentflow/payments';
+import { PrismaClient } from '@prisma/client';
+import Stripe from 'stripe';
+import { stripeWebhookQueue } from '@/lib/queue';
 
 // Force Next.js to use the Node runtime so Stripe's crypto signature verification works
 export const dynamic = 'force-dynamic';
 
-const subscriptionService = new SubscriptionService();
+const prisma = new PrismaClient();
+
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey) {
+  throw new Error('Stripe not configured: STRIPE_SECRET_KEY is missing');
+}
+
+const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: '2026-01-28.clover',
+});
 
 export async function POST(req: Request) {
   const signature = req.headers.get('stripe-signature');
@@ -14,8 +25,30 @@ export async function POST(req: Request) {
 
   try {
     const payload = await req.text(); // Raw body required for Stripe
-    await subscriptionService.processWebhook(payload, signature);
-    return NextResponse.json({ received: true });
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!endpointSecret) {
+      throw new Error('Stripe webhook secret not configured');
+    }
+
+    const event = stripe.webhooks.constructEvent(payload, signature, endpointSecret);
+
+    const webhookEvent = await prisma.webhookEvent.create({
+      data: {
+        gateway: 'STRIPE',
+        eventType: event.type,
+        payload: JSON.parse(JSON.stringify(event)),
+        status: 'PENDING',
+      },
+    });
+
+    await stripeWebhookQueue.add('stripe-webhook', {
+      eventType: event.type,
+      payload: JSON.parse(JSON.stringify(event)) as Record<string, unknown>,
+      webhookEventId: webhookEvent.id,
+      receivedAt: new Date().toISOString(),
+    });
+
+    return NextResponse.json({ received: true }, { status: 202 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Stripe Webhook Error]', message);
