@@ -191,30 +191,32 @@ describe('Payment Error Handler', () => {
     it('[TECH-DEBT-MARCH][JIRA-1264] should use exponential backoff', async () => {
       const delays: number[] = [];
       const originalSetTimeout = global.setTimeout;
-      
-      // Override setTimeout to capture delays
-      global.setTimeout = vi.fn((callback: unknown, delay: number) => {
-        delays.push(delay);
-        return originalSetTimeout(callback as unknown as () => void, 0);
-      });
-      
-      let attempt = 0;
-      const operation = vi.fn().mockImplementation(() => {
-        attempt++;
-        if (attempt < DEFAULT_RETRY_CONFIG.maxAttempts) {
-          throw new Error('Network timeout');
-        }
-        return 'success';
-      });
-      
-      await errorHandler.withRetry(operation, 'test-backoff');
-      
-      // Restore setTimeout
-      global.setTimeout = originalSetTimeout;
-      
-      // Verify that delays increase (exponential backoff)
-      // With baseDelay=1000 and multiplier=2: 1000, 2000, 4000
-      expect(delays.length).toBe(DEFAULT_RETRY_CONFIG.maxAttempts - 1);
+
+      try {
+        // Override setTimeout to capture delays
+        global.setTimeout = vi.fn((callback: unknown, delay: number) => {
+          delays.push(delay);
+          return originalSetTimeout(callback as unknown as () => void, 0);
+        });
+
+        let attempt = 0;
+        const operation = vi.fn().mockImplementation(() => {
+          attempt++;
+          if (attempt < DEFAULT_RETRY_CONFIG.maxAttempts) {
+            throw new Error('Network timeout');
+          }
+          return 'success';
+        });
+
+        await errorHandler.withRetry(operation, 'test-backoff');
+
+        // Verify that delays increase (exponential backoff)
+        // With baseDelay=1000 and multiplier=2: 1000, 2000, 4000
+        expect(delays.length).toBe(DEFAULT_RETRY_CONFIG.maxAttempts - 1);
+      } finally {
+        // Always restore setTimeout
+        global.setTimeout = originalSetTimeout;
+      }
     });
 
     it('should not retry non-retryable errors', async () => {
