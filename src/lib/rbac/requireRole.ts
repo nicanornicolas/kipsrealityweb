@@ -15,6 +15,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyAccessToken } from "@/lib/auth";
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * Token payload structure from JWT
@@ -51,7 +52,10 @@ async function getTokenPayload(): Promise<TokenPayload | null> {
  * @param allowedRoles - Array of roles that are allowed to access the endpoint
  * @returns null if allowed, NextResponse with 401/403 if denied
  */
-export async function requireRole(allowedRoles: string[]): Promise<NextResponse | null> {
+export async function requireRole(
+  allowedRoles: string[],
+  request?: Request
+): Promise<NextResponse | null> {
   // 1. Check authentication
   const payload = await getTokenPayload();
   
@@ -60,6 +64,31 @@ export async function requireRole(allowedRoles: string[]): Promise<NextResponse 
       { error: "Unauthorized - No valid token" },
       { status: 401 }
     );
+  }
+
+  // Inject authenticated user context for observability
+  Sentry.setUser({ id: payload.userId, email: payload.email });
+  Sentry.setTag("auth.role", payload.role);
+  Sentry.setTag("org.id", payload.organizationId);
+  Sentry.setTag("org.userId", payload.organizationUserId);
+  Sentry.setContext("organization", {
+    id: payload.organizationId,
+    userId: payload.organizationUserId,
+  });
+  Sentry.setContext("auth", {
+    role: payload.role,
+    userId: payload.userId,
+    email: payload.email,
+  });
+
+  if (request) {
+    try {
+      const url = new URL(request.url);
+      Sentry.setTag("http.method", request.method);
+      Sentry.setTag("http.route", url.pathname);
+    } catch {
+      // Ignore malformed URLs; tags are best-effort
+    }
   }
 
   // 2. Check role authorization
@@ -78,15 +107,15 @@ export async function requireRole(allowedRoles: string[]): Promise<NextResponse 
  * Require SYSTEM_ADMIN role specifically
  * Shorthand for requireRole(["SYSTEM_ADMIN"])
  */
-export async function requireSystemAdmin(): Promise<NextResponse | null> {
-  return requireRole(["SYSTEM_ADMIN"]);
+export async function requireSystemAdmin(request?: Request): Promise<NextResponse | null> {
+  return requireRole(["SYSTEM_ADMIN"], request);
 }
 
 /**
  * Require admin-level role (SYSTEM_ADMIN or PROPERTY_MANAGER)
  */
-export async function requireAdminRole(): Promise<NextResponse | null> {
-  return requireRole(["SYSTEM_ADMIN", "PROPERTY_MANAGER"]);
+export async function requireAdminRole(request?: Request): Promise<NextResponse | null> {
+  return requireRole(["SYSTEM_ADMIN", "PROPERTY_MANAGER"], request);
 }
 
 /**
