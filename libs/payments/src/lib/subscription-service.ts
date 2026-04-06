@@ -168,6 +168,28 @@ export class SubscriptionService {
   }
 
   /**
+   * Processes a verified Stripe event (used by background worker).
+   */
+  async processEvent(event: Stripe.Event): Promise<void> {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        await this.handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+        break;
+      }
+      case 'invoice.payment_succeeded': {
+        await this.handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+        break;
+      }
+      case 'customer.subscription.deleted': {
+        await this.handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        break;
+      }
+      default:
+        console.log(`Unhandled Stripe event: ${event.type}`);
+    }
+  }
+
+  /**
    * Gets or creates a Stripe Customer ID for a user.
    */
   private async getUserStripeCustomerId(userId: string): Promise<string | null> {
