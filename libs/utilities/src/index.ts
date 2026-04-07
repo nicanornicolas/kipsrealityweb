@@ -44,6 +44,15 @@ export interface IUtilityService {
 
 // Export the concrete implementation
 export { UtilityService } from './lib/utility-service';
+export * from './lib/utility-ai-job-store';
+export * from './lib/utility-allocation-service';
+export * from './lib/utility-bill-service';
+export * from './lib/utility-posting-service';
+export * from './lib/utility-reading-service';
+export * from './lib/utility-types';
+export * from './lib/utility-validators';
+export * from './lib/notifications/notification-service';
+export * from './lib/notifications/sms-factory';
 
 // Re-export the finance module interface for consumers who need to wire up the dependency
 export type { IFinanceModule } from '@rentflow/finance';

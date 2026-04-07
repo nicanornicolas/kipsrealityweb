@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotificationCategory } from '@prisma/client';
-import { SmsFactory } from '@/lib/notifications/sms-factory';
+import { SmsFactory } from './notifications/sms-factory';
 
-vi.mock('@/lib/db', () => ({
+vi.mock('@rentflow/iam', () => ({
   prisma: {
     user: { findUnique: vi.fn() },
     notificationPreference: { findUnique: vi.fn() },
@@ -10,10 +10,8 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
-const { prisma } = await import('@/lib/db');
-const { NotificationService } = await import(
-  '@/lib/notifications/notification-service'
-);
+import { prisma } from '@rentflow/iam';
+import { NotificationService } from './notifications/notification-service';
 
 const prismaMock = prisma as unknown as {
   user: { findUnique: ReturnType<typeof vi.fn> };
