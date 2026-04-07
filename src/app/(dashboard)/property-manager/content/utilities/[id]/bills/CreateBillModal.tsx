@@ -20,7 +20,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Loader2, AlertCircle } from "lucide-react";
-import { UtilitySplitMethod } from "@/lib/utilities/utility-types";
+import { UtilitySplitMethod } from "@rentflow/utilities";
 
 interface Property {
     id: string;

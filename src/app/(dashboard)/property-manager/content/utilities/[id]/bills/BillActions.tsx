@@ -29,7 +29,7 @@ import {
     Loader2,
     ArrowRight,
 } from "lucide-react";
-import { UtilityBillStatus } from "@/lib/utilities/utility-types";
+import { UtilityBillStatus } from "@rentflow/utilities";
 import { toast } from "sonner";
 import Link from "next/link";
 
