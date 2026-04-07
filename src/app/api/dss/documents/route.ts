@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { createDocument } from "@/lib/dss/document-service";
-import { verifyAccessToken } from "@/lib/auth";
+import { prisma } from "@rentflow/iam";
+import { createDocument } from "../../../../lib/dss/document-service";
+import { verifyAccessToken } from "@rentflow/iam";
 import { cookies } from "next/headers";
 import { DssParticipantRole } from "@prisma/client";
-import { enforceFeatureLimit } from "@/lib/guards/requireFeature";
+import { enforceFeatureLimit } from "../../../../lib/guards/requireFeature";
 import { UsageService } from '@rentflow/payments';
 
 const usageService = new UsageService();
@@ -162,3 +162,4 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+

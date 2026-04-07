@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { signDocument } from "@/lib/dss/document-service";
-import { verifyAccessToken } from "@/lib/auth"; // Adjust path if needed
+import { signDocument } from "../../../../lib/dss/document-service";
+import { verifyAccessToken } from "@rentflow/iam"; // Adjust path if needed
 import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
