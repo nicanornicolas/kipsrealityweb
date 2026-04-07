@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/db";
-import { financeActions } from "@/lib/finance/actions";
+import { prisma } from "@rentflow/iam";
+import { financeActions } from "@rentflow/finance";
 import { NotificationCategory, PaymentMethod, Prisma, TransactionStatus, Payment } from "@prisma/client";
-import { NotificationService } from "@/lib/notifications/notification-service";
+import { NotificationService } from "@rentflow/utilities";
 import type Stripe from "stripe";
 
 export async function processMpesaWebhook(payload: unknown) {
@@ -316,3 +316,4 @@ async function updatePaymentStatus(
     data: updateData,
   });
 }
+

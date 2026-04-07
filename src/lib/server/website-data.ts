@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { AboutUs } from "@/app/data/AboutUsData";
 
 export interface HeroData {
@@ -59,3 +59,4 @@ export const getCTAData = async (page: string = "about"): Promise<CTAData | null
         return null;
     }
 };
+

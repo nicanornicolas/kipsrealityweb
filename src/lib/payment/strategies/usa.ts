@@ -1,7 +1,7 @@
 import { IPaymentStrategy, PaymentRequest, PaymentResult, PaymentGateway } from "../types";
 import { TransactionStatus } from "@prisma/client";
 import Stripe from "stripe";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { checkBalance } from "../services/plaid-service";
 
 export class UsaPaymentStrategy implements IPaymentStrategy {
@@ -107,3 +107,4 @@ export class UsaPaymentStrategy implements IPaymentStrategy {
         return {} as PaymentResult;
     }
 }
+
