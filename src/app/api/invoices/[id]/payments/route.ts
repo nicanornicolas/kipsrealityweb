@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { financeActions } from "@/lib/finance/actions";
+import { prisma } from "@rentflow/iam";
+import { financeActions } from "@rentflow/finance";
 import { InvoiceStatus, PaymentMethod } from "@prisma/client";
 
 const VALID_PAYMENT_METHODS = [

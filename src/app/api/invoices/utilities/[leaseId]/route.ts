@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 // Helper function - same as rent invoice calculation
 function calculateNextDueDate(lease: { paymentFrequency: string; paymentDueDay?: number }) {

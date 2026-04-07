@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { ManualInvoiceInput } from '@/app/data/FinanceData';
-import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { getCurrentUser } from "../../../../lib/Getcurrentuser";
 import { InvoiceStatus, PostingStatus } from "@prisma/client";
 
 // Valid invoice types
@@ -102,4 +102,5 @@ export async function POST(req: NextRequest) {
   // Return the invoice in DRAFT status - GL posting happens later via POST /api/invoices/[id]/post
   return NextResponse.json(invoice, { status: 201 });
 }
+
 

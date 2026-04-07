@@ -2,9 +2,9 @@
 // This endpoint handles the "Post/Validate" action - transitioning a DRAFT invoice to PENDING and posting to GL
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { financeActions } from "@/lib/finance/actions";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { prisma } from "@rentflow/iam";
+import { financeActions } from "@rentflow/finance";
+import { getCurrentUser } from "../../../../../lib/Getcurrentuser";
 
 export async function POST(
   req: Request,

@@ -1,8 +1,8 @@
 // src/app/api/invoices/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { toNumber } from "@/lib/decimal-utils"; 
+import { prisma } from "@rentflow/iam";
+import { getCurrentUser } from "../../../lib/Getcurrentuser";
+import { toNumber } from "../../../lib/decimal-utils"; 
 export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
@@ -151,3 +151,4 @@ export async function GET(req: Request) {
     );
   }
 }
+
