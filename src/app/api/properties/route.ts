@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
-import { getCurrentUser } from '@/lib/Getcurrentuser'
+import { prisma } from '@rentflow/iam'
+import { getCurrentUser } from './'
 
 export async function GET(req: NextRequest) {
   try {
@@ -46,3 +46,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch properties' }, { status: 500 });
   }
 }
+
