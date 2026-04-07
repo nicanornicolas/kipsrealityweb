@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
    
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -29,3 +29,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
