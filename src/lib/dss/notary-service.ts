@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { BlockchainNotaryStatus, DssDocumentStatus } from "@prisma/client";
 import crypto from "crypto";
 
@@ -95,3 +95,4 @@ export async function notarizeDocument(documentId: string) {
         throw new Error("Blockchain notarization failed. Please retry.");
     }
 }
+

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { DssDocumentStatus, DssParticipantRole, DssParticipant } from "@prisma/client";
 import { WorkflowResult } from "./types";
 
@@ -76,3 +76,4 @@ export async function canUserSignNow(documentId: string, userEmail: string): Pro
     // (In a strictly sequential flow)
     return result.nextStep === participant.stepOrder;
 }
+

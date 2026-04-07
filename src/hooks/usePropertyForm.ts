@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import { Property } from "@/app/data/PropertyData";
 import { PropertyType } from "@/app/data/PropertTypeData";
 import { Appliance } from "@/app/data/ApplianceData";
-import { fetchPropertyTypes } from "@/lib/property-type";
-import { fetchAppliances } from "@/lib/appliance";
+import { fetchPropertyTypes } from "./";
+import { fetchAppliances } from "./";
 import toast from "react-hot-toast";
 
 export function usePropertyForm() {

@@ -1,6 +1,6 @@
 // Service for managing lease-related notifications and alerts
-import { prisma } from "@/lib/db";
-import { sendEmail } from "@/lib/mail";
+import { prisma } from "@rentflow/iam";
+import { sendEmail } from "./mail";
 
 export interface LeaseNotificationConfig {
   enableEmailNotifications: boolean;

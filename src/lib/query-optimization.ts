@@ -3,7 +3,7 @@
  * Provides optimized queries and batch operations for listing management
  */
 
-import { prisma } from "./db";
+import { prisma } from "@rentflow/iam";
 import { cacheManager, CacheKeys, CacheInvalidator } from "./cache-utils";
 
 /**

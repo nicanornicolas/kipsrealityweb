@@ -1,10 +1,9 @@
 // src/lib/lease-listing-integration.ts
-import { prisma } from "@/lib/db";
-import { ListingService } from "@/lib/listing-service";
-import { ListingAction, ListingStatus } from "@/lib/listing-types";
-import { sendEmail } from "@/lib/mail";
-import { auditService } from "@/lib/audit-service";
-import { leaseNotificationService } from "@/lib/lease-notification-service";
+import { prisma } from "@rentflow/iam";
+import { ListingService, ListingAction, ListingStatus } from "@rentflow/property";
+import { sendEmail } from "./mail";
+import { auditService } from "./audit-service";
+import { leaseNotificationService } from "./lease-notification-service";
 import { LeaseStatus } from "@prisma/client";
 
 export class LeaseListingIntegration {
@@ -394,3 +393,4 @@ export class LeaseListingIntegration {
 
 // Export singleton instance
 export const leaseListingIntegration = new LeaseListingIntegration();
+

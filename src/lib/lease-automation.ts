@@ -1,7 +1,7 @@
 // lib/lease-automation.ts
-import { prisma } from "@/lib/db";
-import { sendEmail } from "@/lib/mail";
-import { leaseListingIntegration } from "@/lib/lease-listing-integration";
+import { prisma } from "@rentflow/iam";
+import { sendEmail } from "./mail";
+import { leaseListingIntegration } from "./lease-listing-integration";
 import { randomUUID } from "crypto";
 
 interface NotificationConfig {
@@ -370,3 +370,4 @@ async function updateLeaseStatuses() {
 
   console.log(`📊 Updated lease statuses: ${leasesToExpire.length} expired, ${leasesToActivate.length} activated`);
 }
+

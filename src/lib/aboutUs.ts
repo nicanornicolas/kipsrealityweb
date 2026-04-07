@@ -2,7 +2,7 @@ import 'server-only';
 
 // src/lib/aboutUs.ts
 import { AboutUs } from "@/app/data/AboutUsData";
-import { getServerBaseUrl } from "@/lib/server-base-url";
+import { getServerBaseUrl } from "./server-base-url";
 
 export interface HeroData {
   id: string;

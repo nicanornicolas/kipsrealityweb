@@ -1,4 +1,4 @@
-import { prisma } from "./db";
+import { prisma } from "@rentflow/iam";
 import crypto from "crypto";
 import { InvoiceStatus } from "@prisma/client";
 import { toNumber } from "./decimal-utils";

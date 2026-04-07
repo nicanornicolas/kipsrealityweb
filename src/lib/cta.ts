@@ -1,5 +1,5 @@
 
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 export async function fetchCTAs(page: string = "home") {
     try {
@@ -12,3 +12,4 @@ export async function fetchCTAs(page: string = "home") {
         return [];
     }
 }
+

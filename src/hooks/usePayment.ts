@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import type {
   PaymentInitializationRequest,
   PaymentInitializationResponse,
-} from "@/lib/payment/client-types";
+} from "./";
 import { useMemo } from "react";
 
 function createIdempotencyKey(invoiceId: string) {

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { computeDocumentHash, verifyDocumentIntegrity } from "./hashing";
 import { getNextSigner } from "./workflow";
 import { DssParticipantRole, DssDocumentStatus, DssSigningMode, DssParticipant } from "@prisma/client";

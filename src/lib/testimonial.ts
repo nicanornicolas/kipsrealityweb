@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { Testimonial } from "@/app/data/TestimonialData";
-import { getServerBaseUrl } from "@/lib/server-base-url";
+import { getServerBaseUrl } from "./server-base-url";
 
 export const fetchTestimonials = async (): Promise<Testimonial[]> => {
   try {
