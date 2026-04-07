@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { prisma } from "@rentflow/iam";
+import { getCurrentUser } from "../../../../../lib/Getcurrentuser";
 import { NextRequest, NextResponse } from "next/server";
 import { LeaseDocumentType, Prisma } from "@prisma/client";
 import { randomUUID } from "crypto";

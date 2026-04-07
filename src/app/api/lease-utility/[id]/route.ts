@@ -1,6 +1,6 @@
 // app/api/lease-utilities/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 // GET /api/lease-utilities/:id -> Get lease utility assignment
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

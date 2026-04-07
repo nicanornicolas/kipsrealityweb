@@ -1,6 +1,6 @@
 // src/app/api/lease/[id]/ammendment/[ammendmentId]/route.ts
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { prisma } from "@rentflow/iam";
+import { getCurrentUser } from "../../../../../../lib/Getcurrentuser";
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 

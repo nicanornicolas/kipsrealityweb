@@ -2,11 +2,11 @@
 // ⚠️ IMPORTANT: This file MUST be at app/api/lease/[id]/sign/[role]/route.ts
 // The folder name MUST be [role] not "tenant" or "landlord"
 
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { leaseListingIntegration } from "@/lib/lease-listing-integration";
-import { sendTenantInviteEmail } from "@/lib/mail-service";
+import { getCurrentUser } from "../../../../../../lib/Getcurrentuser";
+import { leaseListingIntegration } from "../../../../../../lib/lease-listing-integration";
+import { sendTenantInviteEmail } from "../../../../../../lib/mail-service";
 
 export async function POST(
   req: NextRequest,

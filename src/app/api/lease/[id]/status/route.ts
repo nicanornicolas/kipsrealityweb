@@ -1,8 +1,8 @@
 // API endpoint for updating lease status with listing integration
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { leaseListingIntegration } from "@/lib/lease-listing-integration";
+import { prisma } from "@rentflow/iam";
+import { getCurrentUser } from "../../../../../lib/Getcurrentuser";
+import { leaseListingIntegration } from "../../../../../lib/lease-listing-integration";
 import { LeaseStatus } from "@prisma/client";
 
 export async function PUT(

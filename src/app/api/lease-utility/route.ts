@@ -1,6 +1,6 @@
 // app/api/lease-utilities/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 // GET /api/lease-utilities -> List all lease utilities with relations
 export async function GET() {
@@ -77,3 +77,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

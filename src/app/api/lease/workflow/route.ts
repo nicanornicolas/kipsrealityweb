@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { leaseListingIntegration } from "@/lib/lease-listing-integration";
+import { prisma } from "@rentflow/iam";
+import { getCurrentUser } from "../../../../lib/Getcurrentuser";
+import { leaseListingIntegration } from "../../../../lib/lease-listing-integration";
 import { Prisma } from "@prisma/client";
 import { randomUUID } from "crypto";
 
@@ -131,3 +131,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
