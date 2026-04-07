@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { db } from "@/lib/db";
-import { listingService } from "@/lib/listing-service";
-import { auditService } from "@/lib/audit-service";
-import { ListingAction, ListingStatus, CreateListingData } from "@/lib/listing-types";
+import { getCurrentUser } from "../../../../../lib/Getcurrentuser";
+import { db } from "@rentflow/iam";
+import { listingService } from "@rentflow/property";
+import { auditService } from "@rentflow/property";
+import { ListingAction, ListingStatus, CreateListingData } from "@rentflow/property";
 
 export async function PATCH(
   request: NextRequest,

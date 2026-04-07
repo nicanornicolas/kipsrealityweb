@@ -4,11 +4,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withSecurity } from '@/lib/listing-security-middleware';
-import { UserRole } from '@/lib/listing-auth.types';
-import { AbusePreventionService } from '@/lib/listing-abuse-prevention';
-import { ListingSanitizer } from '@/lib/listing-sanitizer';
-import { ListingLogger, LogCategory } from '@/lib/listing-logger';
+import { withSecurity } from "@rentflow/property";
+import { UserRole } from "@rentflow/property";
+import { AbusePreventionService } from "@rentflow/property";
+import { ListingSanitizer } from "@rentflow/property";
+import { ListingLogger, LogCategory } from "@rentflow/property";
 
 // Secure POST handler for security management actions
 const securePostHandler = withSecurity(
@@ -167,3 +167,4 @@ function validateSecurityManagementData(data: any) {
 }
 
 export { securePostHandler as POST };
+

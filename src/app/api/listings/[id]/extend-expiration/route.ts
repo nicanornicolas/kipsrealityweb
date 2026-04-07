@@ -2,8 +2,8 @@
 // Allows property managers to extend listing expiration dates
 
 import { NextRequest, NextResponse } from 'next/server';
-import { listingService } from '@/lib/listing-service';
-import { getCurrentUser } from '@/lib/Getcurrentuser';
+import { listingService } from "@rentflow/property";
+import { getCurrentUser } from "../../../../../lib/Getcurrentuser";
 
 interface ExtendExpirationRequest {
     newExpirationDate: string;
