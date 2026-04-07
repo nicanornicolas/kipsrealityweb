@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { prisma } from '@rentflow/iam';
 import Stripe from 'stripe';
 import { webhookQueue } from '@rentflow/utilities';
 
@@ -51,3 +51,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+

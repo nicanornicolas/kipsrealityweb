@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 /**
  * M-Pesa Daraja API STK Push Callback Handler
@@ -30,3 +30,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

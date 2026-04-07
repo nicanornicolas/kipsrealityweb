@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import crypto from "crypto";
 
 export async function POST(req: Request) {
@@ -36,3 +36,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Webhook Failed" }, { status: 500 });
   }
 }
+
