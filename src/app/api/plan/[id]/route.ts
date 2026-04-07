@@ -1,6 +1,6 @@
 //api/plan/[id]/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 // Type for context allowing async params
 interface RouteContext {

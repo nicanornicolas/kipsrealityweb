@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { requireSystemAdmin } from "@/lib/rbac/requireRole";
+import { requireSystemAdmin } from "@rentflow/iam";
 
 const prisma = new PrismaClient();
 interface RouteContext {
