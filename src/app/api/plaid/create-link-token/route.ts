@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { plaidClient } from "@/lib/payment/services/plaid-service";
+import { getCurrentUser } from "../../../../lib/Getcurrentuser";
+import { plaidClient } from "../../../../lib/payment/services/plaid-service";
 import { CountryCode, Products } from "plaid";
 
 export async function POST(req: Request) {

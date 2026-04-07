@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { plaidClient, createStripeBankAccountToken } from "@/lib/payment/services/plaid-service";
-import { prisma } from "@/lib/db";
+import { plaidClient, createStripeBankAccountToken } from "../../../../lib/payment/services/plaid-service";
+import { prisma } from "@rentflow/iam";
 import Stripe from "stripe";
 import crypto from "crypto";
 
@@ -79,3 +79,4 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: message }, { status: 500 });
     }
 }
+
