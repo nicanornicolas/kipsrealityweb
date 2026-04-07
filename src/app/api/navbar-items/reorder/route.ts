@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import type { NextRequest } from "next/server";
-import { requireSystemAdmin } from "@/lib/rbac/requireRole";
+import { requireSystemAdmin } from "@rentflow/iam";
 
 type ReorderBody = {
   items: { id: number; order: number }[];
@@ -34,3 +34,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to reorder items" }, { status: 500 });
   }
 }
+
