@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { utilityService } from '@/lib/finance/utility-service';
+import { utilityService } from '@rentflow/finance';
 
 export async function POST(
     request: Request,

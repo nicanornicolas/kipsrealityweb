@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { utilityAiJobStore } from "@/lib/utilities/utility-ai-job-store";
-import { UtilityAllocationService } from "@/lib/utilities/utility-allocation-service";
+import { utilityAiJobStore } from "@rentflow/utilities";
+import { UtilityAllocationService } from "@rentflow/utilities";
 
 export async function GET(req: Request) {
   try {

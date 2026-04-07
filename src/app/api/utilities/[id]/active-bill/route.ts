@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { UtilityBillStatus } from "@prisma/client";
 
 export async function GET(

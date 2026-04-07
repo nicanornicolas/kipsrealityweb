@@ -1,6 +1,6 @@
 // app/api/utilities/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 // GET /api/utilities/[id] -> Get utility details
 export async function GET(

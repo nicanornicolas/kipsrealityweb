@@ -1,7 +1,7 @@
 // GET /api/utilities/bills/[billId]/allocations - Get allocations for a bill
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { UtilityAllocation, Unit } from "@prisma/client";
 
 type AllocationWithRelations = UtilityAllocation & {

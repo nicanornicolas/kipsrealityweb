@@ -1,7 +1,7 @@
 // POST /api/utilities/bills/[billId]/post - Post a utility bill to accounting
 
 import { NextRequest, NextResponse } from "next/server";
-import { postUtilityBill } from "@/lib/utilities/utility-posting-service";
+import { postUtilityBill } from "@rentflow/utilities";
 
 // Default organization ID - matches pattern used in finance routes
 const DEFAULT_ORG_ID = "46e17dc1-137b-4e7a-a254-797a8ce16b0d";

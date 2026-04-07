@@ -1,7 +1,7 @@
 // POST /api/utilities/bills/[billId]/allocate - Allocate a utility bill
 
 import { NextRequest, NextResponse } from "next/server";
-import { allocateUtilityBill } from "@/lib/utilities/utility-allocation-service";
+import { allocateUtilityBill } from "@rentflow/utilities";
 
 export async function POST(
     _req: NextRequest,

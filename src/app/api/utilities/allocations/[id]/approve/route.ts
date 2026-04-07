@@ -1,10 +1,10 @@
 // src/app/api/utilities/allocations/[id]/approve/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRole } from '@/lib/rbac/requireRole';
+import { requireRole } from '@rentflow/iam';
 import { UtilityService } from '@rentflow/utilities';
 import { IFinanceModule } from '@rentflow/finance';
-import { prisma } from '@/lib/db';
+import { prisma } from '@rentflow/iam';
 
 /**
  * FinanceFacade - The concrete implementation of IFinanceModule.

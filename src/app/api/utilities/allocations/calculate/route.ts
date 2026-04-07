@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { utilityService } from "@/lib/finance/utility-service";
+import { utilityService } from "@rentflow/finance";
 import { UtilitySplitMethod } from "@prisma/client";
-import { AllocationMethod, UtilityAllocationPayload } from "@/lib/utilities/utility-types";
+import { AllocationMethod, UtilityAllocationPayload } from "@rentflow/utilities";
 
 const mapSplitMethod = (splitMethod: UtilitySplitMethod): AllocationMethod => {
   switch (splitMethod) {
