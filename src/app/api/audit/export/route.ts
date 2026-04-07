@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auditService } from '@/lib/audit-service';
-import { ListingAction, ListingStatus } from '@/lib/listing-types';
+import { auditService } from "@rentflow/property";
+import { ListingAction, ListingStatus } from "@rentflow/property";
 
 /**
  * GET /api/audit/export
@@ -84,3 +84,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
