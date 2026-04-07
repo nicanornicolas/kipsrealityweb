@@ -23,3 +23,9 @@ export interface IFinanceModule {
 }
 
 export * from './lib/finance';
+export * from './lib/journal-service';
+export * from './lib/actions';
+export * from './lib/types';
+export * from './lib/utility-service';
+export * from './lib/maintenance-service';
+export * from './lib/setup';
