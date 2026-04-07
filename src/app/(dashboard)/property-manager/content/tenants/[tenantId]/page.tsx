@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { fetchLeaseForTenant } from "@/lib/InvoiceLease";
+import { fetchLeaseForTenant } from "@/lib/Invoice";
 import { GroupedInvoice, Invoice, Payment, InvoiceItem } from "@/app/data/FinanceData";
 
 import { Download, FileText, Calendar, DollarSign, CreditCard, AlertCircle, Eye, Filter, ChevronDown, ChevronRight, Home, Zap, FileBarChart, ChevronUp } from "lucide-react";
