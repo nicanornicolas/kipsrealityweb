@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { UnitWithListingStatus } from '@/lib/listing-types'
+import { UnitWithListingStatus } from './'
 
 interface ListingDecisionModalProps {
   isOpen: boolean

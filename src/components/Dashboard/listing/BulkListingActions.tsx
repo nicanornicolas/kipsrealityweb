@@ -43,7 +43,7 @@ import {
   BulkListingActionType,
   BulkListingOperation,
   BulkResult 
-} from '@/lib/listing-types'
+} from './'
 
 interface BulkListingActionsProps {
   units: UnitWithListingStatus[]

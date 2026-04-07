@@ -16,7 +16,7 @@ import {
   Bell,
   ExternalLink
 } from 'lucide-react';
-import { api } from '@/lib/api-client';
+import { api } from './';
 
 interface LeaseStatusChange {
   id: string;

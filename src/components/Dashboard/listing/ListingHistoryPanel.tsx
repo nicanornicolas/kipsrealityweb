@@ -34,8 +34,8 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ListingAuditEntry, ListingAction, ListingStatus } from '@/lib/listing-types'
-import { auditService, AuditFilter } from '@/lib/audit-service'
+import { ListingAuditEntry, ListingAction, ListingStatus } from './'
+import { auditService, AuditFilter } from './'
 
 interface ListingHistoryPanelProps {
   unitId?: string

@@ -19,8 +19,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { UnitWithListingStatus, ListingStatus } from '@/lib/listing-types'
-import { cn } from '@/lib/utils'
+import { UnitWithListingStatus, ListingStatus } from './'
+import { cn } from './'
 
 interface UnitListingStatusCardProps {
   unit: UnitWithListingStatus

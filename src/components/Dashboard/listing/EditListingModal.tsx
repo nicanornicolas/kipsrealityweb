@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { ListingStatus, UnitWithListingStatus, UpdateListingData } from '@/lib/listing-types'
+import { ListingStatus, UnitWithListingStatus, UpdateListingData } from './'
 
 interface EditListingModalProps {
   isOpen: boolean
