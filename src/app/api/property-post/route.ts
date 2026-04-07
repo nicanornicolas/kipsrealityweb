@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { enforceFeatureLimit } from "@/lib/guards/requireFeature";
+import { getCurrentUser } from "../../../lib/Getcurrentuser";
+import { enforceFeatureLimit } from "../../../lib/guards/requireFeature";
 import { UsageService } from '@rentflow/payments';
 
 const prisma = new PrismaClient();

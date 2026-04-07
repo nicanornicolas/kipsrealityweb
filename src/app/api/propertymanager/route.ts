@@ -1,6 +1,6 @@
 // src/app/api/propertymanager/route.ts
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { prisma } from "@rentflow/iam";
+import { getCurrentUser } from "../../../lib/Getcurrentuser";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -424,3 +424,4 @@ export async function DELETE(req: Request) {
     );
   }
 }
+

@@ -1,5 +1,5 @@
 // src/app/api/propertymanager/[id]/route.ts
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { NextResponse } from "next/server";
 
 export async function GET(
