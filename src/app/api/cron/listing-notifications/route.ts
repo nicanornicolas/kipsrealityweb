@@ -2,7 +2,7 @@
 // Sends expiration warnings and daily digests
 
 import { NextRequest, NextResponse } from 'next/server';
-import { listingNotificationService } from '@/lib/listing-notification-service';
+import { listingNotificationService } from "@rentflow/property";
 
 /**
  * POST /api/cron/listing-notifications
@@ -71,3 +71,4 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+

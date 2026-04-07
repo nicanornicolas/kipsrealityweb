@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { financeActions } from "@/lib/finance/actions";
+import { prisma } from "@rentflow/iam";
+import { financeActions } from "@rentflow/finance";
 
 export async function GET(req: Request) {
   try {
@@ -79,3 +79,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Rent Roll Failed: " + error.message }, { status: 500 });
   }
 }
+
