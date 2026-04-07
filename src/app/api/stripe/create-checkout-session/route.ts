@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/Getcurrentuser';
+import { getCurrentUser } from "../../../../lib/Getcurrentuser";
 import { SubscriptionService } from '@rentflow/payments';
 
 const subscriptionService = new SubscriptionService();

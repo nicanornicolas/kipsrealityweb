@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { prisma } from '@rentflow/iam';
+import { getCurrentUser } from "../../../lib/Getcurrentuser";
 import { 
   sendTenantApplicationNotification, 
   sendApplicationConfirmation 
-} from "@/lib/mail-service";
-import { APP_NAME } from "@/lib/constants";
-import { encryptSSN } from '@/lib/encryption';
+} from "../../../lib/mail-service";
+import { APP_NAME } from "../../../lib/constants";
+import { encryptSSN } from "../../../lib/encryption";
 
 export async function POST(request: Request) {
   try {
@@ -292,3 +292,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+

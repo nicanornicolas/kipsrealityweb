@@ -1,7 +1,7 @@
 // app/api/sidebarItem/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { requireSystemAdmin } from "@/lib/rbac/requireRole";
+import { prisma } from "@rentflow/iam";
+import { requireSystemAdmin } from "@rentflow/iam";
 
 // UserRole enum - local definition since it doesn't exist in Prisma schema
 const UserRole = {
@@ -157,3 +157,4 @@ export async function POST(req: Request) {
     );
   }
 }
+
