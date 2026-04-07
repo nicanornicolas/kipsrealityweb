@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { cookies } from "next/headers";
-import { journalService } from "@/lib/finance/journal-service";
+import { journalService } from "@rentflow/finance";
 
 const DEFAULT_ORG_ID = "46e17dc1-137b-4e7a-a254-797a8ce16b0d";
 
@@ -122,3 +122,4 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
