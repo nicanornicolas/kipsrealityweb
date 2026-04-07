@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/Getcurrentuser';
-import { applicationControlService } from '@/lib/application-control-service';
+import { getCurrentUser } from "../../../../lib/Getcurrentuser";
+import { applicationControlService } from "@rentflow/property";
 
 export async function GET(request: Request) {
   try {
@@ -72,3 +72,4 @@ export async function POST(request: Request) {
     );
   }
 }
+
