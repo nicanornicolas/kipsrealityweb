@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { ListingStatus } from "@/lib/listing-types";
+import { prisma } from "@rentflow/iam";
+import { getCurrentUser } from "../../../../../lib/Getcurrentuser";
+import { ListingStatus } from "@rentflow/property";
 
 async function ensureStatusId(status: ListingStatus): Promise<string> {
   const existing = await prisma.listingStatus.findFirst({
@@ -65,3 +65,5 @@ export async function POST(req: Request) {
     }
   });
 }
+
+
