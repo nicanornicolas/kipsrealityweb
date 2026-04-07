@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createManualInvoice } from "@/lib/Invoice";
+import { createManualInvoice } from "./";
 import { ManualInvoiceInput, Invoice } from "@/app/data/FinanceData";
 import { toast } from "sonner";
 

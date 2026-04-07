@@ -4,9 +4,9 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useState, useEffect } from "react";
-import { updateUnitDetails } from "@/lib/units";
+import { updateUnitDetails } from "./";
 import { ListingDecisionModal } from "@/components/Dashboard/listing/ListingDecisionModal";
-import { ListingStatus, UnitWithListingStatus } from "@/lib/listing-types";
+import { ListingStatus, UnitWithListingStatus } from "./";
 
 export interface ApplianceInput {
   name: string;

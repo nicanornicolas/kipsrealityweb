@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { generateFullInvoice } from "@/lib/Invoice";
+import { generateFullInvoice } from "./";
 import { FullInvoiceInput, Invoice } from "@/app/data/FinanceData";
 import { toast } from "sonner";
 

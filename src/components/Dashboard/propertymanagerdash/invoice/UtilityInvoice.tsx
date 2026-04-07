@@ -1,6 +1,6 @@
 "use client";
 
-import { generateUtilityInvoice } from "@/lib/Invoice";
+import { generateUtilityInvoice } from "./";
 import { toast } from "sonner";
 import { useState } from "react";
 

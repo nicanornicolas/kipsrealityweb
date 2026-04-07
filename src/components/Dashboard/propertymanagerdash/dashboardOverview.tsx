@@ -13,7 +13,7 @@ import { FinancialSummaryCard } from "./financial-summary-card";
 import { PendingLeasesCard } from "./pending-leases-card";
 import OccupancyLineChart from "./OccupancyLineChart";
 import InvoiceQueueCard from "./InvoiceQueueCard";
-import { cn } from "@/lib/utils";
+import { cn } from "./";
 import { toast } from "sonner";
 
 // --- Alert Chip Component ---

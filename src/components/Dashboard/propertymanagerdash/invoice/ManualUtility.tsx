@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createManualUtilityInvoice, generateManualUtilityInvoiceData } from "@/lib/Invoice";
+import { createManualUtilityInvoice, generateManualUtilityInvoiceData } from "./";
 import { ManualUtilityItem } from "@/app/data/FinanceData";
 import { toast } from "sonner";
 

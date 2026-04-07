@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import UnitsTable from "./UnitsTable";
-import { fetchUnits } from "@/lib/units";
+import { fetchUnits } from "./";
 
 interface Props {
   propertyId: string;
