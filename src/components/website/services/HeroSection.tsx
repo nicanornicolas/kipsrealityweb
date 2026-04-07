@@ -12,7 +12,7 @@ interface HeroData {
   gradient?: string;
 }
 
-import { getHeroSectionData } from "@/lib/server/website-data";
+import { getHeroSectionData } from "./";
 
 // Import fallback image
 import fallbackHero from "@/assets/hero-cityscape.jpg";

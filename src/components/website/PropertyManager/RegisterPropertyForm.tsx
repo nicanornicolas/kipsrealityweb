@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { postProperty, PropertyPayload } from "@/lib/property-manager";
+import { postProperty, PropertyPayload } from "./";
 import { usePropertyForm } from "@/hooks/usePropertyForm";
 import { useGeocoding } from "@/hooks/useGeocoding";
 import { toast } from "sonner";

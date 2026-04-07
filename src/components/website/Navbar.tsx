@@ -1,5 +1,5 @@
 import { NavbarClient } from "./NavbarClient";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 interface NavbarItem {
   id: number;

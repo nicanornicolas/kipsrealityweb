@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, FileCheck, Calculator, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { UtilityBillState, UtilityAllocationPayload } from '@/lib/utilities/utility-types';
+import { UtilityBillState, UtilityAllocationPayload } from './';
 import { toast } from 'sonner';
 
 interface Props {

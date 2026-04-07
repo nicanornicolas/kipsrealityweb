@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { AboutUs as AboutUsType } from "@/app/data/AboutUsData";
-import { HeroData } from "@/lib/aboutUs";
+import { HeroData } from "./";
 import { motion } from "framer-motion";
 
 interface AboutProps {
