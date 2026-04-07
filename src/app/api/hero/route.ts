@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
-import { requireSystemAdmin } from '@/lib/rbac/requireRole'
+import { prisma } from '@rentflow/iam'
+import { requireSystemAdmin } from '@rentflow/iam'
 
 export async function GET(req: Request) {
   try {
@@ -54,3 +54,4 @@ export async function POST(req: Request) {
     )
   }
 }
+
