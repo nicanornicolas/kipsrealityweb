@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { maintenanceService } from "@/lib/finance/maintenance-service";
-import { maintenanceListingIntegration } from "@/lib/maintenance-listing-integration";
+import { prisma } from "@rentflow/iam";
+import { getCurrentUser } from "../../../../lib/Getcurrentuser";
+import { maintenanceService } from "@rentflow/finance";
+import { maintenanceListingIntegration } from "@rentflow/property";
 import { MaintenanceRequestStatus } from "@prisma/client";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {

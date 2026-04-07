@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { verifyAccessToken } from "@/lib/auth";
+import { prisma } from "@rentflow/iam";
+import { verifyAccessToken } from "@rentflow/iam";
 
 /**
  * GET /api/maintenance/recent
@@ -126,3 +126,4 @@ function formatTimeAgo(date: Date, now: Date): string {
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 }
+

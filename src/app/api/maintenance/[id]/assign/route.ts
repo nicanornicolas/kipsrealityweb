@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { cookies } from "next/headers";
-import { verifyAccessToken } from "@/lib/auth";
+import { verifyAccessToken } from "@rentflow/iam";
 
 // POST /api/maintenance/:id/assign
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
