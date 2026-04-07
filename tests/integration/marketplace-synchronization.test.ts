@@ -10,8 +10,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import fc from 'fast-check'
 import { prisma } from './setup'
-import { ListingService } from '@/lib/listing-service'
-import { ListingStatus, CreateListingData, BulkListingActionType } from '@/lib/listing-types'
+import { ListingService } from '@rentflow/property'
+import { ListingStatus, CreateListingData, BulkListingActionType } from '@rentflow/property'
 
 // Test data generators
 function generateUserData() {
@@ -436,3 +436,4 @@ describe.skip('Property 3: Marketplace Visibility Synchronization', () => {
     }
   })
 })
+

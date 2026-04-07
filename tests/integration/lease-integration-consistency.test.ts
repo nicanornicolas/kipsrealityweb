@@ -5,9 +5,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fc from 'fast-check';
 import { prisma } from './setup';
-import { leaseListingIntegration } from '@/lib/lease-listing-integration';
-import { ListingService } from '@/lib/listing-service';
-import { ListingStatus } from '@/lib/listing-types';
+import { leaseListingIntegration } from '../../src/lib/lease-listing-integration';
+import { ListingService } from '@rentflow/property';
+import { ListingStatus } from '@rentflow/property';
 import { Lease_leaseStatus } from '@prisma/client';
 
 // Test data generators
@@ -376,3 +376,4 @@ describe.skip('Lease Integration Consistency Property Tests', () => {
     }
   });
 });
+

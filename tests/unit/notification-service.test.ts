@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NotificationCategory } from "@prisma/client";
-import { prisma } from "@/lib/db";
-import { NotificationService } from "@/lib/notifications/notification-service";
-import { SmsFactory } from "@/lib/notifications/sms-factory";
+import { prisma } from "@rentflow/iam";
+import { NotificationService, SmsFactory } from "@rentflow/utilities";
 
 const prismaMock = prisma as unknown as {
   user: { findUnique: ReturnType<typeof vi.fn> };

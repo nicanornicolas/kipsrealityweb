@@ -10,9 +10,9 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { prisma } from './setup';
-import { applicationControlService } from '@/lib/application-control-service';
-import { applicationListingIntegration, createListingChangeEvent } from '@/lib/application-listing-integration';
-import { ListingStatus, ListingAction } from '@/lib/listing-types';
+import { applicationControlService } from '@rentflow/property';
+import { applicationListingIntegration, createListingChangeEvent } from '@rentflow/property';
+import { ListingStatus, ListingAction } from '@rentflow/property';
 
 // Test data generators for property-based testing
 function generateApplicationData(unitId: string, propertyId: string, userId?: string) {
@@ -560,3 +560,4 @@ describe.skip('Property 14: Application Data Integrity', () => {
     }
   });
 });
+

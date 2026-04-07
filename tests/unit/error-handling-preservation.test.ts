@@ -8,10 +8,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { prisma } from '@/lib/db';
-import { listingService } from '@/lib/listing-service';
-import { ListingStatus } from '@/lib/listing-types';
-import { ListingError, ListingErrorType } from '@/lib/listing-error-handler';
+import { prisma } from '@rentflow/iam';
+import { listingService } from '@rentflow/property';
+import { ListingStatus } from '@rentflow/property';
+import { ListingError, ListingErrorType } from '@rentflow/property';
 import fc from 'fast-check';
 
 describe('Property 5: Error Handling Preservation', () => {
@@ -799,3 +799,4 @@ describe('Property 5: Error Handling Preservation', () => {
         );
     });
 });
+

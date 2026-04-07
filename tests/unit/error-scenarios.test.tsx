@@ -6,10 +6,10 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { prisma } from '@/lib/db';
-import { listingService } from '@/lib/listing-service';
-import { ListingStatus } from '@/lib/listing-types';
-import { ListingError, ListingErrorType, listingErrorHandler } from '@/lib/listing-error-handler';
+import { prisma } from '@rentflow/iam';
+import { listingService } from '@rentflow/property';
+import { ListingStatus } from '@rentflow/property';
+import { ListingError, ListingErrorType, listingErrorHandler } from '@rentflow/property';
 import { ListingDecisionModal } from '@/components/Dashboard/listing/ListingDecisionModal';
 import { UnitListingStatusCard } from '@/components/Dashboard/listing/UnitListingStatusCard';
 import { BulkListingActions } from '@/components/Dashboard/listing/BulkListingActions';
@@ -643,3 +643,4 @@ describe('Error Recovery and User Guidance', () => {
         expect(criticalError.userMessage).toContain('error code');
     });
 });
+

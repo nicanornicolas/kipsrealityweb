@@ -8,9 +8,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { prisma } from '@/lib/db';
-import { listingReportingService } from '@/lib/listing-reporting-service';
-import { ListingStatus } from '@/lib/listing-types';
+import { prisma } from '@rentflow/iam';
+import { listingReportingService } from '@rentflow/property';
+import { ListingStatus } from '@rentflow/property';
 import fc from 'fast-check';
 
 describe('Property 16: Reporting Data Completeness', () => {
@@ -446,3 +446,4 @@ describe('Property 16: Reporting Data Completeness', () => {
         );
     });
 });
+

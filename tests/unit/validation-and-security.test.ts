@@ -6,19 +6,19 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { 
     ListingValidationService 
-} from '@/lib/listing-validation';
+} from '@rentflow/property';
 import { 
     UserRole, 
     ListingPermission 
-} from '@/lib/listing-auth.types';
+} from '@rentflow/property';
 import { 
     ListingSanitizer, 
     XSSSanitizer, 
     SQLSanitizer, 
     PathSanitizer,
     SecurityAuditor 
-} from '@/lib/listing-sanitizer';
-import { getSecurityPolicy, requiresAuth, getRequiredRole, SECURITY_POLICIES } from '@/lib/listing-security-config';
+} from '@rentflow/property';
+import { getSecurityPolicy, requiresAuth, getRequiredRole, SECURITY_POLICIES } from '@rentflow/property';
 
 // Simple mock schemas for testing (Zod-like interface)
 const CreateListingSchema = {
@@ -520,3 +520,4 @@ describe('Schema Validation', () => {
         expect(invalidResult.success).toBe(false);
     });
 });
+

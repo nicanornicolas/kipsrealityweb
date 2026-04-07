@@ -6,9 +6,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { prisma } from '@/lib/db';
-import { listingReportingService } from '@/lib/listing-reporting-service';
-import { ListingStatus } from '@/lib/listing-types';
+import { prisma } from '@rentflow/iam';
+import { listingReportingService } from '@rentflow/property';
+import { ListingStatus } from '@rentflow/property';
 
 describe('Reporting Features Unit Tests', () => {
     let testOrganizationId: string;
@@ -738,3 +738,4 @@ describe('Reporting Features Unit Tests', () => {
         });
     });
 });
+

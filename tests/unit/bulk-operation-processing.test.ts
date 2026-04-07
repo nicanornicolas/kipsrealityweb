@@ -10,17 +10,17 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import fc from 'fast-check'
-import { ListingService } from '@/lib/listing-service'
+import { ListingService } from '@rentflow/property'
 import { 
   BulkListingOperation, 
   BulkListingActionType, 
   ListingStatus,
   CreateListingData,
   BulkResult
-} from '@/lib/listing-types'
+} from '@rentflow/property'
 
 // Mock Prisma
-vi.mock('@/lib/db', () => ({
+vi.mock('@rentflow/iam', () => ({
   prisma: {
     unit: {
       findUnique: vi.fn(),
@@ -307,3 +307,4 @@ describe('Property Test: Bulk Operation Processing', () => {
     )
   })
 })
+

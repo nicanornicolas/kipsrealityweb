@@ -3,7 +3,7 @@ import * as fc from 'fast-check';
 import { 
     ListingStatus, 
     UnitWithListingStatus 
-} from '../../src/lib/listing-types';
+} from '@rentflow/property';
 
 /**
  * Property-Based Test for Listing Decision Integration
