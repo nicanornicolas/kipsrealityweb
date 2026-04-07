@@ -48,6 +48,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': './src',
+      '@rentflow/iam': './libs/iam/src/index.ts',
+      '@rentflow/finance': './libs/finance/src/index.ts',
+      '@rentflow/property': './libs/property/src/index.ts',
+      '@rentflow/payments': './libs/payments/src/index.ts',
+      '@rentflow/utilities': './libs/utilities/src/index.ts',
+      '@rentflow/dss': './libs/dss/src/index.ts',
     },
   },
 });
