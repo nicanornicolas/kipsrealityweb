@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { setupFinancials } from "@/lib/finance/setup";
-import { journalService } from "@/lib/finance/journal-service";
-import { prisma } from "@/lib/db";
-import { CHART_OF_ACCOUNTS } from "@/lib/finance/types";
+import { setupFinancials } from "@rentflow/finance";
+import { journalService } from "@rentflow/finance";
+import { prisma } from "@rentflow/iam";
+import { CHART_OF_ACCOUNTS } from "@rentflow/finance";
 
 export async function GET() {
     try {
@@ -61,3 +61,4 @@ export async function GET() {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+

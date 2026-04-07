@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
-import { requireSystemAdmin } from "@/lib/rbac/requireRole";
+import { requireSystemAdmin } from "@rentflow/iam";
 
 const prisma = new PrismaClient();
 
@@ -38,3 +38,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to create testimonial" }, { status: 500 });
   }
 }
+
