@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import { ListingStatus, UnitWithListingStatus } from '@/lib/listing-types';
+import { ListingStatus, UnitWithListingStatus } from '@rentflow/property';
 
 /**
  * Property-Based Test for Status Display Consistency
@@ -25,7 +25,7 @@ const mockListingGenerator = fc.record({
   updatedAt: fc.date(),
   title: fc.string({ minLength: 1, maxLength: 200 }),
   description: fc.string({ minLength: 1, maxLength: 1000 }),
-  price: fc.float({ min: 0, max: 10000 }),
+  price: fc.float({ min: 0, max: 10000, noNaN: true, noDefaultInfinity: true }),
   availabilityDate: fc.option(fc.date(), { nil: undefined }),
   expirationDate: fc.option(fc.date(), { nil: undefined }),
 });
@@ -34,7 +34,10 @@ const mockUnitWithListingGenerator = fc.record({
   id: unitIdGenerator,
   unitNumber: unitNumberGenerator,
   propertyId: fc.string({ minLength: 1, maxLength: 50 }),
-  rentAmount: fc.option(fc.float({ min: 0, max: 5000 }), { nil: undefined }),
+  rentAmount: fc.option(
+    fc.float({ min: 0, max: 5000, noNaN: true, noDefaultInfinity: true }),
+    { nil: undefined },
+  ),
   bedrooms: fc.option(fc.integer({ min: 0, max: 10 }), { nil: undefined }),
   bathrooms: fc.option(fc.integer({ min: 0, max: 5 }), { nil: undefined }),
   squareFootage: fc.option(fc.integer({ min: 100, max: 5000 }), {
@@ -501,3 +504,4 @@ describe('Status Display Consistency Property Tests', () => {
     );
   });
 });
+

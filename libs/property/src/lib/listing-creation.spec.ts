@@ -4,7 +4,7 @@ import {
   CreateListingData,
   ListingStatus,
   CreateListingError,
-} from '@/lib/listing-types';
+} from '@rentflow/property';
 
 /**
  * Property-Based Test for Listing Creation Completeness
@@ -26,9 +26,12 @@ const descriptionGenerator = fc.option(
   fc.string({ minLength: 1, maxLength: 1000 }),
   { nil: undefined },
 );
-const priceGenerator = fc.option(fc.float({ min: 0, max: 10000 }), {
+const priceGenerator = fc.option(
+  fc.float({ min: 0, max: 10000, noNaN: true, noDefaultInfinity: true }),
+  {
   nil: undefined,
-});
+  },
+);
 const dateGenerator = fc.option(fc.date(), { nil: undefined });
 
 const createListingDataGenerator = fc.record({
@@ -44,7 +47,10 @@ const createListingDataGenerator = fc.record({
 const mockUnitGenerator = fc.record({
   id: fc.string({ minLength: 1, maxLength: 50 }),
   unitNumber: fc.string({ minLength: 1, maxLength: 10 }),
-  rentAmount: fc.option(fc.float({ min: 0, max: 5000 }), { nil: undefined }),
+  rentAmount: fc.option(
+    fc.float({ min: 0, max: 5000, noNaN: true, noDefaultInfinity: true }),
+    { nil: undefined },
+  ),
   bedrooms: fc.option(fc.integer({ min: 0, max: 10 }), { nil: undefined }),
   bathrooms: fc.option(fc.integer({ min: 0, max: 5 }), { nil: undefined }),
   property: fc.record({
@@ -296,3 +302,4 @@ describe('Listing Creation Completeness Property Tests', () => {
     );
   });
 });
+

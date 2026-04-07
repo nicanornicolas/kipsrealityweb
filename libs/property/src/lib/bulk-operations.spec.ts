@@ -7,7 +7,7 @@
  * **Validates: Requirements 4.4, 4.5**
  */
 
-vi.mock('@/lib/db', () => ({
+vi.mock('@rentflow/iam', () => ({
   prisma: {
     unit: { findUnique: vi.fn(), update: vi.fn() },
     listing: { create: vi.fn(), delete: vi.fn(), findUnique: vi.fn() },
@@ -16,16 +16,16 @@ vi.mock('@/lib/db', () => ({
 }));
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ListingService } from '@/lib/listing-service';
+import { ListingService } from '@rentflow/property';
 import {
   BulkListingOperation,
   BulkListingActionType,
   ListingStatus,
   CreateListingData,
   BulkResult,
-} from '@/lib/listing-types';
+} from '@rentflow/property';
 
-const { prisma } = await import('@/lib/db');
+const { prisma } = await import('@rentflow/iam');
 const mockPrisma = prisma as unknown as {
   unit: {
     findUnique: ReturnType<typeof vi.fn>;
@@ -545,3 +545,4 @@ describe('Bulk Operations Unit Tests', () => {
     });
   });
 });
+

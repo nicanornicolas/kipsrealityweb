@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { UnitWithListingStatus, CreateListingData } from '@/lib/listing-types';
+import { UnitWithListingStatus, CreateListingData } from '@rentflow/property';
 
 // Generator for unit data with various completeness levels
 const unitGenerator = fc.record({
@@ -322,3 +322,4 @@ describe('Property 7: Default Value Population', () => {
     );
   });
 });
+

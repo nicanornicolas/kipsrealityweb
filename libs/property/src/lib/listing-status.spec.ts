@@ -4,7 +4,7 @@ import {
   ListingStatus,
   isValidStatusTransition,
   VALID_STATUS_TRANSITIONS,
-} from '@/lib/listing-types';
+} from '@rentflow/property';
 
 /**
  * Property-Based Test for Listing Status Transitions
@@ -175,3 +175,4 @@ describe('Listing Status Transitions Property Tests', () => {
     ).toBe(false);
   });
 });
+

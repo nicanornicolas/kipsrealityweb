@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import { ListingStatus, UnitWithListingStatus } from '@/lib/listing-types';
+import { ListingStatus, UnitWithListingStatus } from '@rentflow/property';
 
 /**
  * Property-Based Test for Listing Decision Integration
@@ -293,3 +293,4 @@ describe('Listing Decision Integration Property Tests', () => {
     );
   });
 });
+
