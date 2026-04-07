@@ -2,7 +2,7 @@
 // (Note: This logic looks like a generic 'accept' route, not just for tenants)
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import bcrypt from "bcryptjs";
 
 export async function POST(request: Request) {
@@ -191,3 +191,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

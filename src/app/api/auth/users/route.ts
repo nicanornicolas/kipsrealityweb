@@ -2,8 +2,8 @@
 // GET endpoint for listing all users in the organization
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { verifyAccessToken } from "@/lib/auth";
+import { prisma } from "@rentflow/iam";
+import { verifyAccessToken } from "@rentflow/iam";
 import { cookies } from "next/headers";
 
 export async function GET(req: Request) {
@@ -111,3 +111,4 @@ export async function GET(req: Request) {
     }, { status: 500 });
   }
 }
+

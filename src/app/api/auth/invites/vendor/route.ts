@@ -1,7 +1,7 @@
 // app/api/invites/vendor/route.ts
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
-import { verifyAccessToken } from '@/lib/auth'
+import { prisma } from '@rentflow/iam'
+import { verifyAccessToken } from './'
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
 
@@ -107,3 +107,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+

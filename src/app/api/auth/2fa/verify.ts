@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { verifyOtp } from "@/lib/auth/otp";
-import { generateAccessToken, generateRefreshToken } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { verifyOtp } from "@rentflow/iam";
+import { generateAccessToken, generateRefreshToken } from "@rentflow/iam";
+import { prisma } from "@rentflow/iam";
 
 export async function POST(req: Request) {
   try {
@@ -111,3 +111,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

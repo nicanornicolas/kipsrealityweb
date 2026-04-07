@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { verifyRefreshToken, generateAccessToken } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { verifyRefreshToken, generateAccessToken } from './'
+import { prisma } from '@rentflow/iam'
 
 export async function POST(request: Request) {
     try {
@@ -68,3 +68,4 @@ export async function POST(request: Request) {
         )
     }
 }
+

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { sendSms } from "@/lib/sms";
-import { createOtp } from "@/lib/auth/otp";
+import { prisma } from "@rentflow/iam";
+import { sendSms } from "../../../../../lib/sms";
+import { createOtp } from "@rentflow/iam";
 
 export async function POST(req: Request) {
   const { userId } = await req.json();
@@ -20,3 +20,4 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ success: true, message: "Code sent" });
 }
+

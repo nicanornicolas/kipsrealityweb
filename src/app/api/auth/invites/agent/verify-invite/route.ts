@@ -1,7 +1,7 @@
 // src/app/api/auth/invites/agent/verify-invite/route.ts
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 export async function POST(request: Request) {
   try {
@@ -80,3 +80,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

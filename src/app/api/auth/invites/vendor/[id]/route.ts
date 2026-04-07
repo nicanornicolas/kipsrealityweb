@@ -1,7 +1,7 @@
 // app/api/auth/invites/vendor/[id]/route.ts
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
-import { verifyAccessToken } from '@/lib/auth'
+import { prisma } from '@rentflow/iam'
+import { verifyAccessToken } from './'
 import { cookies } from 'next/headers'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {

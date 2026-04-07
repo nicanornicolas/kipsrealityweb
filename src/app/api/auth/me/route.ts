@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { verifyAccessToken } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { verifyAccessToken } from './'
+import { prisma } from '@rentflow/iam'
 
 export async function GET(request: Request) {
     try {
@@ -109,3 +109,4 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: 'Failed to update preferences' }, { status: 500 });
     }
 }
+
