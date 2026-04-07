@@ -3,6 +3,36 @@ import { prisma } from "@/lib/db";
 import { verifyAccessToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
+// Type definitions for Prisma query results to avoid 'any'
+type MaintenancePriorityItem = {
+  id: string;
+  priority: string;
+  createdAt: Date;
+  status: string;
+};
+
+type PropertyItem = {
+  id: string;
+  name: string | null;
+  apartmentComplexDetail: { buildingName: string | null } | null;
+  houseDetail: { houseName: string | null } | null;
+};
+
+type CompletedMaintenanceItem = {
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type RecentLeaseItem = {
+  startDate: Date;
+  application: { createdAt: Date } | null;
+};
+
+type MaintenanceBacklogItem = {
+  createdAt: Date;
+  status: string;
+};
+
 export async function GET(req: Request) {
     try {
         const cookieStore = await cookies();
@@ -455,7 +485,7 @@ export async function GET(req: Request) {
         // 2. Average Maintenance Response Time
         let totalResponseTimeHours = 0;
         let responseTimeCount = 0;
-        completedMaintenance.forEach(req => {
+        completedMaintenance.forEach((req: { createdAt: Date; updatedAt: Date }) => {
             if (req.createdAt && req.updatedAt) {
                 const diff = new Date(req.updatedAt).getTime() - new Date(req.createdAt).getTime();
                 totalResponseTimeHours += diff / (1000 * 60 * 60); // Hours
