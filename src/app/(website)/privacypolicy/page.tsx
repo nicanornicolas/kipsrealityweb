@@ -1,7 +1,7 @@
 import Navbar from "@/components/website/Navbar";
 import Footer from "@/components/website/Footer";
 import PolicyPageClient, { Policy } from "./PolicyPageClient";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 export const dynamic = "force-dynamic";
 
@@ -54,3 +54,4 @@ export default async function PolicyListPage() {
     </div>
   );
 }
+

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { UtilityBillStatus } from "@/lib/utilities/utility-types";
+import { UtilityBillStatus } from "@rentflow/utilities";
 
 interface UtilityStatusBadgeProps {
     status: UtilityBillStatus | string | null;

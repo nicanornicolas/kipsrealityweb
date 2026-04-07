@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, Plus, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { ListingDecisionModal } from "@/components/Dashboard/listing/ListingDecisionModal";
-import { ListingStatus, UnitWithListingStatus } from "@/lib/listing-types";
+import { ListingStatus, UnitWithListingStatus } from "@rentflow/property";
 
 interface Unit {
   id: string | null; // null if placeholder

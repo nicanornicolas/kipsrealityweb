@@ -33,7 +33,7 @@ import { ListingPerformanceDashboard } from "@/components/Dashboard/listing/List
 import { MaintenanceModePanel } from "@/components/Dashboard/listing/MaintenanceModePanel";
 import { LeaseIntegrationPanel } from "@/components/Dashboard/listing/LeaseIntegrationPanel";
 import { PropertyDeactivationPanel } from "@/components/Dashboard/listing/PropertyDeactivationPanel";
-import { BulkListingOperation, BulkResult, ListingStatus, UnitWithListingStatus } from "@/lib/listing-types";
+import { BulkListingOperation, BulkResult, ListingStatus, UnitWithListingStatus } from "@rentflow/property";
 
 interface Unit {
   id: string;

@@ -2,7 +2,7 @@
 import { fetchUnits } from "@/lib/units";
 import Link from "next/link";
 import { Building, Bed, Bath, DollarSign, Users, Home, Wifi, Utensils, Eye } from "lucide-react";
-import { ListingStatus } from "@/lib/listing-types";
+import { ListingStatus } from "@rentflow/property";
 
 export default async function ManageUnitsPage({
   params,

@@ -1,5 +1,5 @@
 // src/app/%28website%29/services/page.tsx
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { Prisma } from "@prisma/client";
 import ServicesPageClient from "@/components/website/services/ServicePageClient";
 
@@ -44,3 +44,4 @@ export default async function ServicesPage() {
 
   return <ServicesPageClient categories={categories} />;
 }
+
