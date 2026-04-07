@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { MpesaPaymentStrategy } from '@/lib/payment/strategies/mpesa';
-import type { PaymentRequest } from '@/lib/payment/types';
+import { MpesaPaymentStrategy } from '../../../../src/lib/payment/strategies/mpesa';
+import type { PaymentRequest } from '../../../../src/lib/payment/types';
 import { TransactionStatus } from '@prisma/client';
 
 const mockFetch = vi.fn();
