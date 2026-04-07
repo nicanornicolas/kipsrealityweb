@@ -1,7 +1,7 @@
 // src/app/api/units/route.ts
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/Getcurrentuser"; 
+import { getCurrentUser } from "../../../lib/Getcurrentuser"; 
 
 type UnitPlaceholder = {
   id: string | null;
@@ -123,4 +123,5 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Failed to fetch units" }, { status: 500 });
   }
 }
+
 

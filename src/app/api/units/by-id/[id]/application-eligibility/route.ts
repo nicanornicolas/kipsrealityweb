@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { ListingStatus } from "@/lib/listing-types";
+import { prisma } from "@rentflow/iam";
+import { ListingStatus } from "@rentflow/property";
 
 export async function GET(
   req: Request,

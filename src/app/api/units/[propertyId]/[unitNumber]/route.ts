@@ -1,5 +1,5 @@
 // src/app/api/units/[propertyId]/[unitNumber]/route.ts
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request, context: { params: Promise<{ propertyId: string; unitNumber: string }> }) {
