@@ -60,3 +60,4 @@ export type { IFinanceModule } from '@rentflow/finance';
 export * from './lib/utilities';
 export * from './lib/queue';
 export * from './lib/mail';
+export * from './lib/webhook-processors';
