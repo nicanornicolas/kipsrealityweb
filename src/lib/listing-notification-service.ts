@@ -20,6 +20,26 @@ export interface ExpirationNotification {
     propertyManagerEmails: string[];
 }
 
+interface PropertyManagerUser {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+}
+
+interface OrganizationUserWithUser {
+    user: PropertyManagerUser;
+}
+
+interface ExpiringListingWithUnit {
+    id: string;
+    title: string;
+    expirationDate: Date;
+    unit: {
+        unitNumber: string | null;
+    } | null;
+}
+
 /**
  * Service for managing listing-related notifications
  */
@@ -151,13 +171,19 @@ export class ListingNotificationService {
                         }
                     }
                 }
-            });
+            }) as {
+                property?: {
+                    organization?: {
+                        users: OrganizationUserWithUser[];
+                    };
+                };
+            };
 
             if (!unit?.property?.organization?.users) {
                 return [];
             }
 
-            return unit.property.organization.users.map(orgUser => orgUser.user);
+            return unit.property.organization.users.map((orgUser) => orgUser.user);
 
         } catch (error) {
             console.error('Error getting property managers:', error);

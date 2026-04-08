@@ -6,7 +6,6 @@ import type {
   PaymentInitializationRequest,
   PaymentInitializationResponse,
 } from "@/lib/payment/client-types";
-import { useMemo } from "react";
 
 function createIdempotencyKey(invoiceId: string) {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -16,13 +15,11 @@ function createIdempotencyKey(invoiceId: string) {
 }
 
 export function useInitializePayment() {
-  useMemo(() => createIdempotencyKey("payment"), []);
-
   return useMutation({
     mutationFn: async (
       payload: PaymentInitializationRequest
     ): Promise<PaymentInitializationResponse> => {
-      const key = createIdempotencyKey(payload.invoiceId) || idempotencyKey;
+      const key = createIdempotencyKey(payload.invoiceId);
       const response = await fetch("/api/payments/initialize", {
         method: "POST",
         headers: {

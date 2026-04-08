@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
-import { computeDocumentHash, verifyDocumentIntegrity } from "./hashing";
+import type { Prisma, DssParticipantRole } from "@prisma/client";
+import { computeDocumentHash } from "./hashing";
 import { getNextSigner } from "./workflow";
-import { DssParticipantRole, DssDocumentStatus, DssSigningMode, DssParticipant } from "@prisma/client";
 import fs from "fs/promises";
 import path from "path";
 
@@ -16,8 +16,6 @@ enum DssDocumentStatus {
     IN_SIGNING = "IN_SIGNING",
     COMPLETED = "COMPLETED"
 }
-
-type DssParticipantRole = Prisma.DssParticipantRole;
 
 // Local file storage for DSS documents
 async function uploadFileToStorage(fileBuffer: Buffer): Promise<{ url: string; key: string }> {
@@ -125,7 +123,7 @@ export async function signDocument(documentId: string, userEmail: string, signat
     if (!doc) throw new Error("Document not found");
 
     // 2. Validate it is THIS user's turn
-    const participant = doc.participants.find((p: DssParticipant) => p.email === userEmail);
+    const participant = doc.participants.find(p => p.email === userEmail);
     if (!participant) throw new Error("User is not a participant of this document");
 
     if (doc.signingMode === DssSigningMode.SEQUENTIAL) {
@@ -151,7 +149,7 @@ export async function signDocument(documentId: string, userEmail: string, signat
     // We compute a "Server-Proof" of the signature.
     const signatureProof = computeDocumentHash(Buffer.from(signatureData + doc.originalPdfSha256Hex));
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // A. Update Participant
         await tx.dssParticipant.update({
             where: { id: participant.id },

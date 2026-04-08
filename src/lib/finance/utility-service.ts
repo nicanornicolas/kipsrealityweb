@@ -31,9 +31,12 @@ export const utilityService = {
         if (utilityBill.status === UtilityBillStatus.POSTED) throw new Error("Bill already posted");
 
         // 2. Find all active leases at this property
+        type UnitWithLease = (typeof utilityBill.property.units)[number];
+        type LeaseWithUnit = UnitWithLease['leases'][number] & { unit: UnitWithLease };
+
         const activeLeases = utilityBill.property.units
-            .flatMap(unit => unit.leases.map(lease => ({ ...lease, unit })))
-            .filter(lease => lease.leaseStatus === 'ACTIVE');
+            .flatMap((unit) => unit.leases.map((lease: UnitWithLease['leases'][number]) => ({ ...lease, unit })))
+            .filter((lease: LeaseWithUnit) => lease.leaseStatus === 'ACTIVE');
 
         if (activeLeases.length === 0) throw new Error("No active leases found for this property");
 
