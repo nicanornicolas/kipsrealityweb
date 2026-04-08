@@ -1,8 +1,7 @@
 // API endpoint for updating lease status with listing integration
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@rentflow/iam";
 import { getCurrentUser } from "@rentflow/iam";
-import { leaseListingIntegration } from "@rentflow/lease";
+import { LeaseStatusError, leaseStatusService } from "@rentflow/lease";
 import { LeaseStatus } from "@prisma/client";
 
 export async function PUT(
@@ -11,122 +10,28 @@ export async function PUT(
 ) {
     try {
         const { id: leaseId } = await params;
-        const user = await getCurrentUser();
+        const user = await getCurrentUser(req);
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
         const { status, reason } = await req.json();
 
-        // Validate status
-        const validStatuses: LeaseStatus[] = [
-            LeaseStatus.DRAFT,
-            LeaseStatus.PENDING_APPROVAL,
-            LeaseStatus.APPROVED,
-            LeaseStatus.SIGNED,
-            LeaseStatus.ACTIVE,
-            LeaseStatus.EXPIRING_SOON,
-            LeaseStatus.EXPIRED,
-            LeaseStatus.TERMINATED,
-            LeaseStatus.RENEWED
-        ];
-
-        if (!validStatuses.includes(status)) {
-            return NextResponse.json(
-                { error: `Invalid lease status: ${status}` },
-                { status: 400 }
-            );
-        }
-
-        // Get current lease to check permissions and previous status
-        const currentLease = await prisma.lease.findUnique({
-            where: { id: leaseId },
-            include: {
-                property: {
-                    include: {
-                        manager: true
-                    }
-                }
-            }
+        const data = await leaseStatusService.updateStatus({
+            leaseId,
+            status: status as LeaseStatus,
+            reason,
+            userId: user.id,
         });
-
-        if (!currentLease) {
-            return NextResponse.json(
-                { error: "Lease not found" },
-                { status: 404 }
-            );
-        }
-
-        // Check permissions - user must be the property manager
-        if (currentLease.property.manager?.userId !== user.id) {
-            return NextResponse.json(
-                { error: "Unauthorized - you can only update leases for your properties" },
-                { status: 403 }
-            );
-        }
-
-        const previousStatus = currentLease.leaseStatus;
-
-        // Update lease status in transaction
-        const updatedLease = await prisma.$transaction(async (tx) => {
-            // Update the lease
-            const updated = await tx.lease.update({
-                where: { id: leaseId },
-                data: {
-                    leaseStatus: status,
-                    updatedAt: new Date()
-                },
-                include: {
-                    unit: true,
-                    property: true,
-                    tenant: true
-                }
-            });
-
-            // Create audit log entry
-            await tx.leaseAuditLog.create({
-                data: {
-                    id: crypto.randomUUID(),
-                    leaseId: leaseId,
-                    action: `STATUS_CHANGED_TO_${status}`,
-                    performedBy: user.id,
-                    changes: {
-                        previousStatus,
-                        newStatus: status,
-                        reason: reason || 'Status updated via API'
-                    } as any,
-                    performedAt: new Date()
-                }
-            });
-
-            return updated;
-        });
-
-        // Handle listing integration after successful database update
-        try {
-            await leaseListingIntegration.handleLeaseStatusChange(
-                leaseId,
-                status,
-                previousStatus,
-                user.id
-            );
-        } catch (integrationError) {
-            console.error('Lease-listing integration error:', integrationError);
-            // Don't fail the request if integration fails, but log it
-            // The lease status update was successful, integration can be retried
-        }
 
         return NextResponse.json({
             success: true,
-            data: {
-                id: updatedLease.id,
-                leaseStatus: updatedLease.leaseStatus,
-                previousStatus,
-                unitNumber: updatedLease.unit?.unitNumber,
-                propertyName: updatedLease.property?.name
-            }
+            data,
         });
 
     } catch (error) {
+        if (error instanceof LeaseStatusError) {
+            return NextResponse.json({ error: error.message }, { status: error.status });
+        }
         console.error("Error updating lease status:", error);
         return NextResponse.json(
             { error: "Failed to update lease status" },
@@ -141,73 +46,24 @@ export async function GET(
 ) {
     try {
         const { id: leaseId } = await params;
-        const user = await getCurrentUser();
+        const user = await getCurrentUser(req);
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-
-        // Get lease with status history
-        const lease = await prisma.lease.findUnique({
-            where: { id: leaseId },
-            include: {
-                property: {
-                    include: {
-                        manager: true
-                    }
-                },
-                unit: {
-                    include: {
-                        listing: true
-                    }
-                },
-                LeaseAuditLog: {
-                    where: {
-                        action: {
-                            startsWith: 'STATUS_CHANGED_TO_'
-                        }
-                    },
-                    orderBy: {
-                        performedAt: 'desc'
-                    },
-                    take: 10
-                }
-            }
+        const data = await leaseStatusService.getStatusDetails({
+            leaseId,
+            userId: user.id,
         });
-
-        if (!lease) {
-            return NextResponse.json(
-                { error: "Lease not found" },
-                { status: 404 }
-            );
-        }
-
-        // Check permissions
-        if (lease.property.manager?.userId !== user.id) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 403 }
-            );
-        }
 
         return NextResponse.json({
             success: true,
-            data: {
-                id: lease.id,
-                currentStatus: lease.leaseStatus,
-                unitNumber: lease.unit?.unitNumber,
-                propertyName: lease.property?.name,
-                hasActiveListing: !!lease.unit?.listing,
-                isUnitOccupied: lease.unit?.isOccupied,
-                statusHistory: lease.LeaseAuditLog.map(log => ({
-                    action: log.action,
-                    timestamp: log.performedAt,
-                    performedBy: log.performedBy,
-                    changes: log.changes
-                }))
-            }
+            data,
         });
 
     } catch (error) {
+        if (error instanceof LeaseStatusError) {
+            return NextResponse.json({ error: error.message }, { status: error.status });
+        }
         console.error("Error fetching lease status:", error);
         return NextResponse.json(
             { error: "Failed to fetch lease status" },

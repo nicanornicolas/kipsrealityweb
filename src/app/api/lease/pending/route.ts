@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@rentflow/iam';
 import { verifyAccessToken } from "@rentflow/iam";
+import { leasePendingService } from "@rentflow/lease";
 import { cookies } from 'next/headers';
 
 export async function GET() {
@@ -26,46 +26,8 @@ export async function GET() {
 
     const orgId = payload.organizationId;
 
-    // 2. Find leases that are DRAFT or SIGNED (waiting for landlord)
-    const pendingLeases = await prisma.lease.findMany({
-      where: {
-        property: {
-          organizationId: orgId
-        },
-        OR: [
-          { leaseStatus: 'DRAFT' },
-          { leaseStatus: 'SIGNED' }
-        ]
-      },
-      include: {
-        tenant: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true
-          }
-        },
-        unit: {
-          select: {
-            unitNumber: true
-          }
-        },
-        property: {
-          select: {
-            name: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    return NextResponse.json({
-      success: true,
-      count: pendingLeases.length,
-      leases: pendingLeases
-    });
+    const response = await leasePendingService.getPendingLeasesByOrganization(orgId);
+    return NextResponse.json(response);
 
   } catch (error: unknown) {
     console.error('Pending leases error:', error);

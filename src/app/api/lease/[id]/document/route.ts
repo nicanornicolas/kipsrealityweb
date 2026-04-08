@@ -1,8 +1,6 @@
-import { prisma } from "@rentflow/iam";
 import { getCurrentUser } from "@rentflow/iam";
+import { LeaseDocumentError, leaseDocumentService } from "@rentflow/lease";
 import { NextRequest, NextResponse } from "next/server";
-import { LeaseDocumentType, Prisma } from "@prisma/client";
-import { randomUUID } from "crypto";
 
 // POST: Upload a lease document
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -16,57 +14,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const file = formData.get("file") as File;
     const documentTypeStr = formData.get("documentType") as string;
     const description = formData.get("description") as string;
-
-    if (!file || !documentTypeStr) {
-      return NextResponse.json({ error: "Missing file or documentType" }, { status: 400 });
-    }
-
-    const documentType = LeaseDocumentType[documentTypeStr as keyof typeof LeaseDocumentType];
-
-    const lease = await prisma.lease.findUnique({
-      where: { id: leaseId },
-      include: { property: true },
-    });
-    if (!lease) return NextResponse.json({ error: "Lease not found" }, { status: 404 });
-
-    const fileUrl = `https://storage.example.com/leases/${leaseId}/${file.name}`;
-
-    const document = await prisma.leaseDocument.create({
-      data: {
-        id: randomUUID(),
-        leaseId,
-        documentType,
-        fileName: file.name,
-        fileUrl,
-        fileSize: file.size,
-        mimeType: file.type,
-        uploadedBy: user.id,
-        description,
-      } as Prisma.LeaseDocumentUncheckedCreateInput,
-    });
-
-    // Update lease metadata
-    await prisma.lease.update({
-      where: { id: leaseId },
-      data: {
-        documentVersion: { increment: 1 },
-        lastDocumentUpdate: new Date(),
-      },
-    });
-
-    // Audit log
-    await prisma.leaseAuditLog.create({
-      data: {
-        id: randomUUID(),
-        leaseId,
-        action: "DOCUMENT_UPLOADED",
-        performedBy: user.id,
-        changes: document as Prisma.InputJsonValue,
-      } as Prisma.LeaseAuditLogUncheckedCreateInput,
+    const document = await leaseDocumentService.uploadDocument({
+      leaseId,
+      file,
+      documentType: documentTypeStr,
+      description,
+      userId: user.id,
     });
 
     return NextResponse.json(document, { status: 201 });
   } catch (error: any) {
+    if (error instanceof LeaseDocumentError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("Document upload error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -80,13 +40,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const user = await getCurrentUser(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const documents = await prisma.leaseDocument.findMany({
-      where: { leaseId },
-      orderBy: { uploadedAt: "desc" },
-    });
+    const documents = await leaseDocumentService.listDocuments(leaseId);
 
     return NextResponse.json(documents);
   } catch (error: any) {
+    if (error instanceof LeaseDocumentError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("Fetch lease documents error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
