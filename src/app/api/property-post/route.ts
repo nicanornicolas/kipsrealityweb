@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { getCurrentUser } from "../../../lib/Getcurrentuser";
+import { getCurrentUser } from "@rentflow/iam";
 import { enforceFeatureLimit } from "../../../lib/guards/requireFeature";
 import { UsageService } from '@rentflow/payments';
 

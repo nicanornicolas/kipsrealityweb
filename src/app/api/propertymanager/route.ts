@@ -1,6 +1,6 @@
 // src/app/api/propertymanager/route.ts
 import { prisma } from "@rentflow/iam";
-import { getCurrentUser } from "../../../lib/Getcurrentuser";
+import { getCurrentUser } from "@rentflow/iam";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
