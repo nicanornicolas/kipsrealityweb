@@ -1,7 +1,7 @@
 import express from 'express';
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
-import { processStripeWebhookJob } from './stripe-webhook-processor';
+import { processStripeWebhookJob } from '@rentflow/payments';
 
 const app = express();
 
