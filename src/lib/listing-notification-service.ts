@@ -332,7 +332,12 @@ export class ListingNotificationService {
                         }
                     }
                 }
-            });
+            }) as Array<{
+                id: string;
+                name: string;
+                users: OrganizationUserWithUser[];
+                listings: ExpiringListingWithUnit[];
+            }>;
 
             return organizations.map(org => ({
                 id: org.id,
@@ -342,9 +347,9 @@ export class ListingNotificationService {
                     listingId: listing.id,
                     unitNumber: listing.unit?.unitNumber || 'Unknown',
                     title: listing.title,
-                    expirationDate: listing.expirationDate!,
+                    expirationDate: listing.expirationDate,
                     daysUntilExpiration: Math.ceil(
-                        (listing.expirationDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+                        (listing.expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
                     )
                 }))
             }));

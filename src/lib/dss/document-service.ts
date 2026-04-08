@@ -5,6 +5,20 @@ import { DssParticipantRole, DssDocumentStatus, DssSigningMode, DssParticipant }
 import fs from "fs/promises";
 import path from "path";
 
+enum DssSigningMode {
+    SEQUENTIAL = "SEQUENTIAL",
+    PARALLEL = "PARALLEL"
+}
+
+enum DssDocumentStatus {
+    DRAFT = "DRAFT",
+    SENT = "SENT",
+    IN_SIGNING = "IN_SIGNING",
+    COMPLETED = "COMPLETED"
+}
+
+type DssParticipantRole = Prisma.DssParticipantRole;
+
 // Local file storage for DSS documents
 async function uploadFileToStorage(fileBuffer: Buffer): Promise<{ url: string; key: string }> {
     // Create uploads directory if it doesn't exist
