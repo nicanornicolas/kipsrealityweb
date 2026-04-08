@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from "../../../../lib/Getcurrentuser";
+import { getCurrentUser } from "@rentflow/iam";
 import { prisma } from '@rentflow/iam';
 import type { Prisma } from '@prisma/client';
 
