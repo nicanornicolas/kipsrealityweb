@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@rentflow/iam";
 import { maintenanceListingIntegration } from "@rentflow/property";
-import { getCurrentUser } from "../../../../lib/Getcurrentuser";
+import { getCurrentUser } from "@rentflow/iam";
 
 /**
  * GET /api/maintenance/listing-integration
@@ -115,5 +115,6 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+
 
 

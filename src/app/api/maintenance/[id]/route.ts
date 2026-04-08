@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@rentflow/iam";
-import { getCurrentUser } from "../../../../lib/Getcurrentuser";
+import { getCurrentUser } from "@rentflow/iam";
 import { maintenanceService } from "@rentflow/finance";
 import { maintenanceListingIntegration } from "@rentflow/property";
 import { MaintenanceRequestStatus } from "@prisma/client";
