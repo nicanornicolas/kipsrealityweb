@@ -127,9 +127,3 @@ export async function getCurrentUserRole(): Promise<string | null> {
   return payload?.role ?? null;
 }
 
-/**
- * Get the full token payload for the current user
- */
-export async function getCurrentUser(): Promise<TokenPayload | null> {
-  return getTokenPayload();
-}
