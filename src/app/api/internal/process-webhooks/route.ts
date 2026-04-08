@@ -4,7 +4,7 @@ import {
   processMpesaWebhook,
   processPaystackWebhook,
   processStripeWebhook,
-} from "../../../../lib/webhooks/processors";
+} from "@rentflow/utilities";
 
 const RETRY_DELAYS_SECONDS = [60, 300, 900, 3600, 14400];
 
