@@ -78,7 +78,7 @@ async function verifyUtilityAllocation() {
                 });
 
                 // Need an application first
-                const app = await prisma.tenantapplication.create({
+                const app = await prisma.tenantApplication.create({
                     data: {
                         fullName: `${tenant.firstName} ${tenant.lastName}`,
                         email: tenant.email,

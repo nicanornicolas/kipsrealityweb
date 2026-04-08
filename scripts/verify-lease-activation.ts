@@ -59,7 +59,7 @@ async function main() {
             }
         });
 
-        const application = await prisma.tenantapplication.create({
+        const application = await prisma.tenantApplication.create({
             data: {
                 fullName: "John Doe",
                 email: tenant.email,

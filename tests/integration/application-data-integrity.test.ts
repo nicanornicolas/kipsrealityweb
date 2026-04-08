@@ -200,7 +200,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
 
       // Create application
       const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
-      const application = await prisma.tenantapplication.create({ data: applicationData });
+      const application = await prisma.tenantApplication.create({ data: applicationData });
       createdEntities.applications.push(application.id);
 
       // Validate data integrity
@@ -253,7 +253,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
 
       // Create application
       const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
-      const application = await prisma.tenantapplication.create({ data: applicationData });
+      const application = await prisma.tenantApplication.create({ data: applicationData });
       createdEntities.applications.push(application.id);
 
       // Simulate listing status changes
@@ -312,7 +312,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
 
       // Create application WITHOUT listing (orphaned)
       const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
-      const application = await prisma.tenantapplication.create({ data: applicationData });
+      const application = await prisma.tenantApplication.create({ data: applicationData });
       createdEntities.applications.push(application.id);
 
       // Check if application is identified as orphaned
@@ -357,7 +357,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
 
       // Create application with correct associations
       const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
-      const application = await prisma.tenantapplication.create({ data: applicationData });
+      const application = await prisma.tenantApplication.create({ data: applicationData });
       createdEntities.applications.push(application.id);
 
       // Simulate inconsistency by creating another property and updating unit
@@ -442,7 +442,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
       );
 
       try {
-        const application = await prisma.tenantapplication.create({ data: applicationData });
+        const application = await prisma.tenantApplication.create({ data: applicationData });
         createdEntities.applications.push(application.id);
         applicationIds.push(application.id);
 
@@ -511,7 +511,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
 
       // Create application
       const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
-      const application = await prisma.tenantapplication.create({ data: applicationData });
+      const application = await prisma.tenantApplication.create({ data: applicationData });
       createdEntities.applications.push(application.id);
 
       // Simulate application lifecycle with multiple state transitions

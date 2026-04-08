@@ -178,7 +178,7 @@ async function main() {
     });
 
     // 8. Create Tenant Application (Required by Lease)
-    const application = await prisma.tenantapplication.create({
+    const application = await prisma.tenantApplication.create({
         data: {
             fullName: 'John Doe',
             email: tenantEmail,

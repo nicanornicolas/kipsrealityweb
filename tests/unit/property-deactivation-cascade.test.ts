@@ -374,7 +374,7 @@ describe('Property 12: Property Deactivation Cascade', () => {
       expect(result.success).toBe(true);
 
       // Create tenant application
-      const application = await prisma.tenantapplication.create({
+      const application = await prisma.tenantApplication.create({
         data: {
           unitId: unit.id,
           propertyId: property.id,

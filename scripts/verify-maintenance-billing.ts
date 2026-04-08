@@ -50,7 +50,7 @@ async function verifyMaintenanceBilling() {
             }
         });
 
-        const application = await prisma.tenantapplication.create({
+        const application = await prisma.tenantApplication.create({
             data: {
                 fullName: 'Repair Tenant',
                 email: tenant.email,
