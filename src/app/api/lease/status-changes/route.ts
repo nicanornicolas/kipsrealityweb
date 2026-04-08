@@ -1,7 +1,7 @@
 // API endpoint for fetching lease status changes and their listing integration impact
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@rentflow/iam";
-import { getCurrentUser } from "../../../../lib/Getcurrentuser";
+import { getCurrentUser } from "@rentflow/iam";
 
 export async function GET(req: NextRequest) {
     try {

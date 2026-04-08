@@ -4,9 +4,9 @@
 
 import { prisma } from "@rentflow/iam";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "../../../../../../lib/Getcurrentuser";
-import { leaseListingIntegration } from "../../../../../../lib/lease-listing-integration";
-import { sendTenantInviteEmail } from "../../../../../../lib/mail-service";
+import { getCurrentUser } from "@rentflow/iam";
+import { leaseListingIntegration } from "@rentflow/lease";
+import { sendTenantInviteEmail } from "@/lib/mail-service";
 
 export async function POST(
   req: NextRequest,

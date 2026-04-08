@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@rentflow/iam";
-import { getCurrentUser } from "../../../../../lib/Getcurrentuser";
+import { getCurrentUser } from "@rentflow/iam";
 import { LeaseNotificationType } from "@prisma/client";
 import crypto from "crypto";
 

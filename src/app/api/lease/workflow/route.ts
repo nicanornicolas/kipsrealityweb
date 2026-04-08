@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@rentflow/iam";
-import { getCurrentUser } from "../../../../lib/Getcurrentuser";
-import { leaseListingIntegration } from "../../../../lib/lease-listing-integration";
+import { getCurrentUser } from "@rentflow/iam";
+import { leaseListingIntegration } from "@rentflow/lease";
 import { Prisma } from "@prisma/client";
 import { randomUUID } from "crypto";
 

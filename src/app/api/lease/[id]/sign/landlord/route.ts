@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@rentflow/iam';
 import { verifyAccessToken } from "@rentflow/iam";
-import { leaseListingIntegration } from "../../../../../../lib/lease-listing-integration";
+import { leaseListingIntegration } from "@rentflow/lease";
 import { cookies } from 'next/headers';
 
 export async function POST(
