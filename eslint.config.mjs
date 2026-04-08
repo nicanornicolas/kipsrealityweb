@@ -84,6 +84,11 @@ const eslintConfig = [
             {
               sourceTag: 'scope:dss',
               onlyDependOnLibsWithTags: ['scope:iam']
+            },
+            // 6. Lease depends on IAM, Property, and Utilities
+            {
+              sourceTag: 'scope:lease',
+              onlyDependOnLibsWithTags: ['scope:iam', 'scope:property', 'scope:utilities']
             }
           ]
         }
