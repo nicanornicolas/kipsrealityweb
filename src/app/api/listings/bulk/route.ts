@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "../../../../lib/Getcurrentuser";
+import { getCurrentUser } from "@rentflow/iam";
 import { db } from "@rentflow/iam";
 import { ListingService } from "@rentflow/property";
 import { AuditService } from "@rentflow/property";
@@ -302,5 +302,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
 
 

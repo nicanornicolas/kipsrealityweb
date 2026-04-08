@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { listingService } from "@rentflow/property";
-import { getCurrentUser } from "../../../../../lib/Getcurrentuser";
+import { getCurrentUser } from "@rentflow/iam";
 
 interface ExtendExpirationRequest {
     newExpirationDate: string;

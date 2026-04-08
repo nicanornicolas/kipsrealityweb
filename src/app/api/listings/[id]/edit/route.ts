@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "../../../../../lib/Getcurrentuser";
+import { getCurrentUser } from "@rentflow/iam";
 import { db } from "@rentflow/iam";
 import { listingService } from "@rentflow/property";
 import { auditService } from "@rentflow/property";
