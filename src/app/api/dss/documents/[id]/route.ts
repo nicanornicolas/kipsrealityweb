@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@rentflow/iam";
 import { verifyAccessToken } from "@rentflow/iam"; // Adjust path if needed
 import { cookies } from "next/headers";
-import { canUserSignNow } from "../../../../../lib/dss/workflow"; // The logic we built in Phase 2
+import { canUserSignNow } from "@rentflow/dss"; // The logic we built in Phase 2
 
 export async function GET(
   request: Request,

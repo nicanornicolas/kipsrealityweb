@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@rentflow/iam";
-import { createDocument } from "../../../../lib/dss/document-service";
+import { createDocument } from "@rentflow/dss";
 import { verifyAccessToken } from "@rentflow/iam";
 import { cookies } from "next/headers";
 import { DssParticipantRole } from "@prisma/client";

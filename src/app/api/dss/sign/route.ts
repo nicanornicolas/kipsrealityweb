@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { signDocument } from "../../../../lib/dss/document-service";
+import { signDocument } from "@rentflow/dss";
 import { verifyAccessToken } from "@rentflow/iam"; // Adjust path if needed
 import { cookies } from "next/headers";
 

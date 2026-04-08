@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { notarizeDocument } from "../../../../lib/dss/notary-service";
+import { notarizeDocument } from "@rentflow/dss";
 import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
