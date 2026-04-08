@@ -1,5 +1,5 @@
 //src/lib/property-manager.ts
-import { Property, ApartmentComplexDetail, HouseDetail } from "@/app/data/PropertyData";
+import { Property, ApartmentComplexDetail, HouseDetail } from "./types";
 
 export type PropertyPayload = Property & {
   propertyDetails?: ApartmentComplexDetail | HouseDetail;

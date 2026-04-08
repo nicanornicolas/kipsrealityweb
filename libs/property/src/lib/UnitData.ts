@@ -1,4 +1,4 @@
-import { Unit } from "@/app/data/UnitData";
+import { Unit } from "./types";
 
 export const fetchUnits = async (propertyId: string): Promise<Unit[]> => {
   try {

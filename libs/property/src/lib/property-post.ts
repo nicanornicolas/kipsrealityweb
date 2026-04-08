@@ -1,5 +1,5 @@
 // src/lib/postProperty.ts
-import { Property } from "@/app/data/PropertyData";
+import { Property } from "./types";
 
 export const postProperty = async (propertyData: Property) => {
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/property-post`, {

@@ -17,6 +17,7 @@ vi.mock('@rentflow/iam', () => ({
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ListingService } from '@rentflow/property';
+import { prisma } from '@rentflow/iam';
 import {
   BulkListingOperation,
   BulkListingActionType,
@@ -25,7 +26,6 @@ import {
   BulkResult,
 } from '@rentflow/property';
 
-const { prisma } = await import('@rentflow/iam');
 const mockPrisma = prisma as unknown as {
   unit: {
     findUnique: ReturnType<typeof vi.fn>;

@@ -1,4 +1,4 @@
-import {PropertyType} from "@/app/data/PropertTypeData";
+import { PropertyType } from "./types";
 
 
 export const fetchPropertyTypes = async (): Promise<PropertyType[]> => {

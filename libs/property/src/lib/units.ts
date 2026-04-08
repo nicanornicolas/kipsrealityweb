@@ -1,7 +1,6 @@
 // src/lib/units.ts
 import { prisma } from "@rentflow/iam";
-import { Unit } from "@/app/data/UnitData";
-import { UnitFormData } from "@/components/Dashboard/propertymanagerdash/units/EditUnitForm";
+import { Unit, UnitFormData } from "./types";
 
 
 export const fetchUnits = async (propertyId: string): Promise<Unit[]> => {

@@ -26,3 +26,4 @@ export * from './lib/property-post';
 export * from './lib/property-type';
 export * from './lib/units';
 export * from './lib/UnitData';
+export * from './lib/types';

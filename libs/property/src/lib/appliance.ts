@@ -1,4 +1,4 @@
-import {Appliance} from "@/app/data/ApplianceData";
+import { Appliance } from "./types";
 
 
 export const fetchAppliances = async (): Promise<Appliance[]> => {

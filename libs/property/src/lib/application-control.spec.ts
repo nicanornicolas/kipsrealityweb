@@ -9,6 +9,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { applicationControlService } from '@rentflow/property';
+import { prisma } from '@rentflow/iam';
 
 // Create mock prisma client at the @prisma/client level first
 vi.mock('@prisma/client', () => {
@@ -65,11 +67,7 @@ vi.mock('@prisma/client', () => {
   };
 });
 
-// Now import after mock is set up - the db module will use the mocked PrismaClient
-const { applicationControlService } = await import(
-  '@rentflow/property'
-);
-const { prisma } = await import('@rentflow/iam');
+// Imports above will use the mocked PrismaClient due to vi.mock hoisting
 
 describe('Property 13: Application Functionality Control', () => {
   beforeEach(() => {

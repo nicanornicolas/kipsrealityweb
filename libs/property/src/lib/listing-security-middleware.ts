@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from './Getcurrentuser';
+import { getCurrentUser } from '@rentflow/iam';
 import { ListingValidationService } from './listing-validation';
 import { UserRole } from './listing-auth.types';
 import { ListingLogger, LogCategory } from './listing-logger';
@@ -638,3 +638,4 @@ export function withSecurity(
         }
     };
 }
+

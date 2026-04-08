@@ -1,4 +1,4 @@
-import {Categories} from "@/app/data/CategoriesData";
+import { Categories } from "./types";
 
 
 export const fetchCategories = async (): Promise<Categories[]> => {
