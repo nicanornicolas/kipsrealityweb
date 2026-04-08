@@ -9,7 +9,7 @@ import {
   PaymentError,
   PaymentErrorType,
   DEFAULT_RETRY_CONFIG,
-} from '../../../../src/lib/payment/payment-error-handler';
+} from './payment-error-handler';
 import { PaymentGateway } from '@prisma/client';
 
 describe('Payment Error Handler', () => {

@@ -8,8 +8,8 @@ import {
   fraudDetectionService,
   FraudDetectionService,
   FraudDetectionContext,
-} from '../../../../src/lib/payment/fraud-detection-service';
-import { PaymentRequest } from '../../../../src/lib/payment/types';
+} from './fraud-detection-service';
+import { PaymentRequest } from './types';
 
 describe('Fraud Detection Service', () => {
   let service: FraudDetectionService;
