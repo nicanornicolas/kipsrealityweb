@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { PaymentErrorHandler, PaymentError, PaymentErrorType, DEFAULT_RETRY_CONFIG } from '../../../src/lib/payment/payment-error-handler';
+import { PaymentErrorHandler, PaymentError, PaymentErrorType, DEFAULT_RETRY_CONFIG } from '@rentflow/payments';
 import { PaymentGateway } from '@prisma/client';
 
 describe('Payment Error Handler', () => {

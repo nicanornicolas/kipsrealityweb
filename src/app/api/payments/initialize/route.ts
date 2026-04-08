@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@rentflow/iam";
 import { prisma } from "@rentflow/iam";
-import { PaymentFactory } from "../../../../lib/payment/payment-factory";
-import { PaymentRequest } from "../../../../lib/payment/types";
+import { PaymentFactory, PaymentRequest } from "@rentflow/payments";
 import { PaymentMethod, TransactionStatus, Prisma } from "@prisma/client";
 
 export async function POST(req: NextRequest) {

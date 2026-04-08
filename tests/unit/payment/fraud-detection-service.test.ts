@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { fraudDetectionService, FraudDetectionService, FraudDetectionContext } from '../../../src/lib/payment/fraud-detection-service';
-import { PaymentRequest } from '../../../src/lib/payment/types';
+import { fraudDetectionService, FraudDetectionService, FraudDetectionContext } from '@rentflow/payments';
+import { PaymentRequest } from '@rentflow/payments';
 
 describe('Fraud Detection Service', () => {
   let service: FraudDetectionService;

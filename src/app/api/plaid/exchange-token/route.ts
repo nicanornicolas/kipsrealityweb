@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { plaidClient, createStripeBankAccountToken } from "../../../../lib/payment/services/plaid-service";
+import { plaidClient, createStripeBankAccountToken } from "@rentflow/payments";
 import { prisma } from "@rentflow/iam";
 import Stripe from "stripe";
 import crypto from "crypto";

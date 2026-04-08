@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { MpesaPaymentStrategy } from '../../../src/lib/payment/strategies/mpesa';
-import type { PaymentRequest } from '../../../src/lib/payment/types';
+import { MpesaPaymentStrategy } from '@rentflow/payments';
+import type { PaymentRequest } from '@rentflow/payments';
 import { TransactionStatus } from '@prisma/client';
 
 // Mock environment variables
