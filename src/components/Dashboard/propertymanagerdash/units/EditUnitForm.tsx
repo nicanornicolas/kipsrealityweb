@@ -7,21 +7,7 @@ import { useState, useEffect } from "react";
 import { updateUnitDetails } from "./";
 import { ListingDecisionModal } from "@/components/Dashboard/listing/ListingDecisionModal";
 import { ListingStatus, UnitWithListingStatus } from "./";
-
-export interface ApplianceInput {
-  name: string;
-}
-
-export interface UnitFormData {
-  bedrooms: number;
-  bathrooms: number;
-  floorNumber?: number | null;
-  rentAmount?: number | null;
-  unitName?: string;
-  currency?: string;
-  isOccupied?: boolean;
-  appliances?: ApplianceInput[];
-}
+import type { UnitFormData, ApplianceInput } from "@rentflow/property";
 
 export default function EditUnitForm({
   propertyId,

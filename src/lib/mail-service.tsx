@@ -1,5 +1,5 @@
 // src/lib/mail-service.tsx
-import { sendEmail } from "./mail";
+import { sendEmail } from "@rentflow/utilities";
 import { APP_NAME, getBaseUrl, SUPPORT_EMAIL } from "./constants";
 
 /**

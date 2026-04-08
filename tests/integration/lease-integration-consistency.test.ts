@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fc from 'fast-check';
 import { prisma } from './setup';
-import { leaseListingIntegration } from '../../src/lib/lease-listing-integration';
+import { leaseListingIntegration } from '@rentflow/lease';
 import { ListingService } from '@rentflow/property';
 import { ListingStatus } from '@rentflow/property';
 import { Lease_leaseStatus } from '@prisma/client';
