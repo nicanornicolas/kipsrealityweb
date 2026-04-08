@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@rentflow/iam";
-import { getCurrentUser } from "../../../../../../lib/Getcurrentuser";
+import { getCurrentUser } from "@rentflow/iam";
 
 const INVITE_EXPIRY_HOURS = 1;
 
