@@ -1,5 +1,1 @@
-export interface Categories{
-id:string,
-name:string,
-description: string
-}
+export type { Categories } from '@rentflow/property';
