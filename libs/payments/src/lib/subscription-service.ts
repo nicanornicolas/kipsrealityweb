@@ -260,7 +260,6 @@ export class SubscriptionService {
    */
   private async handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
     // The subscription field may be a string ID or expanded object
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const invoiceData = invoice as any;
     const subscriptionId = typeof invoiceData.subscription === 'string'
       ? invoiceData.subscription
