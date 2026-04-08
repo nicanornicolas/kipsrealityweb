@@ -1,0 +1,47 @@
+export function capturePreviousValues(
+  lease: Record<string, unknown>,
+  amendmentType: string,
+  changes: Record<string, unknown>,
+): Record<string, unknown> {
+  const previous: Record<string, unknown> = {};
+
+  switch (amendmentType) {
+    case "RENT_CHANGE":
+      previous.rentAmount = lease.rentAmount;
+      previous.paymentDueDay = lease.paymentDueDay;
+      break;
+    case "TERM_EXTENSION":
+      previous.endDate = lease.endDate;
+      previous.leaseTerm = lease.leaseTerm;
+      break;
+    case "UTILITY_CHANGE":
+      previous.tenantPaysElectric = lease.tenantPaysElectric;
+      previous.tenantPaysWater = lease.tenantPaysWater;
+      previous.tenantPaysTrash = lease.tenantPaysTrash;
+      previous.tenantPaysInternet = lease.tenantPaysInternet;
+      break;
+    case "RESPONSIBILITY_CHANGE":
+      previous.tenantResponsibilities = lease.tenantResponsibilities;
+      previous.landlordResponsibilities = lease.landlordResponsibilities;
+      break;
+    case "TENANT_CHANGE":
+      previous.tenantId = lease.tenantId;
+      break;
+    case "DEPOSIT_CHANGE":
+      previous.securityDeposit = lease.securityDeposit;
+      break;
+    case "FEE_STRUCTURE_CHANGE":
+      previous.lateFeeFlat = lease.lateFeeFlat;
+      previous.lateFeeDaily = lease.lateFeeDaily;
+      previous.gracePeriodDays = lease.gracePeriodDays;
+      break;
+    default:
+      Object.keys(changes).forEach((key) => {
+        if (key in lease) {
+          previous[key] = lease[key];
+        }
+      });
+  }
+
+  return previous;
+}
