@@ -10,6 +10,7 @@ export const CHART_OF_ACCOUNTS = {
     // LIABILITIES (2000-2999)
     SECURITY_DEPOSITS_LIABILITY: "2100", // Money held for tenants
     ACCOUNTS_PAYABLE: "2200",            // Money we owe vendors
+    SALES_TAX_PAYABLE: "2250",           // USA sales tax collected from tenants
     PREPAID_RENT: "2300",                // Rent paid in advance
 
     // EQUITY (3000-3999)
@@ -25,7 +26,7 @@ export const CHART_OF_ACCOUNTS = {
     MAINTENANCE_EXPENSE: "5100",     // Cost of vendor
     UTILITY_EXPENSE: "5200",         // Cost of water/power bill
     MANAGEMENT_FEES: "5300",
-};
+} as const;
 
 export type AccountCode = keyof typeof CHART_OF_ACCOUNTS;
 
