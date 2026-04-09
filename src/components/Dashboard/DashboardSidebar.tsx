@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, Building2, Menu, X } from "lucide-react";
 import { DashboardSidebarLinks } from "./DashboardSidebarLinks";
-import { cn } from "./";
+import { cn } from "@/lib/utils";
 import { useDashboard } from "@/context/DashboardContext";
 
 interface DashboardSidebarProps {

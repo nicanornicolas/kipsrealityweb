@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { cn } from './'
+import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 
 interface RouteItemProps {

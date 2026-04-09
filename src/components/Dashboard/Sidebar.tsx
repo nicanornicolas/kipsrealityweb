@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { PROPERTY_MANAGER_LINKS, SidebarCategory } from './SidebarLinks';
-import { cn } from './';
+import { cn } from '@/lib/utils';
 import { ChevronDown, Building2 } from 'lucide-react';
 
 interface SidebarProps {
