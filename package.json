@@ -162,7 +162,6 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19",
     "@types/react-modal": "^3.16.3",
-    "@types/recharts": "^2.0.1",
     "@vitest/coverage-v8": "^4.1.0",
     "autoprefixer": "^10.4.21",
     "baseline-browser-mapping": "^2.9.14",
