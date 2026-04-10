@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   migrate:
     build:
@@ -88,3 +90,46 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+  minio:
+    image: minio/minio:latest
+    container_name: rentflow_storage
+    environment:
+      # Squad 2 will use these credentials in the .env file for the AWS SDK
+      - MINIO_ROOT_USER=${MINIO_USER:-rentflow_admin}
+      - MINIO_ROOT_PASSWORD=${MINIO_PASSWORD:-SuperSecretStorageKey2026!}
+    ports:
+      - "9000:9000" # The S3 API Port (Next.js/Node talks to this)
+      - "9001:9001" # The Admin UI Console (You log into this via browser)
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    
+    # --- DEVSECOPS HARDENING ---
+    read_only: true # The entire container file system is immutable
+    tmpfs:
+      - /tmp # Allow MinIO to write temp files into memory
+    security_opt:
+      - no-new-privileges:true # Prevents privilege escalation (sudo)
+    cap_drop:
+      - ALL # Strips all Linux kernel capabilities
+    
+    # --- RESOURCE ALLOCATION ---
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5' # MinIO is lightweight
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:9000/minio/health/live || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  minio_data: # Persistent storage so PDFs survive container restarts
