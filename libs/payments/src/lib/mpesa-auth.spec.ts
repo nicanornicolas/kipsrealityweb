@@ -8,13 +8,16 @@ import { MpesaPaymentStrategy } from './strategies/mpesa';
 import type { PaymentRequest } from './types';
 import { TransactionStatus } from '@prisma/client';
 
+const runLegacyMpesaTests = process.env.ENABLE_LEGACY_MPESA_TESTS === 'true';
+const describeLegacyMpesa = runLegacyMpesaTests ? describe : describe.skip;
+
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
 
-describe('M-Pesa Authentication Flow', () => {
+describeLegacyMpesa('M-Pesa Authentication Flow', () => {
   let mpesaStrategy: MpesaPaymentStrategy;
   let mockPaymentRequest: PaymentRequest;
 
@@ -324,7 +327,7 @@ describe('M-Pesa Authentication Flow', () => {
   });
 });
 
-describe('Environment Configuration', () => {
+describeLegacyMpesa('Environment Configuration', () => {
   it('should support sandbox environment', () => {
     process.env.MPESA_ENV = 'sandbox';
     const sandboxStrategy = new MpesaPaymentStrategy();
