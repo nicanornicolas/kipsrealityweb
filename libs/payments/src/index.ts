@@ -11,4 +11,3 @@ export * from './lib/strategies/kenya';
 export * from './lib/strategies/mpesa';
 export * from './lib/strategies/usa';
 export * from './lib/services/plaid-service';
-export * from './lib/stripe-webhook-processor';
