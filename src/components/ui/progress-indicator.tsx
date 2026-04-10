@@ -1,6 +1,6 @@
 import React from "react";
 import { CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
-import { cn } from "./";
+import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
 interface ProgressIndicatorProps {

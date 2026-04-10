@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { UnitWithListingStatus, ListingStatus } from './'
-import { cn } from './'
+import { cn } from '@/lib/utils'
 
 interface UnitListingStatusCardProps {
   unit: UnitWithListingStatus
