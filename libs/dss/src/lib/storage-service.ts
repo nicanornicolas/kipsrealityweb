@@ -1,7 +1,11 @@
 /* eslint-disable @nx/enforce-module-boundaries */
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
-import { randomUUID } from "crypto";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl as getPresignedUrl } from '@aws-sdk/s3-request-presigner';
+import { randomUUID } from 'crypto';
 
 interface StorageConfig {
   bucket: string;
@@ -18,16 +22,18 @@ export class StorageService {
   private static getConfig(): StorageConfig {
     const bucket = process.env.S3_BUCKET || process.env.AWS_S3_BUCKET;
     if (!bucket) {
-      throw new Error("Storage bucket is not configured. Set S3_BUCKET.");
+      throw new Error('Storage bucket is not configured. Set S3_BUCKET.');
     }
 
     return {
       bucket,
-      region: process.env.S3_REGION || process.env.AWS_REGION || "us-east-1",
+      region: process.env.S3_REGION || process.env.AWS_REGION || 'us-east-1',
       endpoint: process.env.S3_ENDPOINT || process.env.AWS_S3_ENDPOINT,
-      forcePathStyle: (process.env.S3_FORCE_PATH_STYLE || "true").toLowerCase() === "true",
+      forcePathStyle:
+        (process.env.S3_FORCE_PATH_STYLE || 'true').toLowerCase() === 'true',
       accessKeyId: process.env.S3_ACCESS_KEY || process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.S3_SECRET_KEY || process.env.AWS_SECRET_ACCESS_KEY,
+      secretAccessKey:
+        process.env.S3_SECRET_KEY || process.env.AWS_SECRET_ACCESS_KEY,
     };
   }
 
@@ -53,9 +59,12 @@ export class StorageService {
     return this.client;
   }
 
-  static async uploadPdf(fileBuffer: Buffer, organizationId: string): Promise<{ key: string }> {
+  static async uploadPdf(
+    fileBuffer: Buffer,
+    organizationId: string,
+  ): Promise<{ key: string }> {
     const config = this.getConfig();
-    const safeOrganizationId = organizationId.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const safeOrganizationId = organizationId.replace(/[^a-zA-Z0-9_-]/g, '_');
     const key = `${safeOrganizationId}/${Date.now()}-${randomUUID()}.pdf`;
 
     await this.getClient().send(
@@ -63,14 +72,17 @@ export class StorageService {
         Bucket: config.bucket,
         Key: key,
         Body: fileBuffer,
-        ContentType: "application/pdf",
-      })
+        ContentType: 'application/pdf',
+      }),
     );
 
     return { key };
   }
 
-  static async getSignedUrl(key: string, expiresInSeconds = 900): Promise<string> {
+  static async getSignedUrl(
+    key: string,
+    expiresInSeconds = 900,
+  ): Promise<string> {
     const config = this.getConfig();
 
     return getPresignedUrl(
@@ -79,7 +91,21 @@ export class StorageService {
         Bucket: config.bucket,
         Key: key,
       }),
-      { expiresIn: expiresInSeconds }
+      { expiresIn: expiresInSeconds },
     );
+  }
+
+  static async downloadDocument(key: string): Promise<Buffer> {
+    const config = this.getConfig();
+    const command = new GetObjectCommand({ Bucket: config.bucket, Key: key });
+    const response = await this.getClient().send(command);
+
+    if (!response.Body) throw new Error('Empty file body returned from S3');
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of response.Body as any) {
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks);
   }
 }
