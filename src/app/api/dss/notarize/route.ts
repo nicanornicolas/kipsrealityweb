@@ -1,23 +1,12 @@
 import { NextResponse } from "next/server";
 import { notarizeDocument } from "@rentflow/dss";
-import { cookies } from "next/headers";
+import { requireRole } from "@rentflow/iam";
 
 export async function POST(req: Request) {
     try {
         // 1. Auth Check (Admins/Managers Only)
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-
-        // Simple mock auth check if verifyAccessToken isn't fully set up for this route yet
-        // In production, uncomment the verify logic:
-        // TODO: [Security] Re-enable RBAC before production
-        /*
-        if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        const user = verifyAccessToken(token); 
-        if (user.role !== 'PROPERTY_MANAGER' && user.role !== 'SYSTEM_ADMIN') {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-        }
-        */
+        const authError = await requireRole(["PROPERTY_MANAGER", "SYSTEM_ADMIN"], req);
+        if (authError) return authError;
 
         // 2. Parse ID
         const body = await req.json();
@@ -35,8 +24,9 @@ export async function POST(req: Request) {
             data: record
         });
 
-    } catch (error: any) {
-        console.error("[API] Notarize Error:", error.message);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Internal Server Error";
+        console.error("[API] Notarize Error:", message);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
