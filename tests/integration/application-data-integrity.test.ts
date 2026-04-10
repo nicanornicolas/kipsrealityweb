@@ -46,13 +46,13 @@ function generateUnitData(propertyId: string) {
   };
 }
 
-function generatePropertyData(managerId: string) {
+function generatePropertyData(managerId: string, organizationId: string) {
   return {
     id: `prop-${Math.random().toString(36).substr(2, 9)}`,
     name: `Test Property ${Math.floor(Math.random() * 1000)}`,
     city: 'Test City',
     managerId,
-    organizationId: 'test-org'
+    organizationId
   };
 }
 
@@ -187,7 +187,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
     
     for (let i = 0; i < iterations; i++) {
       // Generate test data
-      const propertyData = generatePropertyData(testManager.id);
+      const propertyData = generatePropertyData(testManager.id, testOrganization.id);
       const unitData = generateUnitData(propertyData.id);
 
       // Create property
@@ -231,7 +231,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
     
     for (let i = 0; i < iterations; i++) {
       // Generate test data
-      const propertyData = generatePropertyData(testManager.id);
+      const propertyData = generatePropertyData(testManager.id, testOrganization.id);
       const unitData = generateUnitData(propertyData.id);
 
       // Create property and unit
@@ -300,7 +300,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
     
     for (let i = 0; i < iterations; i++) {
       // Generate test data
-      const propertyData = generatePropertyData(testManager.id);
+      const propertyData = generatePropertyData(testManager.id, testOrganization.id);
       const unitData = generateUnitData(propertyData.id);
 
       // Create property and unit
@@ -345,7 +345,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
     
     for (let i = 0; i < iterations; i++) {
       // Generate test data
-      const propertyData = generatePropertyData(testManager.id);
+      const propertyData = generatePropertyData(testManager.id, testOrganization.id);
       const unitData = generateUnitData(propertyData.id);
 
       // Create property and unit
@@ -361,7 +361,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
       createdEntities.applications.push(application.id);
 
       // Simulate inconsistency by creating another property and updating unit
-      const anotherPropertyData = generatePropertyData(testManager.id);
+      const anotherPropertyData = generatePropertyData(testManager.id, testOrganization.id);
       const anotherProperty = await prisma.property.create({ data: anotherPropertyData });
       createdEntities.properties.push(anotherProperty.id);
 
@@ -409,7 +409,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
 
     // Create multiple applications with varying integrity states
     for (let i = 0; i < numApplications; i++) {
-      const propertyData = generatePropertyData(testManager.id);
+      const propertyData = generatePropertyData(testManager.id, testOrganization.id);
       const unitData = generateUnitData(propertyData.id);
 
       // Create property and unit
@@ -489,7 +489,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
     
     for (let i = 0; i < iterations; i++) {
       // Generate test data
-      const propertyData = generatePropertyData(testManager.id);
+      const propertyData = generatePropertyData(testManager.id, testOrganization.id);
       const unitData = generateUnitData(propertyData.id);
 
       // Create property and unit
