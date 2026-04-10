@@ -1,28 +1,12 @@
-import { Region } from "@prisma/client";
-import { IPaymentStrategy } from "./types";
-import { KenyaPaymentStrategy } from "./strategies/kenya";
-import { UsaPaymentStrategy } from "./strategies/usa";
-import { MpesaPaymentStrategy } from "./strategies/mpesa";
+import { UsaPaymentStrategy } from './strategies/usa';
+import { IPaymentStrategy } from '../types';
 
 export class PaymentFactory {
-    /**
-     * Returns the correct payment processor based on the Property/Landlord Region.
-     */
-    static getStrategy(region: Region): IPaymentStrategy {
-        switch (region) {
-            case "KEN":
-                // Check if M-Pesa direct integration should be used
-                const useMpesaDirect = process.env.USE_MPESA_DIRECT === "true" || 
-                                      !!process.env.MPESA_CONSUMER_KEY;
-                if (useMpesaDirect) {
-                    return new MpesaPaymentStrategy();
-                }
-                return new KenyaPaymentStrategy();
-            case "USA":
-                return new UsaPaymentStrategy();
-            default:
-                // Default to Kenya logic for your pilot, or throw error
-                return new KenyaPaymentStrategy();
-        }
-    }
+  /**
+   * @deprecated region parameter is no longer used. System is strictly USA-focused.
+   */
+  static getStrategy(region?: string): IPaymentStrategy {
+    // We completely bypass the switch statement. USA is the only strategy.
+    return new UsaPaymentStrategy();
+  }
 }
