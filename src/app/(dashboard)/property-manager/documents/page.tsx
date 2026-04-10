@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useRef } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import {
   File, 
   Search, 
   Upload,
-  MoreHorizontal,
+  Loader2,
   Download,
   Eye,
   Trash2,
@@ -41,29 +41,45 @@ interface Folder {
   icon: string;
 }
 
+interface ApiDocument {
+  id: string;
+  title?: string;
+  fileName?: string;
+  name?: string;
+  type?: string;
+  category?: string;
+  size?: string;
+  status?: "active" | "archived";
+  createdAt?: string;
+  property?: { name?: string };
+  unit?: { unitNumber?: string };
+}
+
 export default function DocumentsPage() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [folders, setFolders] = useState<Folder[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        setIsLoading(true);
+        setErrorMessage(null);
         
         // Fetch documents from API
         const res = await fetch('/api/dss/documents');
         if (!res.ok) throw new Error('Failed to fetch documents');
-        const data = await res.json();
+        const data = (await res.json()) as ApiDocument[];
         
-        const docs: Document[] = Array.isArray(data) ? data.map((d: any) => ({
+        const docs: Document[] = Array.isArray(data) ? data.map((d) => ({
           id: d.id,
-          name: d.name || d.fileName || 'Untitled',
+          name: d.title || d.name || d.fileName || 'Untitled',
           type: d.type || 'PDF',
           category: d.category || 'Other',
           size: d.size || '0 KB',
@@ -86,14 +102,77 @@ export default function DocumentsPage() {
         setFolders(folderData);
         
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load documents');
+        setErrorMessage(err instanceof Error ? err.message : 'Failed to load documents');
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
     
     fetchData();
   }, []);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      alert("Please upload a PDF document.");
+      event.target.value = "";
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("title", file.name.replace(/\.pdf$/i, ""));
+      formData.append("participants", "[]");
+
+      const response = await fetch("/api/dss/documents", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.status === 402) {
+        alert(`Upgrade Required: ${data.message || "Plan limit reached."}`);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload document");
+      }
+
+      const uploadedDoc = data?.data;
+      const uploadedDocument: Document = {
+        id: uploadedDoc?.id || crypto.randomUUID(),
+        name: uploadedDoc?.title || file.name.replace(/\.pdf$/i, ""),
+        type: uploadedDoc?.mimeType || "PDF",
+        category: "Other",
+        size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
+        uploadedAt: new Date().toISOString().split("T")[0],
+        property: uploadedDoc?.property?.name || "",
+        unit: uploadedDoc?.unit?.unitNumber || "",
+        status: "active",
+      };
+
+      setDocuments((prev) => [uploadedDocument, ...prev]);
+      alert("Document uploaded successfully to MinIO!");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload failed";
+      console.error("Upload error:", error);
+      alert(message);
+    } finally {
+      setIsUploading(false);
+      event.target.value = "";
+    }
+  };
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -113,8 +192,24 @@ export default function DocumentsPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-10 max-w-6xl">
+        <div className="text-sm text-gray-500">Loading documents...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-10 max-w-6xl">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="application/pdf"
+        className="hidden"
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -122,14 +217,15 @@ export default function DocumentsPage() {
           <p className="text-gray-500 mt-1">
             Manage all your property documents in one place.
           </p>
+          {errorMessage && <p className="text-sm text-red-600 mt-2">{errorMessage}</p>}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline">
             <Filter className="h-4 w-4 mr-2" />
             Filter
           </Button>
-          <Button>
-            <Upload className="h-4 w-4 mr-2" />
+          <Button onClick={handleUploadClick} disabled={isUploading}>
+            {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
             Upload Document
           </Button>
         </div>
@@ -281,8 +377,8 @@ export default function DocumentsPage() {
             <p className="text-gray-500 mb-4">
               {searchTerm ? "Try adjusting your search terms" : "Upload your first document to get started"}
             </p>
-            <Button>
-              <Upload className="h-4 w-4 mr-2" />
+            <Button onClick={handleUploadClick} disabled={isUploading}>
+              {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
               Upload Document
             </Button>
           </CardContent>
