@@ -861,6 +861,7 @@ model DssDocument {
   unit                 Unit?                   @relation(fields: [unitId], references: [id])
   participants         DssParticipant[]
   signatures           DssSignature[]
+  fields               DssField[]
 
   @@index([organizationId])
   @@index([leaseId])
@@ -886,6 +887,7 @@ model DssParticipant {
   organization    Organization       @relation(fields: [organizationId], references: [id])
   user            User?              @relation(fields: [userId], references: [id])
   signatures      DssSignature[]
+  fields          DssField[]
 
   @@unique([documentId, email], map: "uq_dss_participant_doc_email")
   @@index([organizationId], map: "dss_participants_organization_id_fkey")
@@ -907,6 +909,28 @@ model DssSignature {
   @@unique([documentId, participantId], map: "uq_dss_signature_doc_participant")
   @@index([participantId], map: "dss_signatures_participant_id_fkey")
   @@map("dss_signatures")
+}
+
+model DssField {
+  id            String @id @default(uuid())
+  documentId    String @map("document_id")
+  participantId String @map("participant_id")
+
+  type       String // "SIGNATURE", "DATE", "INITIALS", "TEXT"
+  pageNumber Int    @map("page_number")
+
+  // Coordinates as percentages (0-100) to support responsive UI scaling
+  x      Float
+  y      Float
+  width  Float
+  height Float
+
+  value String? @db.Text // Used if type is "TEXT"
+
+  document    DssDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  participant DssParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@map("dss_fields")
 }
 
 model BlockchainNotaryRecord {
