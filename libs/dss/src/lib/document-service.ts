@@ -2,30 +2,7 @@ import { prisma } from "@rentflow/iam";
 import { computeDocumentHash, verifyDocumentIntegrity } from "./hashing";
 import { getNextSigner } from "./workflow";
 import { DssParticipantRole, DssDocumentStatus, DssSigningMode, DssParticipant } from "@prisma/client";
-import fs from "fs/promises";
-import path from "path";
-
-// Local file storage for DSS documents
-async function uploadFileToStorage(fileBuffer: Buffer): Promise<{ url: string; key: string }> {
-    // Create uploads directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), "uploads", "dss-documents");
-    await fs.mkdir(uploadDir, { recursive: true });
-    
-    // Generate unique filename
-    const fileName = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.pdf`;
-    const filePath = path.join(uploadDir, fileName);
-    
-    // Write file to disk
-    await fs.writeFile(filePath, fileBuffer);
-    
-    console.log(`Document uploaded to local storage: ${filePath}`);
-    
-    // Return relative URL for serving
-    return {
-        url: `/uploads/dss-documents/${fileName}`,
-        key: fileName
-    };
-}
+import { StorageService } from "./storage-service";
 
 interface CreateDocumentParams {
     title: string;
@@ -37,6 +14,62 @@ interface CreateDocumentParams {
         name?: string;
     }[];
     signingMode?: DssSigningMode;
+}
+
+interface AddParticipantInput {
+    email: string;
+    fullName: string;
+    role: DssParticipantRole;
+    stepOrder: number;
+}
+
+export class DocumentService {
+    /**
+     * Adds a participant to a DRAFT document only.
+     */
+    async addParticipant(documentId: string, organizationId: string, data: AddParticipantInput) {
+        const document = await prisma.dssDocument.findFirst({
+            where: { id: documentId, organizationId }
+        });
+
+        if (!document) {
+            throw new Error("Document not found");
+        }
+
+        if (document.status !== DssDocumentStatus.DRAFT) {
+            throw new Error(`Cannot add participants to a document in ${document.status} state.`);
+        }
+
+        return prisma.dssParticipant.create({
+            data: {
+                documentId,
+                organizationId,
+                email: data.email,
+                fullName: data.fullName,
+                role: data.role,
+                stepOrder: data.stepOrder
+            }
+        });
+    }
+
+    /**
+     * Removes a participant from a DRAFT document only.
+     */
+    async removeParticipant(participantId: string, documentId: string, organizationId: string) {
+        const document = await prisma.dssDocument.findFirst({
+            where: { id: documentId, organizationId }
+        });
+
+        if (!document || document.status !== DssDocumentStatus.DRAFT) {
+            throw new Error("Cannot remove participants from a non-DRAFT document.");
+        }
+
+        await prisma.dssParticipant.delete({
+            where: { id: participantId }
+        });
+
+        return { success: true };
+    }
 }
 
 /**
@@ -55,7 +88,7 @@ export async function createDocument({
 
     // 2. Upload to Storage
     // We do this AFTER hashing to ensure we know exactly what is being stored
-    const { url, key } = await uploadFileToStorage(fileBuffer);
+    const { key } = await StorageService.uploadPdf(fileBuffer, organizationId);
 
     // 3. Create Document & Participants in Transaction
     // We enforce basic sequential order logic here:
@@ -69,7 +102,7 @@ export async function createDocument({
             organizationId,
             title,
             originalPdfSha256Hex: sha256Hex,
-            originalFileUrl: url,
+            originalFileUrl: key, // Stored as S3 object key
             originalFileKey: key,
             signingMode,
             participants: {
@@ -88,6 +121,32 @@ export async function createDocument({
     });
 
     return doc;
+}
+
+export async function getDocumentForViewing(documentId: string) {
+    const document = await prisma.dssDocument.findUnique({
+        where: { id: documentId },
+        include: {
+            participants: {
+                orderBy: { stepOrder: "asc" }
+            },
+            organization: {
+                select: { name: true }
+            }
+        }
+    });
+
+    if (!document) {
+        return null;
+    }
+
+    const storageKey = document.originalFileKey || document.originalFileUrl || undefined;
+    const originalFileUrl = storageKey ? await StorageService.getSignedUrl(storageKey) : null;
+
+    return {
+        document,
+        originalFileUrl,
+    };
 }
 
 /**
