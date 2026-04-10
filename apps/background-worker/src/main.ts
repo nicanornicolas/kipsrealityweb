@@ -2,6 +2,7 @@ import express from 'express';
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
 import { processStripeWebhookJob } from '@rentflow/payments';
+import { generateFinalSignedPdf } from '@rentflow/dss';
 
 const app = express();
 
@@ -23,7 +24,7 @@ worker.on('completed', (job) => {
 worker.on('failed', (job, err) => {
   console.error(
     `[Stripe Worker] Job ${job?.id ?? 'unknown'} failed on attempt ${job?.attemptsMade ?? 0}`,
-    err
+    err,
   );
 });
 
@@ -35,6 +36,36 @@ worker.on('error', (err) => {
   console.error('[Stripe Worker] Worker error', err);
 });
 
+const pdfWorker = new Worker(
+  'dss-pdf-generation',
+  async (job) => {
+    const { documentId, orgId } = job.data;
+    return await generateFinalSignedPdf(documentId, orgId);
+  },
+  {
+    connection: redisConnection,
+  },
+);
+
+pdfWorker.on('completed', (job) => {
+  console.log(`[DSS PDF Worker] Job ${job.id} completed`);
+});
+
+pdfWorker.on('failed', (job, err) => {
+  console.error(
+    `[DSS PDF Worker] Job ${job?.id ?? 'unknown'} failed on attempt ${job?.attemptsMade ?? 0}`,
+    err,
+  );
+});
+
+pdfWorker.on('stalled', (jobId) => {
+  console.warn(`[DSS PDF Worker] Job ${jobId} stalled and will be retried`);
+});
+
+pdfWorker.on('error', (err) => {
+  console.error('[DSS PDF Worker] Worker error', err);
+});
+
 const port = Number(process.env.PORT) || 3001;
 const server = app.listen(port, () => {
   console.log(`[Background Worker] Listening on port ${port}`);
@@ -43,6 +74,7 @@ const server = app.listen(port, () => {
 async function shutdown(signal: string) {
   console.log(`[Background Worker] Received ${signal}, shutting down...`);
   await worker.close();
+  await pdfWorker.close();
   await redisConnection.quit();
   server.close(() => {
     process.exit(0);
