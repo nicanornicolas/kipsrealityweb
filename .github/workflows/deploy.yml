@@ -13,27 +13,38 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up SSH
+      - name: Check deploy secrets
+        id: deploy_secrets
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          if [ -z "${{ secrets.SERVER_HOST }}" ]; then
-            echo "Error: SERVER_HOST secret is not set"
-            exit 1
+          if [ -n "$SSH_PRIVATE_KEY" ] && [ -n "$SERVER_HOST" ] && [ -n "$SERVER_USER" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Skip deploy when secrets are absent
+        if: steps.deploy_secrets.outputs.ready != 'true'
+        run: echo "Deploy secrets not configured (SSH_PRIVATE_KEY, SERVER_HOST, SERVER_USER). Skipping deployment."
+
+      - name: Set up SSH
+        if: steps.deploy_secrets.outputs.ready == 'true'
+        run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Deploy to server
+        if: steps.deploy_secrets.outputs.ready == 'true'
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          if [ -z "$SSH_PRIVATE_KEY" ] || [ -z "$SERVER_HOST" ] || [ -z "$SERVER_USER" ]; then
-            echo "Deploy secrets not configured (SSH_PRIVATE_KEY, SERVER_HOST, SERVER_USER). Skipping deployment."
-            exit 0
-          fi
           echo "Connecting to $SERVER_USER@$SERVER_HOST..."
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST << 'EOF'
           cd /home/kipsreality/kipsrealityweb

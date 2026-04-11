@@ -84,6 +84,8 @@ npx prisma migrate deploy
 # optional
 npm run db:seed
 
+For full database, Prisma, and operations guidance, see [DATABASE_PRISMA_SETUP.md](DATABASE_PRISMA_SETUP.md). For first-time MySQL server provisioning, use the safe template at [server-bootstrap.template.sql](server-bootstrap.template.sql).
+
 ### Run Dev Server
 
 ```bash
@@ -234,6 +236,11 @@ test-results/
 * **Frontend:** Auto-builds via Vercel from `main` or `production`.
 * **Backend:** Deploy via Node / Express server.
 * **Run database migrations during release.
+
+### Database Runbook
+
+- Full setup and maintenance guide: [DATABASE_PRISMA_SETUP.md](DATABASE_PRISMA_SETUP.md)
+- Safe SQL bootstrap template: [server-bootstrap.template.sql](server-bootstrap.template.sql)
 
 ---
 
