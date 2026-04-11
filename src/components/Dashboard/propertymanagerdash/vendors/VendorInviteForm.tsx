@@ -186,6 +186,7 @@ export default function VendorInviteForm() {
     throw new Error("Environment variable NEXT_PUBLIC_BASE_URL is not set.");
   }
   const generateInviteLink = (token: string, inviteEmail: string) => {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
     return `${baseUrl}/inviteor?email=${encodeURIComponent(inviteEmail)}&token=${token}`;
   };
 
