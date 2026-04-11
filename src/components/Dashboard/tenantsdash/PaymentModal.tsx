@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -9,12 +9,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { CreditCard, Smartphone, Building2, Wallet } from "lucide-react";
-import { toast } from "react-hot-toast";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { CreditCard, Smartphone, Building2, Wallet } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -25,80 +25,80 @@ interface PaymentModalProps {
   onPaymentSuccess?: () => void;
 }
 
-type PaymentMethod = "mpesa" | "card" | "paystack" | "stripe" | "plaid";
+type PaymentMethod = 'mpesa' | 'card' | 'paystack' | 'stripe' | 'plaid';
 
 export function PaymentModal({
   isOpen,
   onClose,
   invoiceId,
   amount,
-  currency = "KES",
+  currency = 'KES',
   onPaymentSuccess,
 }: PaymentModalProps) {
   const router = useRouter();
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("mpesa");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('mpesa');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [cardDetails, setCardDetails] = useState({
-    number: "",
-    expiry: "",
-    cvc: "",
-    name: "",
+    number: '',
+    expiry: '',
+    cvc: '',
+    name: '',
   });
 
   const paymentMethods = [
     {
-      id: "mpesa" as PaymentMethod,
-      label: "M-Pesa",
-      description: "Pay via M-Pesa STK Push",
+      id: 'mpesa' as PaymentMethod,
+      label: 'M-Pesa',
+      description: 'Pay via M-Pesa STK Push',
       icon: Smartphone,
-      color: "bg-green-100 text-green-700 border-green-300",
-      iconColor: "text-green-600",
+      color: 'bg-green-100 text-green-700 border-green-300',
+      iconColor: 'text-green-600',
     },
     {
-      id: "paystack" as PaymentMethod,
-      label: "Paystack",
-      description: "Card payments (Nigeria/Ghana)",
+      id: 'paystack' as PaymentMethod,
+      label: 'Paystack',
+      description: 'Card payments (Nigeria/Ghana)',
       icon: CreditCard,
-      color: "bg-purple-100 text-purple-700 border-purple-300",
-      iconColor: "text-purple-600",
+      color: 'bg-purple-100 text-purple-700 border-purple-300',
+      iconColor: 'text-purple-600',
     },
     {
-      id: "stripe" as PaymentMethod,
-      label: "Stripe",
-      description: "International cards",
+      id: 'stripe' as PaymentMethod,
+      label: 'Stripe',
+      description: 'International cards',
       icon: Building2,
-      color: "bg-blue-100 text-blue-700 border-blue-300",
-      iconColor: "text-blue-600",
+      color: 'bg-blue-100 text-blue-700 border-blue-300',
+      iconColor: 'text-blue-600',
     },
     {
-      id: "plaid" as PaymentMethod,
-      label: "Plaid",
-      description: "US Bank transfers",
+      id: 'plaid' as PaymentMethod,
+      label: 'Plaid',
+      description: 'US Bank transfers',
       icon: Wallet,
-      color: "bg-orange-100 text-orange-700 border-orange-300",
-      iconColor: "text-orange-600",
+      color: 'bg-orange-100 text-orange-700 border-orange-300',
+      iconColor: 'text-orange-600',
     },
   ];
 
   const handlePayment = async () => {
     if (!invoiceId) {
-      toast.error("No invoice selected for payment");
+      toast.error('No invoice selected for payment');
       return;
     }
 
     setIsProcessing(true);
     try {
       // Call payment initialization API
-      const response = await fetch("/api/payments/initialize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+      const response = await fetch('/api/payments/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           invoiceId,
           paymentMethod: selectedMethod,
-          ...(selectedMethod === "mpesa" && { phoneNumber }),
-          ...(selectedMethod === "card" && { cardDetails }),
+          ...(selectedMethod === 'mpesa' && { phoneNumber }),
+          ...(selectedMethod === 'card' && { cardDetails }),
         }),
       });
 
@@ -107,33 +107,33 @@ export function PaymentModal({
       if (!response.ok) {
         if (response.status === 401) {
           const returnUrl =
-            typeof window !== "undefined"
+            typeof window !== 'undefined'
               ? `${window.location.pathname}${window.location.search}`
-              : "/";
-          toast.error("Please sign in to continue with payment.");
+              : '/';
+          toast.error('Please sign in to continue with payment.');
           router.push(`/login?next=${encodeURIComponent(returnUrl)}`);
           return;
         }
-        throw new Error(data.error || "Payment initialization failed");
+        throw new Error(data.error || 'Payment initialization failed');
       }
 
       // Handle M-Pesa STK Push flow
-      if (selectedMethod === "mpesa" && data.gateway === "MPESA_DIRECT") {
+      if (selectedMethod === 'mpesa' && data.gateway === 'MPESA_DIRECT') {
         toast.success(
           `M-Pesa STK Push sent to ${phoneNumber}. Please check your phone to complete payment.`,
-          { duration: 5000 }
+          { duration: 5000 },
         );
-        
+
         // Show payment status monitoring
         monitorPaymentStatus(data.transactionId);
       } else {
-        toast.success("Payment initialized successfully!");
+        toast.success('Payment initialized successfully!');
         if (onPaymentSuccess) onPaymentSuccess();
         onClose();
       }
     } catch (error) {
-      console.error("Payment error:", error);
-      toast.error(error instanceof Error ? error.message : "Payment failed");
+      console.error('Payment error:', error);
+      toast.error(error instanceof Error ? error.message : 'Payment failed');
     } finally {
       setIsProcessing(false);
     }
@@ -142,20 +142,22 @@ export function PaymentModal({
   const monitorPaymentStatus = async (transactionId: string) => {
     // In a real implementation, you would poll the payment status API
     // or use WebSocket to get real-time updates
-    toast.loading("Waiting for payment confirmation...", { id: "payment-status" });
-    
+    toast.loading('Waiting for payment confirmation...', {
+      id: 'payment-status',
+    });
+
     // Simulate waiting for callback
     setTimeout(() => {
-      toast.dismiss("payment-status");
-      toast.success("Payment confirmed!", { duration: 3000 });
+      toast.dismiss('payment-status');
+      toast.success('Payment confirmed!', { duration: 3000 });
       if (onPaymentSuccess) onPaymentSuccess();
       onClose();
     }, 10000);
   };
 
   const formatAmount = () => {
-    return new Intl.NumberFormat("en-KE", {
-      style: "currency",
+    return new Intl.NumberFormat('en-KE', {
+      style: 'currency',
       currency: currency,
     }).format(amount);
   };
@@ -187,7 +189,7 @@ export function PaymentModal({
                 Invoice
               </span>
               <span className="text-sm font-semibold">
-                #{invoiceId ? invoiceId.slice(0, 8) : "—"}
+                #{invoiceId ? invoiceId.slice(0, 8) : '—'}
               </span>
             </div>
           </div>
@@ -197,8 +199,12 @@ export function PaymentModal({
           {/* Amount Display */}
           <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 p-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-blue-800">Amount to Pay</span>
-              <span className="text-2xl font-bold text-blue-900">{formatAmount()}</span>
+              <span className="text-sm font-medium text-blue-800">
+                Amount to Pay
+              </span>
+              <span className="text-2xl font-bold text-blue-900">
+                {formatAmount()}
+              </span>
             </div>
             {invoiceId && (
               <p className="text-xs text-blue-700 mt-2">
@@ -209,7 +215,9 @@ export function PaymentModal({
 
           {/* Payment Method Selection */}
           <div className="space-y-4">
-            <Label className="text-base font-semibold">Select Payment Method</Label>
+            <Label className="text-base font-semibold">
+              Select Payment Method
+            </Label>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {paymentMethods.map((method) => {
                 const Icon = method.icon;
@@ -222,21 +230,27 @@ export function PaymentModal({
                       name="paymentMethod"
                       value={method.id}
                       checked={isSelected}
-                      onChange={(e) => setSelectedMethod(e.target.value as PaymentMethod)}
+                      onChange={(e) =>
+                        setSelectedMethod(e.target.value as PaymentMethod)
+                      }
                       className="sr-only peer"
                     />
                     <Label
                       htmlFor={method.id}
-                      className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] ${method.color} ${isSelected ? "border-2 ring-2 ring-blue-500 ring-offset-2" : ""}`}
+                      className={`group flex flex-col items-center justify-center rounded-xl border-2 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] ${method.color} ${isSelected ? 'border-2 ring-2 ring-blue-500 ring-offset-2' : ''}`}
                     >
-                      <Icon className={`mb-2 h-8 w-8 transition-transform duration-200 group-hover:scale-110 ${method.iconColor}`} />
+                      <Icon
+                        className={`mb-2 h-8 w-8 transition-transform duration-200 group-hover:scale-110 ${method.iconColor}`}
+                      />
                       <span className="text-sm font-medium transition-colors duration-200 group-hover:text-slate-900">
                         {method.label}
                       </span>
                       <span className="mt-1 text-xs opacity-80">
                         {method.description}
                       </span>
-                      <span className={`mt-2 h-1 w-10 rounded-full bg-current/30 transition-all duration-200 ${isSelected ? "w-16 bg-current/60" : "group-hover:w-12"}`} />
+                      <span
+                        className={`mt-2 h-1 w-10 rounded-full bg-current/30 transition-all duration-200 ${isSelected ? 'w-16 bg-current/60' : 'group-hover:w-12'}`}
+                      />
                     </Label>
                   </div>
                 );
@@ -245,9 +259,12 @@ export function PaymentModal({
           </div>
 
           {/* M-Pesa Phone Number Input */}
-          {selectedMethod === "mpesa" && (
+          {selectedMethod === 'mpesa' && (
             <div className="space-y-3 rounded-xl border border-blue-200 bg-blue-50/70 p-4">
-              <Label htmlFor="phone" className="text-sm font-medium text-blue-900">
+              <Label
+                htmlFor="phone"
+                className="text-sm font-medium text-blue-900"
+              >
                 Enter M-Pesa Phone Number
               </Label>
               <div className="flex items-center gap-2">
@@ -259,7 +276,9 @@ export function PaymentModal({
                   type="tel"
                   placeholder="7XXXXXXXX"
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                  onChange={(e) =>
+                    setPhoneNumber(e.target.value.replace(/\D/g, ''))
+                  }
                   className="flex-1 rounded-l-none border-blue-200 bg-white focus-visible:ring-blue-500"
                 />
               </div>
@@ -270,7 +289,7 @@ export function PaymentModal({
           )}
 
           {/* Card Details Input (for demo) */}
-          {selectedMethod === "card" && (
+          {selectedMethod === 'card' && (
             <div className="space-y-4 rounded-lg border border-gray-200 p-4">
               <Label className="text-sm font-medium">Card Details</Label>
               <div className="space-y-3">
@@ -306,7 +325,8 @@ export function PaymentModal({
                 />
               </div>
               <p className="text-xs text-gray-500">
-                Note: This is a demo. Real card payments would use secure tokenization.
+                Note: This is a demo. Real card payments would use secure
+                tokenization.
               </p>
             </div>
           )}
@@ -314,30 +334,31 @@ export function PaymentModal({
           {/* Payment Method Notes */}
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
             <h4 className="mb-2 text-sm font-medium text-gray-700">
-              About {paymentMethods.find(m => m.id === selectedMethod)?.label}:
+              About {paymentMethods.find((m) => m.id === selectedMethod)?.label}
+              :
             </h4>
-            {selectedMethod === "mpesa" && (
+            {selectedMethod === 'mpesa' && (
               <ul className="list-disc space-y-1 pl-4 text-xs text-gray-600">
                 <li>You will receive an STK Push prompt on your phone</li>
                 <li>Enter your M-Pesa PIN to complete payment</li>
                 <li>Transaction fee: KSh 0 (waived for rent payments)</li>
               </ul>
             )}
-            {selectedMethod === "paystack" && (
+            {selectedMethod === 'paystack' && (
               <ul className="list-disc space-y-1 pl-4 text-xs text-gray-600">
                 <li>Redirect to Paystack for secure payment</li>
                 <li>Supports cards, bank transfers, and mobile money</li>
                 <li>Available for Nigeria and Ghana residents</li>
               </ul>
             )}
-            {selectedMethod === "stripe" && (
+            {selectedMethod === 'stripe' && (
               <ul className="list-disc space-y-1 pl-4 text-xs text-gray-600">
                 <li>Secure international card payments</li>
                 <li>Supports Visa, Mastercard, American Express</li>
                 <li>3D Secure authentication required</li>
               </ul>
             )}
-            {selectedMethod === "plaid" && (
+            {selectedMethod === 'plaid' && (
               <ul className="list-disc space-y-1 pl-4 text-xs text-gray-600">
                 <li>Connect directly to your US bank account</li>
                 <li>No card details needed</li>
@@ -360,7 +381,9 @@ export function PaymentModal({
           <Button
             type="button"
             onClick={handlePayment}
-            disabled={isProcessing || (selectedMethod === "mpesa" && !phoneNumber)}
+            disabled={
+              isProcessing || (selectedMethod === 'mpesa' && !phoneNumber)
+            }
             className="sm:flex-1 bg-blue-600 hover:bg-blue-700"
           >
             {isProcessing ? (
