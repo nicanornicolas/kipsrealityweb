@@ -1,9 +1,9 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { FlatCompat } from '@eslint/eslintrc';
 import nxEslintPlugin from '@nx/eslint-plugin';
-import tsParser from "@typescript-eslint/parser";
-import tsEslintPlugin from "@typescript-eslint/eslint-plugin";
+import tsParser from '@typescript-eslint/parser';
+import tsEslintPlugin from '@typescript-eslint/eslint-plugin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -13,7 +13,7 @@ const compat = new FlatCompat({
 });
 
 const nextConfigs = compat
-  .extends("next/core-web-vitals", "next/typescript")
+  .extends('next/core-web-vitals', 'next/typescript')
   .map((config) => ({
     ...config,
     files: ['src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx'],
@@ -23,13 +23,13 @@ const eslintConfig = [
   ...nextConfigs,
   {
     ignores: [
-      "node_modules/**",
-      ".next/**",
-      "out/**",
-      "build/**",
-      "next-env.d.ts",
-      "libs/**/*.spec.ts",
-      "libs/**/*.spec.tsx",
+      'node_modules/**',
+      '.next/**',
+      'out/**',
+      'build/**',
+      'next-env.d.ts',
+      'libs/**/*.spec.ts',
+      'libs/**/*.spec.tsx',
     ],
   },
   // Nx Module Boundary Enforcement - ONLY applies to libs/ folder
@@ -38,16 +38,16 @@ const eslintConfig = [
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        ecmaVersion: "latest",
-        sourceType: "module",
+        ecmaVersion: 'latest',
+        sourceType: 'module',
         ecmaFeatures: {
-          jsx: true
-        }
-      }
+          jsx: true,
+        },
+      },
     },
     plugins: {
       '@nx': nxEslintPlugin,
-      '@typescript-eslint': tsEslintPlugin
+      '@typescript-eslint': tsEslintPlugin,
     },
     rules: {
       '@nx/enforce-module-boundaries': [
@@ -59,41 +59,45 @@ const eslintConfig = [
             // 1. IAM is the core. It depends on nothing.
             {
               sourceTag: 'scope:iam',
-              onlyDependOnLibsWithTags: []
+              onlyDependOnLibsWithTags: [],
             },
             // 2. Property & Finance depend only on IAM
             {
               sourceTag: 'scope:property',
-              onlyDependOnLibsWithTags: ['scope:iam']
+              onlyDependOnLibsWithTags: ['scope:iam'],
             },
             {
               sourceTag: 'scope:finance',
-              onlyDependOnLibsWithTags: ['scope:iam']
+              onlyDependOnLibsWithTags: ['scope:iam'],
             },
             // 3. Utilities creates invoices, so it needs Finance
             {
               sourceTag: 'scope:utilities',
-              onlyDependOnLibsWithTags: ['scope:iam', 'scope:finance']
+              onlyDependOnLibsWithTags: ['scope:iam', 'scope:finance'],
             },
             // 4. Payments needs Finance to post to the General Ledger
             {
               sourceTag: 'scope:payments',
-              onlyDependOnLibsWithTags: ['scope:iam', 'scope:finance']
+              onlyDependOnLibsWithTags: ['scope:iam', 'scope:finance'],
             },
-            // 5. DSS is quarantined. Only IAM for auth.
+            // 5. DSS is quarantined. Only IAM for auth and Utilities for queues.
             {
               sourceTag: 'scope:dss',
-              onlyDependOnLibsWithTags: ['scope:iam']
+              onlyDependOnLibsWithTags: ['scope:iam', 'scope:utilities'],
             },
             // 6. Lease depends on IAM, Property, and Utilities
             {
               sourceTag: 'scope:lease',
-              onlyDependOnLibsWithTags: ['scope:iam', 'scope:property', 'scope:utilities']
-            }
-          ]
-        }
-      ]
-    }
+              onlyDependOnLibsWithTags: [
+                'scope:iam',
+                'scope:property',
+                'scope:utilities',
+              ],
+            },
+          ],
+        },
+      ],
+    },
   },
   // Legacy amnesty for src/ to unblock CI while migrating to libs/
   {
@@ -106,9 +110,9 @@ const eslintConfig = [
       '@typescript-eslint/no-unsafe-function-type': 'warn',
       'prefer-const': 'warn',
       'react/no-unescaped-entities': 'warn',
-      'react-hooks/rules-of-hooks': 'warn'
-    }
-  }
+      'react-hooks/rules-of-hooks': 'warn',
+    },
+  },
 ];
 
 export default eslintConfig;
