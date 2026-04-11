@@ -185,7 +185,8 @@ test.describe('Financial Core Workflow', () => {
             await expect(page).toHaveURL(/\/property-manager/, { timeout: 30000 });
         } catch (error) {
             console.error('Login failed. Current URL:', page.url());
-            console.error('Page content:', await page.content());
+            const pageContent = await page.content().catch(() => '[page content unavailable while navigation is in progress]');
+            console.error('Page content:', pageContent);
             throw error;
         }
 

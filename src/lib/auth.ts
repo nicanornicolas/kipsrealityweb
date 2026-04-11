@@ -12,6 +12,11 @@ export function getJwtSecret(): string {
 export function getJwtRefreshSecret(): string {
     const secret = process.env.JWT_REFRESH_SECRET;
     if (!secret) {
+        const accessSecret = process.env.JWT_SECRET;
+        if (accessSecret) {
+            console.warn("JWT_REFRESH_SECRET missing - falling back to JWT_SECRET");
+            return accessSecret;
+        }
         if (process.env.NODE_ENV === 'test') {
             console.warn("JWT_REFRESH_SECRET missing - using fallback (test only)");
             return "test-fallback-secret";
