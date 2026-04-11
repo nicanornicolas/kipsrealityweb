@@ -1,39 +1,38 @@
-"use client";
-import { useState, useEffect } from "react";
-import toast, { Toaster } from "react-hot-toast";
-import PlanItem from "./PlanItem";
-import PlanForm from "./PlanForm";
+'use client';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import PlanItem from './PlanItem';
+import PlanForm from './PlanForm';
 
 export default function PlansList() {
   const [plans, setPlans] = useState<any[]>([]);
   const [editingPlan, setEditingPlan] = useState<any | null>(null);
   const [showPlanModal, setShowPlanModal] = useState(false);
 
- const fetchPlans = async () => {
-  try {
-    const res = await fetch("/api/plan");
-    const data = await res.json();
-    
-    const plansWithFeatures = data.map((plan: any) => ({
-      ...plan,
-      features: plan.features || [],
-    }));
+  const fetchPlans = async () => {
+    try {
+      const res = await fetch('/api/plan');
+      const data = await res.json();
 
-    setPlans(plansWithFeatures);
-  } catch {
-    toast.error("Failed to fetch plans");
-  }
-};
+      const plansWithFeatures = data.map((plan: any) => ({
+        ...plan,
+        features: plan.features || [],
+      }));
 
+      setPlans(plansWithFeatures);
+    } catch {
+      toast.error('Failed to fetch plans');
+    }
+  };
 
   const deletePlan = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this plan?")) return;
+    if (!confirm('Are you sure you want to delete this plan?')) return;
     try {
-      await fetch(`/api/plan/${id}`, { method: "DELETE" });
-      toast.success("Plan deleted successfully");
+      await fetch(`/api/plan/${id}`, { method: 'DELETE' });
+      toast.success('Plan deleted successfully');
       fetchPlans();
     } catch {
-      toast.error("Failed to delete plan");
+      toast.error('Failed to delete plan');
     }
   };
 
@@ -49,7 +48,10 @@ export default function PlansList() {
 
       {/* Button to open Plan modal */}
       <button
-        onClick={() => { setEditingPlan(null); setShowPlanModal(true); }}
+        onClick={() => {
+          setEditingPlan(null);
+          setShowPlanModal(true);
+        }}
         className="mb-4 bg-green-500 hover:bg-green-500 text-white px-4 py-2 rounded-md transition"
       >
         Create Plan
@@ -70,7 +72,9 @@ export default function PlansList() {
               onSaved={() => {
                 setShowPlanModal(false);
                 fetchPlans();
-                toast.success(`Plan ${editingPlan ? "updated" : "created"} successfully`);
+                toast.success(
+                  `Plan ${editingPlan ? 'updated' : 'created'} successfully`,
+                );
               }}
             />
           </div>
@@ -83,7 +87,10 @@ export default function PlansList() {
           <PlanItem
             key={plan.id}
             plan={plan}
-            onEdit={(p) => { setEditingPlan(p); setShowPlanModal(true); }}
+            onEdit={(p) => {
+              setEditingPlan(p);
+              setShowPlanModal(true);
+            }}
             onDelete={deletePlan}
             refreshPlans={fetchPlans}
           />

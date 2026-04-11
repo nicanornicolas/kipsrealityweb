@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import toast, { Toaster } from "react-hot-toast";
-import CTAForm from "./CTAForm";
-import CTAItem from "./CTAItem";
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import CTAForm from './CTAForm';
+import CTAItem from './CTAItem';
 
 export interface CTA {
   id?: number;
@@ -22,22 +22,22 @@ export default function CTAList() {
 
   const fetchCTAs = async () => {
     try {
-      const res = await fetch("/api/cta");
+      const res = await fetch('/api/cta');
       const data = await res.json();
       setCtas(data);
     } catch {
-      toast.error("Failed to fetch CTAs");
+      toast.error('Failed to fetch CTAs');
     }
   };
 
   const deleteCTA = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this CTA?")) return;
+    if (!confirm('Are you sure you want to delete this CTA?')) return;
     try {
-      await fetch(`/api/cta/${id}`, { method: "DELETE" });
-      toast.success("CTA deleted successfully");
+      await fetch(`/api/cta/${id}`, { method: 'DELETE' });
+      toast.success('CTA deleted successfully');
       fetchCTAs();
     } catch {
-      toast.error("Failed to delete CTA");
+      toast.error('Failed to delete CTA');
     }
   };
 
@@ -53,7 +53,10 @@ export default function CTAList() {
         <h1 className="text-2xl font-bold">CTA Management</h1>
         <button
           className="bg-green-500 hover:bg-green-500 text-white px-4 py-2 rounded-md"
-          onClick={() => { setEditingCTA(null); setShowForm(true); }}
+          onClick={() => {
+            setEditingCTA(null);
+            setShowForm(true);
+          }}
         >
           + Add CTA
         </button>
@@ -71,7 +74,10 @@ export default function CTAList() {
             </button>
             <CTAForm
               cta={editingCTA}
-              onSaved={() => { setShowForm(false); fetchCTAs(); }}
+              onSaved={() => {
+                setShowForm(false);
+                fetchCTAs();
+              }}
             />
           </div>
         </div>
@@ -83,7 +89,10 @@ export default function CTAList() {
           <CTAItem
             key={cta.id}
             cta={cta}
-            onEdit={(c) => { setEditingCTA(c); setShowForm(true); }}
+            onEdit={(c) => {
+              setEditingCTA(c);
+              setShowForm(true);
+            }}
             onDelete={deleteCTA}
           />
         ))}

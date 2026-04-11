@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
-import SidebarItemForm, { SidebarUserRole } from "./SidebarItemForm";
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import SidebarItemForm, { SidebarUserRole } from './SidebarItemForm';
 
 interface SidebarItem {
   id: number;
@@ -28,44 +28,46 @@ export default function SidebarItemList() {
     setLoading(true);
     try {
       // Don't pass role parameter to get ALL items for admin view
-      const res = await fetch("/api/sidebarItem?all=true");
-      
+      const res = await fetch('/api/sidebarItem?all=true');
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      console.log("Fetched items:", data); // Debug log
-      
-      setItems(data.map((i: any) => ({ ...i, role: i.role as SidebarUserRole })));
+      console.log('Fetched items:', data); // Debug log
+
+      setItems(
+        data.map((i: any) => ({ ...i, role: i.role as SidebarUserRole })),
+      );
     } catch (error) {
-      console.error("Fetch error:", error);
-      toast.error("Failed to fetch sidebar items");
+      console.error('Fetch error:', error);
+      toast.error('Failed to fetch sidebar items');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this sidebar item?")) {
+    if (!confirm('Are you sure you want to delete this sidebar item?')) {
       return;
     }
 
     setDeleting(id);
     try {
       const res = await fetch(`/api/sidebarItem/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (!res.ok) {
-        throw new Error("Failed to delete");
+        throw new Error('Failed to delete');
       }
 
-      toast.success("Sidebar item deleted successfully");
+      toast.success('Sidebar item deleted successfully');
       fetchItems();
     } catch (error) {
-      console.error("Delete error:", error);
-      toast.error("Failed to delete sidebar item");
+      console.error('Delete error:', error);
+      toast.error('Failed to delete sidebar item');
     } finally {
       setDeleting(null);
     }
@@ -125,7 +127,9 @@ export default function SidebarItemList() {
       {items.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           <p>No sidebar items found.</p>
-          <p className="text-sm mt-2">Click "Create Sidebar Item" to add one.</p>
+          <p className="text-sm mt-2">
+            Click "Create Sidebar Item" to add one.
+          </p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -135,7 +139,7 @@ export default function SidebarItemList() {
               <div
                 key={item.id}
                 className={`border rounded-lg p-4 transition-colors ${
-                  item.isActive === false ? "bg-gray-50 opacity-60" : "bg-white"
+                  item.isActive === false ? 'bg-gray-50 opacity-60' : 'bg-white'
                 }`}
               >
                 <div className="flex justify-between items-start gap-4">
@@ -159,31 +163,35 @@ export default function SidebarItemList() {
                         <span className="font-medium">Path:</span> {item.path}
                       </div>
                       <div>
-                        <span className="font-medium">Role:</span>{" "}
+                        <span className="font-medium">Role:</span>{' '}
                         <span className="inline-block bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">
                           {item.role}
                         </span>
                       </div>
                       {item.section && (
                         <div>
-                          <span className="font-medium">Section:</span> {item.section}
+                          <span className="font-medium">Section:</span>{' '}
+                          {item.section}
                         </div>
                       )}
                       {item.order !== undefined && (
                         <div>
-                          <span className="font-medium">Order:</span> {item.order}
+                          <span className="font-medium">Order:</span>{' '}
+                          {item.order}
                         </div>
                       )}
                       {item.feature && (
                         <div>
-                          <span className="font-medium">Feature:</span>{" "}
-                          <span className="text-green-500">{item.feature.title}</span>
+                          <span className="font-medium">Feature:</span>{' '}
+                          <span className="text-green-500">
+                            {item.feature.title}
+                          </span>
                         </div>
                       )}
                       {item.plans && item.plans.length > 0 && (
                         <div>
-                          <span className="font-medium">Plans:</span>{" "}
-                          {item.plans.map((p) => p.name).join(", ")}
+                          <span className="font-medium">Plans:</span>{' '}
+                          {item.plans.map((p) => p.name).join(', ')}
                         </div>
                       )}
                     </div>
@@ -204,7 +212,7 @@ export default function SidebarItemList() {
                       onClick={() => handleDelete(item.id)}
                       disabled={deleting === item.id}
                     >
-                      {deleting === item.id ? "..." : "Delete"}
+                      {deleting === item.id ? '...' : 'Delete'}
                     </button>
                   </div>
                 </div>

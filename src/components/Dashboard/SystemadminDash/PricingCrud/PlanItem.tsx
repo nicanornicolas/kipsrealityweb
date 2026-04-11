@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import FeatureForm from "./FeatureForm";
-import FeatureItem from "./FeatureItem";
-import toast from "react-hot-toast";
+import { useState } from 'react';
+import FeatureForm from './FeatureForm';
+import FeatureItem from './FeatureItem';
+import { toast } from 'sonner';
 
 interface Feature {
   id: number;
@@ -34,19 +34,24 @@ interface Props {
   refreshPlans: () => void;
 }
 
-export default function PlanItem({ plan, onEdit, onDelete, refreshPlans }: Props) {
+export default function PlanItem({
+  plan,
+  onEdit,
+  onDelete,
+  refreshPlans,
+}: Props) {
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
   const [showFeatureForm, setShowFeatureForm] = useState(false);
 
   // DELETE a feature
   const deleteFeature = async (id: number) => {
-    if (!confirm("Delete this feature?")) return;
+    if (!confirm('Delete this feature?')) return;
     try {
-      await fetch(`/api/feature/${id}`, { method: "DELETE" });
-      toast.success("Feature deleted successfully");
+      await fetch(`/api/feature/${id}`, { method: 'DELETE' });
+      toast.success('Feature deleted successfully');
       refreshPlans();
     } catch {
-      toast.error("Failed to delete feature");
+      toast.error('Failed to delete feature');
     }
   };
 
@@ -63,8 +68,12 @@ export default function PlanItem({ plan, onEdit, onDelete, refreshPlans }: Props
       </div>
 
       {/* Description & Pricing */}
-      {plan.description && <p className="text-gray-600 mb-2">{plan.description}</p>}
-      <p className="font-bold mb-2">${plan.monthlyPrice}/month • ${plan.yearlyPrice}/year</p>
+      {plan.description && (
+        <p className="text-gray-600 mb-2">{plan.description}</p>
+      )}
+      <p className="font-bold mb-2">
+        ${plan.monthlyPrice}/month • ${plan.yearlyPrice}/year
+      </p>
 
       {/* Features Section */}
       <div className="mb-4">
@@ -76,7 +85,7 @@ export default function PlanItem({ plan, onEdit, onDelete, refreshPlans }: Props
                 key={feature.id}
                 feature={feature}
                 onEdit={(f) => {
-                  setEditingFeature(f);  
+                  setEditingFeature(f);
                   setShowFeatureForm(true);
                 }}
                 onDelete={deleteFeature}
@@ -91,7 +100,7 @@ export default function PlanItem({ plan, onEdit, onDelete, refreshPlans }: Props
         <button
           className="mt-2 text-blue-500 hover:underline"
           onClick={() => {
-            setEditingFeature(null);  
+            setEditingFeature(null);
             setShowFeatureForm(true);
           }}
         >
@@ -115,7 +124,7 @@ export default function PlanItem({ plan, onEdit, onDelete, refreshPlans }: Props
                   setShowFeatureForm(false);
                   refreshPlans();
                   toast.success(
-                    `${editingFeature ? "Feature updated" : "Feature created"} successfully`
+                    `${editingFeature ? 'Feature updated' : 'Feature created'} successfully`,
                   );
                 }}
               />
