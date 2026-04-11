@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { PrismaClient } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 
 const prisma = new PrismaClient();
 
@@ -106,8 +107,9 @@ test.describe('Tenant Invitation Flow', () => {
         await expect(leaseSelect.locator('option')).not.toHaveCount(1, { timeout: 20000 });
         await leaseSelect.selectOption({ index: 1 });
 
-        const testEmail = `tenant_${Date.now()}@example.com`;
-        const uniquePhoneSuffix = (Date.now() % 100000000).toString().padStart(8, '0');
+        const inviteRunId = `${Date.now()}_${test.info().workerIndex}_${test.info().retry}_${randomUUID().slice(0, 8)}`;
+        const testEmail = `tenant_${inviteRunId}@example.com`;
+        const uniquePhoneSuffix = Math.floor(Math.random() * 100000000).toString().padStart(8, '0');
         const testPhone = `+2547${uniquePhoneSuffix}`;
         await page.fill('#invite-email', testEmail);
         await page.fill('input[placeholder="John"]', 'Test');
