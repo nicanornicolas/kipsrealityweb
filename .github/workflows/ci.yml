@@ -131,22 +131,26 @@ jobs:
 
       # 6. ARTIFACTS: Save the evidence if things fail (UPDATED)
       - name: Upload Playwright HTML Report
-        if: always()
+        if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 3
+          retention-days: 1
+          if-no-files-found: ignore
 
       - name: Upload Test Results (JSON only - no videos/screenshots)
-        if: always()
+        if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: playwright-results
           path: |
             playwright-results/results.json
             test-results/**/test-failed*.md
-          retention-days: 3
+          retention-days: 1
+          if-no-files-found: ignore
 
       # 7. Build the Docker Image with BuildKit caching (don't push yet)
       - name: Set up Docker Buildx
