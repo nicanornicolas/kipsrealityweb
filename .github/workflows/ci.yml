@@ -84,32 +84,62 @@ jobs:
       - name: Install Playwright Browsers
         run: npm exec playwright install --with-deps
 
-      - name: Run E2E Tests (Playwright)
+      - name: Check Next.js Build
+        run: |
+          ls -la .next/
+          ls -la .next/standalone/ || echo "No standalone build"
+          head -20 .next/standalone/server.js || echo "No server.js found"
+
+      - name: Run E2E Tests (Playwright) with Debug
         run: npm run test:e2e:ci
         env:
           CI: true
+          PLAYWRIGHT_BROWSERS_PATH: 0
           DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
           NEXT_PUBLIC_APP_URL: http://localhost:3000
-          # Magic Flag: If this is a merge to 'main', run Chromium, Firefox, and WebKit.
-          # If it's just a PR, run Chromium only to save time.
+          NEXTAUTH_SECRET: "test-secret-key-do-not-use-in-prod"
+          NEXTAUTH_URL: "http://localhost:3000"
+          DEBUG: "pw:api"
           RUN_ALL_BROWSERS: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
 
-      # 6. ARTIFACTS: Save the evidence if things fail
-      - name: Upload Playwright Report
-        if: failure()
+      - name: Clean up old test artifacts
+        if: always()
+        run: |
+          # Remove large video/screenshot files to free storage
+          find test-results -name "*.webm" -delete 2>/dev/null || true
+          find test-results -name "*.png" -delete 2>/dev/null || true
+          du -sh test-results/ 2>/dev/null || echo "No test results"
+          du -sh playwright-report/ 2>/dev/null || echo "No playwright report"
+
+      - name: Free up artifact storage
+        if: always()
+        run: |
+          # Remove individual test result files (keep only summary)
+          rm -rf test-results/**/video.webm
+          rm -rf test-results/**/test-failed*.png
+          # Reduce report size
+          find playwright-report -name "*.webm" -delete
+          echo "Storage freed. Current usage:"
+          du -sh . --include='{test-results,playwright-report}' || true
+
+      # 6. ARTIFACTS: Save the evidence if things fail (UPDATED)
+      - name: Upload Playwright HTML Report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 7
+          retention-days: 3
 
-      - name: Upload Playwright Test Results
-        if: failure()
+      - name: Upload Test Results (JSON only - no videos/screenshots)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-results
-          path: playwright-results/
-          retention-days: 7
+          path: |
+            playwright-results/results.json
+            test-results/**/test-failed*.md
+          retention-days: 3
 
       # 7. Build the Docker Image with BuildKit caching (don't push yet)
       - name: Set up Docker Buildx

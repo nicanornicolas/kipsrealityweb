@@ -90,8 +90,11 @@ test.describe('Tenant Invitation Flow', () => {
         // Wait for navigation
         await expect(page).toHaveURL(/\/property-manager/, { timeout: 30000 });
 
+        // Wait for sidebar to finish loading (Next.js may still be compiling the route)
+        await expect(page.getByRole('button', { name: 'My Tenants' })).toBeVisible({ timeout: 30000 });
+
         // 3. Navigate to "My tenants"
-        await page.getByRole('button', { name: 'My tenants' }).click();
+        await page.getByRole('button', { name: 'My Tenants' }).click();
         await expect(page).toHaveURL(/\/property-manager\/content\/tenants/, { timeout: 20000 });
 
         // 4. Open Invite Modal

@@ -79,7 +79,9 @@ export default function RootLayout({
               }
             >
               <LoadingBar />
-              {children}
+              <main>
+                {children}
+              </main>
               <Toaster
                 position="top-center"
                 expand={false}

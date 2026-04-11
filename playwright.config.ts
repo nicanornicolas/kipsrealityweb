@@ -19,6 +19,11 @@ if (envResult.error) {
   console.warn("Warning: .env.test not found, using process.env only");
 }
 
+// Force a deterministic browser cache path for Playwright in all environments.
+// This prevents stale machine-level overrides (e.g. D:\\playwright-browsers)
+// from breaking browser launches.
+process.env.PLAYWRIGHT_BROWSERS_PATH = "0";
+
 export default defineConfig({
   testDir: "./tests/e2e",
   
@@ -65,11 +70,28 @@ export default defineConfig({
   webServer: {
     // If CI, run the already-built production server (build happens in CI workflow before this)
     // If local, run the dev server for hot-reloading while writing tests
-    command: process.env.CI ? "npm run start" : "npm run dev",
+    command: process.env.CI ? "node .next/standalone/server.js" : "npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
-    stdout: process.env.CI ? "pipe" : "ignore",
+    stdout: "pipe",
     stderr: "pipe",
-    timeout: 120000, // 2 minutes to start the server
+    timeout: 180000, // 3 minutes for CI - give it time to connect to DB
+    // Add health check endpoint
+    env: {
+      DATABASE_URL: process.env.DATABASE_URL,
+      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      JWT_SECRET: process.env.JWT_SECRET,
+      JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+      STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+      STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,
+      STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+      MPESA_CONSUMER_KEY: process.env.MPESA_CONSUMER_KEY,
+      MPESA_CONSUMER_SECRET: process.env.MPESA_CONSUMER_SECRET,
+      MPESA_SHORTCODE: process.env.MPESA_SHORTCODE,
+      MPESA_PASSKEY: process.env.MPESA_PASSKEY,
+      MPESA_ENV: process.env.MPESA_ENV,
+    },
   },
 });
