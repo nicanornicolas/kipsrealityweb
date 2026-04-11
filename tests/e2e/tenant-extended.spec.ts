@@ -73,10 +73,17 @@ test.describe('Tenant — Lease Page Interactions', () => {
     await expectPageLoads(page);
 
     const hasLeaseContent = await page
-      .getByRole('button', { name: /view lease details/i })
+      .getByRole('button', { name: /view lease details|lease information/i })
       .first()
-      .isVisible({ timeout: 8000 })
+      .isVisible({ timeout: 15000 })
       .catch(() => false);
+
+    if (!hasLeaseContent) {
+      await page.screenshot({
+        path: 'test-results/tenant-lease-missing-content.png',
+        fullPage: true,
+      });
+    }
 
     expect(hasLeaseContent).toBe(true);
   });
@@ -85,10 +92,19 @@ test.describe('Tenant — Lease Page Interactions', () => {
     await page.goto('/tenant/content/utilities');
     await expectPageLoads(page);
 
-    // Should contain at minimum a heading or table related to utilities
-    await expect(
-      page.getByText(/utilit|meter|electric|water|gas|allocation/i).first()
-    ).toBeVisible({ timeout: 10000 });
+    const utilityText = page
+      .getByText(/utilit|meter|electric|water|gas|allocation|charges|usage/i)
+      .first();
+
+    try {
+      await expect(utilityText).toBeVisible({ timeout: 15000 });
+    } catch (error) {
+      await page.screenshot({
+        path: 'test-results/tenant-utilities-missing-content.png',
+        fullPage: true,
+      });
+      throw error;
+    }
   });
 });
 

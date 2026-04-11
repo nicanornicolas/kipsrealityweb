@@ -107,10 +107,12 @@ test.describe('Tenant Invitation Flow', () => {
         await leaseSelect.selectOption({ index: 1 });
 
         const testEmail = `tenant_${Date.now()}@example.com`;
+        const uniquePhoneSuffix = (Date.now() % 100000000).toString().padStart(8, '0');
+        const testPhone = `+2547${uniquePhoneSuffix}`;
         await page.fill('#invite-email', testEmail);
         await page.fill('input[placeholder="John"]', 'Test');
         await page.fill('input[placeholder="Doe"]', 'Tenant');
-        await page.fill('input[placeholder="+254 7XX XXX XXX"]', '1234567890');
+        await page.fill('input[placeholder="+254 7XX XXX XXX"]', testPhone);
 
         // 6. Send
         const sendButton = page.locator('button:has-text("Send Invite")');
