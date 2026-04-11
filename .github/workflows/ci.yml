@@ -81,8 +81,15 @@ jobs:
           NEXTAUTH_URL: "http://localhost:3000"
 
       # 5. EXECUTE: The Optimized Playwright Run
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright Browsers
-        run: npm exec playwright install --with-deps
+        run: npx playwright install --with-deps chromium
 
       - name: Check Next.js Build
         run: |
@@ -94,7 +101,7 @@ jobs:
         run: npm run test:e2e:ci
         env:
           CI: true
-          PLAYWRIGHT_BROWSERS_PATH: 0
+          PLAYWRIGHT_BROWSERS_PATH: .playwright-browsers
           DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
           NEXT_PUBLIC_APP_URL: http://localhost:3000
           NEXTAUTH_SECRET: "test-secret-key-do-not-use-in-prod"

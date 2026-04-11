@@ -19,10 +19,11 @@ if (envResult.error) {
   console.warn("Warning: .env.test not found, using process.env only");
 }
 
-// Force a deterministic browser cache path for Playwright in all environments.
-// This prevents stale machine-level overrides (e.g. D:\\playwright-browsers)
-// from breaking browser launches.
-process.env.PLAYWRIGHT_BROWSERS_PATH = "0";
+// Keep a deterministic browser cache path, but do not override explicit
+// values provided by scripts/CI.
+if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = ".playwright-browsers";
+}
 
 export default defineConfig({
   testDir: "./tests/e2e",
