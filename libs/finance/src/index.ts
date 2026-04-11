@@ -1,7 +1,20 @@
 import { Decimal } from '@prisma/client/runtime/library';
 
 // Explicit USA/GAAP typings
-export type AccountCode = '1000' | '1100' | '2100' | '2200' | '2250' | '4000' | '5100';
+export type AccountCode =
+  | '1000'
+  | '1100'
+  | '2100'
+  | '2200'
+  | '2250'
+  | '4000'
+  | '4100'
+  | '4200'
+  | '4300'
+  | '4400'
+  | '5100'
+  | '5200'
+  | '5300';
 export type InvoiceType = 'RENT' | 'UTILITY' | 'DEPOSIT' | 'FEE' | 'TAX';
 
 export interface CreateInvoiceInput {

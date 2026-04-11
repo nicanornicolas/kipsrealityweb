@@ -154,7 +154,8 @@ export class FinanceActions {
 
     const invoice = payment.invoice;
     const organizationId =
-      (invoice as any).organizationId ?? invoice.Lease?.property?.organizationId;
+      (invoice as any).organizationId ??
+      invoice.Lease?.property?.organizationId;
     const propertyId = (invoice as any).propertyId ?? invoice.Lease?.propertyId;
     const tenantId = (invoice as any).tenantId ?? invoice.Lease?.tenantId;
 
@@ -208,6 +209,85 @@ export class FinanceActions {
     } catch (error) {
       await this.db.payment.update({
         where: { id: paymentId },
+        data: { postingStatus: 'FAILED' },
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Creates an Invoice for cross-module service billing (DSS signing fees, etc.)
+   * and automatically posts it to the General Ledger.
+   */
+  async billOrganizationForService(params: {
+    organizationId: string;
+    amount: number;
+    description: string;
+    referenceType: string;
+    referenceId: string;
+    serviceType: 'DSS_SIGNING' | 'BACKGROUND_CHECK';
+  }): Promise<{ invoiceId: string; journalEntryId: string }> {
+    const invoice = await this.db.invoice.create({
+      data: {
+        organizationId: params.organizationId,
+        type: 'FEE',
+        totalAmount: params.amount,
+        balance: params.amount,
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        status: 'ISSUED',
+        referenceType: params.referenceType,
+        referenceId: params.referenceId,
+        InvoiceItem: {
+          create: [
+            {
+              description: params.description,
+              amount: params.amount,
+            },
+          ],
+        },
+      },
+    });
+
+    const amount = new Decimal(params.amount);
+    const incomeAccountCode: string =
+      params.serviceType === 'DSS_SIGNING'
+        ? CHART_OF_ACCOUNTS.DOCUMENT_SIGNING_INCOME
+        : CHART_OF_ACCOUNTS.MAINTENANCE_INCOME;
+
+    try {
+      const lines = [
+        {
+          accountCode: CHART_OF_ACCOUNTS.ACCOUNTS_RECEIVABLE,
+          debit: amount,
+          credit: new Decimal(0),
+        },
+        {
+          accountCode: incomeAccountCode,
+          debit: new Decimal(0),
+          credit: amount,
+        },
+      ];
+
+      const { journalEntryId } = await this.journalService.postJournalEntry({
+        organizationId: params.organizationId,
+        date: new Date(),
+        reference: `SVC-${invoice.id.substring(0, 8)}`,
+        description: `Service fee: ${params.description}`,
+        lines: lines as any,
+      });
+
+      await this.db.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          postingStatus: 'POSTED',
+          journalEntryId,
+        },
+      });
+
+      return { invoiceId: invoice.id, journalEntryId };
+    } catch (error) {
+      await this.db.invoice.update({
+        where: { id: invoice.id },
         data: { postingStatus: 'FAILED' },
       });
       throw error;

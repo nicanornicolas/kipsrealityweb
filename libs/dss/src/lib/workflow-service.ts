@@ -6,7 +6,7 @@ import {
 } from '@prisma/client';
 import { computeDocumentHash } from './hashing';
 import { getNextSigner } from './workflow';
-import { dssPdfQueue } from '@rentflow/utilities';
+import { dssPdfQueue, emailQueue } from '@rentflow/utilities';
 
 interface SignDocumentResult {
   document: any;
@@ -36,13 +36,25 @@ export class WorkflowService {
       throw new Error('Cannot send a document with no assigned signers.');
     }
 
-    return prisma.dssDocument.update({
+    const updatedDoc = await prisma.dssDocument.update({
       where: { id: documentId },
       data: {
         status: DssDocumentStatus.SENT,
         sentAt: new Date(),
       },
     });
+
+    const firstSigners = document.participants.filter((p) => p.stepOrder === 1);
+    for (const signer of firstSigners) {
+      await emailQueue.add('send-signature-invite', {
+        email: signer.email,
+        documentTitle: document.title,
+        documentId: document.id,
+        role: signer.role,
+      });
+    }
+
+    return updatedDoc;
   }
 
   /**
@@ -100,6 +112,7 @@ export class WorkflowService {
     userEmail: string;
     signatureHash: string; // The SHA-256 hash of their drawn/typed signature
     ipAddress?: string;
+    userAgent?: string;
   }): Promise<SignDocumentResult> {
     // 1. Fetch document and all participants
     const document = await prisma.dssDocument.findUnique({
@@ -147,6 +160,8 @@ export class WorkflowService {
           documentId: payload.documentId,
           participantId: participant.id,
           signatureHash: signatureProof, // Cryptographic proof
+          ipAddress: payload.ipAddress,
+          userAgent: payload.userAgent,
         },
       });
 
@@ -178,6 +193,7 @@ export class WorkflowService {
             status: DssDocumentStatus.COMPLETED,
             completedAt: new Date(),
           },
+          include: { participants: true },
         });
         return { document: completedDoc, isCompleted: true };
       }
@@ -185,6 +201,7 @@ export class WorkflowService {
       // Fetch current document state for return
       const currentDoc = await tx.dssDocument.findUnique({
         where: { id: payload.documentId },
+        include: { participants: true },
       });
 
       return { document: currentDoc, isCompleted: false };
@@ -195,6 +212,26 @@ export class WorkflowService {
         documentId: payload.documentId,
         orgId: document.organizationId,
       });
+    } else {
+      if (!result.document) {
+        throw new Error('Document not found after signing');
+      }
+      const nextStepOrder = result.document.participants
+        .filter((p) => !p.hasSigned)
+        .reduce((min, p) => (p.stepOrder < min ? p.stepOrder : min), Infinity);
+
+      const nextSigners = result.document.participants.filter(
+        (p) => p.stepOrder === nextStepOrder,
+      );
+
+      for (const signer of nextSigners) {
+        await emailQueue.add('send-signature-invite', {
+          email: signer.email,
+          documentTitle: result.document.title,
+          documentId: result.document.id,
+          role: signer.role,
+        });
+      }
     }
 
     return result;
