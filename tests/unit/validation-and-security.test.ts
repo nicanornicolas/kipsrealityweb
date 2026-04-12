@@ -6,28 +6,32 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { 
     ListingValidationService 
-} from '@/lib/listing-validation';
+} from '../../src/lib/listing-validation';
 import { 
     UserRole, 
     ListingPermission 
-} from '@/lib/listing-auth.types';
+} from '../../src/lib/listing-auth.types';
 import { 
     ListingSanitizer, 
     XSSSanitizer, 
     SQLSanitizer, 
     PathSanitizer,
     SecurityAuditor 
-} from '@/lib/listing-sanitizer';
-import { getSecurityPolicy, requiresAuth, getRequiredRole, SECURITY_POLICIES } from '@/lib/listing-security-config';
+} from '../../src/lib/listing-sanitizer';
+import { getSecurityPolicy, requiresAuth, getRequiredRole, SECURITY_POLICIES } from '../../src/lib/listing-security-config';
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+    typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
 
 // Simple mock schemas for testing (Zod-like interface)
 const CreateListingSchema = {
     safeParse: (data: unknown) => {
+        const parsed = asRecord(data);
         const errors: string[] = [];
-        if (!data.title || data.title.length < 1) errors.push('Title is required');
-        if (data.title && data.title.length > 200) errors.push('Title too long');
-        if (!data.description || data.description.length < 10) errors.push('Description too short');
-        if (!data.price || data.price < 1) errors.push('Price must be positive');
+        if (typeof parsed.title !== 'string' || parsed.title.length < 1) errors.push('Title is required');
+        if (typeof parsed.title === 'string' && parsed.title.length > 200) errors.push('Title too long');
+        if (typeof parsed.description !== 'string' || parsed.description.length < 10) errors.push('Description too short');
+        if (typeof parsed.price !== 'number' || parsed.price < 1) errors.push('Price must be positive');
         
         return {
             success: errors.length === 0,
@@ -39,9 +43,10 @@ const CreateListingSchema = {
 
 const UpdateListingSchema = {
     safeParse: (data: unknown) => {
+        const parsed = asRecord(data);
         const errors: string[] = [];
-        if (data.title && data.title.length > 200) errors.push('Title too long');
-        if (data.price && data.price < 1) errors.push('Price must be positive');
+        if (typeof parsed.title === 'string' && parsed.title.length > 200) errors.push('Title too long');
+        if (typeof parsed.price === 'number' && parsed.price < 1) errors.push('Price must be positive');
         
         return {
             success: errors.length === 0,
@@ -53,10 +58,11 @@ const UpdateListingSchema = {
 
 const BulkOperationSchema = {
     safeParse: (data: unknown) => {
+        const parsed = asRecord(data);
         const errors: string[] = [];
-        if (!data.unitIds || !Array.isArray(data.unitIds)) errors.push('unitIds must be an array');
-        if (data.unitIds && data.unitIds.length > 50) errors.push('Too many units');
-        if (!data.action) errors.push('action is required');
+        if (!Array.isArray(parsed.unitIds)) errors.push('unitIds must be an array');
+        if (Array.isArray(parsed.unitIds) && parsed.unitIds.length > 50) errors.push('Too many units');
+        if (typeof parsed.action !== 'string' || parsed.action.length === 0) errors.push('action is required');
         
         return {
             success: errors.length === 0,
@@ -68,10 +74,11 @@ const BulkOperationSchema = {
 
 const StatusUpdateSchema = {
     safeParse: (data: unknown) => {
+        const parsed = asRecord(data);
         const errors: string[] = [];
-        if (!data.status) errors.push('status is required');
+        if (typeof parsed.status !== 'string' || parsed.status.length === 0) errors.push('status is required');
         const allowedStatuses = ['ACTIVE', 'INACTIVE', 'PENDING', 'SUSPENDED'];
-        if (data.status && !allowedStatuses.includes(data.status)) errors.push('Invalid status');
+        if (typeof parsed.status === 'string' && !allowedStatuses.includes(parsed.status)) errors.push('Invalid status');
         
         return {
             success: errors.length === 0,
@@ -138,7 +145,7 @@ describe('Listing Validation Service', () => {
             });
 
             expect(result.isValid).toBe(false);
-            expect(result.errors.some(e => e.includes('Price'))).toBe(true);
+            expect(result.errors.some((e: string) => e.includes('Price'))).toBe(true);
         });
 
         it('[TECH-DEBT-MARCH][JIRA-1237] should reject listing with past availability date', async () => {
@@ -188,7 +195,7 @@ describe('Listing Validation Service', () => {
             });
 
             expect(result.isValid).toBe(false);
-            expect(result.errors.some(e => e.includes('exceed'))).toBe(true);
+            expect(result.errors.some((e: string) => e.includes('exceed'))).toBe(true);
         });
     });
 
@@ -360,9 +367,7 @@ describe('Data Sanitization', () => {
             // because '://' contains '//'. We need to test with a different approach.
             
             // Test that the function properly validates URLs when not in strict mode
-            // by checking the logic directly
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const _url = 'http://example.com/path';
+            // by checking invalid input behavior directly
             
             // The function should return null for URLs without proper protocol
             // or validate correctly
@@ -376,7 +381,7 @@ describe('Data Sanitization', () => {
 
         it('[TECH-DEBT-MARCH][JIRA-1251] should sanitize arrays', () => {
             const input = ['  item1  ', 'item2', '  item3  '];
-            const sanitized = ListingSanitizer.sanitizeArray(input, (item) => item.trim());
+            const sanitized = ListingSanitizer.sanitizeArray(input, (item: string) => item.trim());
             expect(sanitized).toHaveLength(3);
             expect(sanitized).toContain('item1');
             expect(sanitized).toContain('item2');
@@ -520,3 +525,4 @@ describe('Schema Validation', () => {
         expect(invalidResult.success).toBe(false);
     });
 });
+

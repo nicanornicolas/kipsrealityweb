@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireSystemAdmin } from "@/lib/rbac/requireRole";
 
 type RouteContext = {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 };
 
 // GET service by ID

@@ -37,7 +37,7 @@ export async function GET(req: Request) {
         );
 
         const confidenceScore = job.method === "AI_SUGGESTED" ? 0.82 : 1.0;
-        const flags = confidenceScore < 0.9
+        const flags: Array<{ type: "WARNING" | "INFO"; message: string }> = confidenceScore < 0.9
           ? [{ type: "WARNING", message: "AI confidence below 90%. Please review carefully." }]
           : [{ type: "INFO", message: "AI allocation generated successfully." }];
 

@@ -1,14 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import React from "react";
 
-interface DashboardPageProps {
-  leaseId?: string; // optional
-}
-
-const DashboardPage: React.FC<DashboardPageProps> = ({ leaseId }) => {
+const DashboardPage: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const leaseId = searchParams.get("leaseId") || undefined;
 
   const handleViewLease = () => {
     if (!leaseId) {

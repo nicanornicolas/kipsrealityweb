@@ -31,8 +31,8 @@ export default defineConfig({
   // Fail the build on CI if you accidentally left test.only in the source code.
   forbidOnly: !!process.env.CI,
   
-  // Retry on CI only
-  retries: process.env.CI ? 2 : 0,
+  // Keep retries conservative in CI to limit masked flakiness and runtime overhead.
+  retries: process.env.CI ? 1 : 0,
   
   // E2E tests share seeded accounts (manager@test.com, tenant@test.com) and perform DB mutations.
   // Keep workers at 1 to avoid cross-test interference/flakiness in both CI and local.

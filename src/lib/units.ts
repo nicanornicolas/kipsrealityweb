@@ -161,14 +161,25 @@ export const fetchUnitDetails = async (propertyId: string, unitNumber: string, i
     
     if (isServerSide) {
       // Server-side: need absolute URL
-      // Use environment variable or construct from available info
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-                     process.env.NEXTAUTH_URL || 
-                     process.env.VERCEL_URL ||
-                     'http://localhost:3000'; // fallback for development
-      
-      const fullBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
-      url = `${fullBaseUrl}/api/units/${propertyId}/${unitNumber}`;
+      const fromEnv =
+        process.env.NEXT_PUBLIC_APP_URL ||
+        process.env.NEXT_PUBLIC_BASE_URL ||
+        process.env.NEXTAUTH_URL ||
+        process.env.VERCEL_URL;
+
+      const baseUrl = fromEnv
+        ? fromEnv.startsWith("http")
+          ? fromEnv
+          : `https://${fromEnv}`
+        : null;
+
+      if (!baseUrl) {
+        throw new Error(
+          "Missing base URL env. Set NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_BASE_URL, NEXTAUTH_URL, or VERCEL_URL."
+        );
+      }
+
+      url = `${baseUrl}/api/units/${propertyId}/${unitNumber}`;
     } else {
       // Client-side: relative URL is fine
       url = `/api/units/${propertyId}/${unitNumber}`;

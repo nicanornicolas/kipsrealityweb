@@ -484,6 +484,7 @@ const mockPrismaInstance = {
     create: vi.fn().mockResolvedValue({ id: 'mock-audit-entry-id', listingId: 'listing-123', action: 'CREATE', performedBy: 'user-123', createdAt: new Date() }),
     findUnique: vi.fn().mockResolvedValue({ id: 'mock-audit-entry-id', listingId: 'listing-123', action: 'CREATE', performedBy: 'user-123', createdAt: new Date() }),
     findMany: vi.fn().mockResolvedValue([{ id: 'mock-audit-entry-id', listingId: 'listing-123', action: 'CREATE', performedBy: 'user-123', createdAt: new Date() }]),
+    count: vi.fn().mockResolvedValue(0),
     deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
   },
   
@@ -741,7 +742,7 @@ vi.mock('next-auth/react', () => ({
   }),
   signIn: vi.fn(),
   signOut: vi.fn(),
-}));
+}), { virtual: true });
 
 // Export the mock instance so tests can access and customize it
 export { mockPrismaInstance };

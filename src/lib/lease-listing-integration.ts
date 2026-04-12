@@ -4,9 +4,7 @@ import { ListingService } from "@/lib/listing-service";
 import { ListingAction, ListingStatus } from "@/lib/listing-types";
 import { auditService } from "@/lib/audit-service";
 import { leaseNotificationService } from "@/lib/lease-notification-service";
-import type { Prisma } from "@prisma/client";
-
-type LeaseStatus = 'DRAFT' | 'SIGNED' | 'ACTIVE' | 'EXPIRED' | 'TERMINATED' | 'PENDING_APPROVAL';
+import type { LeaseStatus, Prisma } from "@prisma/client";
 
 type UnitWithDecisionLeases = Prisma.UnitGetPayload<{
     include: {

@@ -292,7 +292,7 @@ export default function BillDetailPage() {
             amount: bill.amountDue,
             currency: billCurrency,
             region: billRegion,
-            phoneNumber: billRegion === "KEN" ? normalizedPhone : undefined,
+            phoneNumber: billRegion === "KEN" ? normalizedPhone ?? undefined : undefined,
         };
 
         initializePayment(payload, {

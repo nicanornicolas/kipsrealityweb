@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { verifyAccessToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { sendTenantInviteEmail } from "@/lib/mail-service";
+import { getServerBaseUrl } from "@/lib/server-base-url";
 
 type TokenPayload = {
   userId: string;
@@ -89,7 +90,7 @@ export async function POST(
 
     // --- 4. Send email ---
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      const baseUrl = await getServerBaseUrl();
       const inviteLink = `${baseUrl}/invite/tenant/accept?token=${invite.token}&email=${encodeURIComponent(invite.email)}&leaseId=${invite.leaseId}`;
 
       const propertyName = invite.lease?.unit?.property?.name || "Unknown Property";

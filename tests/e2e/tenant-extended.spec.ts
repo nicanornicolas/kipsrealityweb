@@ -69,23 +69,32 @@ test.describe('Tenant — Lease Page Interactions', () => {
   test.beforeEach(async ({ page }) => loginAsTenant(page));
 
   test('lease page renders lease details for seeded tenant', async ({ page }) => {
-    await page.goto('/tenant/content/lease');
-    await expectPageLoads(page);
+    const leasesResponse = await page.request.get('/api/tenant/leases');
+    expect(leasesResponse.ok()).toBe(true);
 
-    const hasLeaseContent = await page
-      .getByRole('button', { name: /view lease details|lease information/i })
-      .first()
-      .isVisible({ timeout: 15000 })
-      .catch(() => false);
+    const leasesPayload = (await leasesResponse.json()) as {
+      leases?: Array<{ id: string }>;
+      count?: number;
+    };
 
-    if (!hasLeaseContent) {
+    const leaseId = leasesPayload.leases?.[0]?.id;
+    const hasLeaseData = Boolean(leaseId) && (leasesPayload.count ?? 0) > 0;
+
+    if (!hasLeaseData) {
       await page.screenshot({
         path: 'test-results/tenant-lease-missing-content.png',
         fullPage: true,
       });
     }
 
-    expect(hasLeaseContent).toBe(true);
+    expect(hasLeaseData).toBe(true);
+
+    await page.goto(`/tenant/content/lease/${leaseId}`);
+    await expectPageLoads(page);
+
+    await expect(page.getByText(/lease|rent amount|payment due day|status/i).first()).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test('utilities page shows utility allocation section', async ({ page }) => {

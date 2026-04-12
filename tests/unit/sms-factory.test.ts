@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { SmsFactory } from "@/lib/notifications/sms-factory";
+import { SmsFactory } from "../../src/lib/notifications/sms-factory";
 
 describe("SmsFactory.getProvider", () => {
   beforeEach(() => {
@@ -41,3 +41,4 @@ describe("SmsFactory.getProvider", () => {
     expect(first.provider).toBe(second.provider);
   });
 });
+

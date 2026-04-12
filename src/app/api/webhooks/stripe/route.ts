@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@prisma/client";
 import Stripe from "stripe";
 
 let stripeClient: Stripe | null = null;
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
     data: {
       gateway: "STRIPE",
       eventType: event.type,
-      payload: event,
+      payload: event as unknown as Prisma.InputJsonValue,
       status: "PENDING",
     },
   });

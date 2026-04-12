@@ -78,6 +78,60 @@ async function main() {
     },
   });
 
+  // 4b. Create Vendor User
+  await prisma.user.create({
+    data: {
+      email: 'vendor@test.com',
+      passwordHash: await bcrypt.hash('password123', 12),
+      firstName: 'Test',
+      lastName: 'Vendor',
+      status: 'ACTIVE',
+      emailVerified: new Date(),
+      organizationUsers: {
+        create: {
+          organizationId: org.id,
+          role: 'VENDOR',
+        },
+      },
+    },
+  });
+
+  // 4c. Create Admin User
+  await prisma.user.create({
+    data: {
+      email: 'admin@test.com',
+      passwordHash: await bcrypt.hash('password123', 12),
+      firstName: 'Test',
+      lastName: 'Admin',
+      status: 'ACTIVE',
+      emailVerified: new Date(),
+      organizationUsers: {
+        create: {
+          organizationId: org.id,
+          role: 'SYSTEM_ADMIN',
+        },
+      },
+    },
+  });
+
+  // 4d. Create Agent User
+  await prisma.user.create({
+    data: {
+      email: 'agent@test.com',
+      passwordHash: await bcrypt.hash('password123', 12),
+      firstName: 'Test',
+      lastName: 'Agent',
+      status: 'ACTIVE',
+      emailVerified: new Date(),
+      organizationUsers: {
+        create: {
+          organizationId: org.id,
+          role: 'AGENT',
+        },
+      },
+    },
+  });
+
   // 5. Create Property
   const property = await prisma.property.create({
     data: {
@@ -134,7 +188,7 @@ async function main() {
     }
   });
 
-  console.log(`✅ Seeded: Org, Manager, Tenant, Property, Unit (101), Tenant Application, Lease (${lease.id})`);
+  console.log(`✅ Seeded: Org, Manager, Tenant, Vendor, Admin, Agent, Property, Unit (101), Tenant Application, Lease (${lease.id})`);
 }
 
 main()

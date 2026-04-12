@@ -1,6 +1,17 @@
 import twilio from "twilio";
-import AfricasTalking from "africastalking";
 import { PhoneNumberUtil } from "google-libphonenumber";
+
+type AfricasTalkingRecipient = {
+  statusCode?: number;
+  messageId?: string;
+  status?: string;
+};
+
+type AfricasTalkingResponse = {
+  SMSMessageData?: {
+    Recipients?: AfricasTalkingRecipient[];
+  };
+};
 
 function requireEnv(name: string) {
   const value = process.env[name];
@@ -63,14 +74,21 @@ class TwilioProvider implements ISmsProvider {
 
 // 3. Africa's Talking Implementation (For +254)
 class AfricasTalkingProvider implements ISmsProvider {
-  private client?: ReturnType<typeof AfricasTalking>;
+  private apiKey?: string;
+  private username?: string;
+  private senderId?: string;
+  private endpoint: string;
   private configError?: string;
 
   constructor() {
+    this.endpoint =
+      process.env.AT_API_URL ||
+      "https://api.africastalking.com/version1/messaging";
+
     try {
-      const apiKey = requireEnv("AT_API_KEY");
-      const username = requireEnv("AT_USERNAME");
-      this.client = AfricasTalking({ apiKey, username });
+      this.apiKey = requireEnv("AT_API_KEY");
+      this.username = requireEnv("AT_USERNAME");
+      this.senderId = process.env.AT_SENDER_ID;
     } catch (error) {
       this.configError =
         error instanceof Error
@@ -80,23 +98,51 @@ class AfricasTalkingProvider implements ISmsProvider {
   }
 
   isConfigured() {
-    return Boolean(this.client && !this.configError);
+    return Boolean(this.apiKey && this.username && !this.configError);
   }
 
   async sendSms(to: string, message: string) {
-    if (this.configError || !this.client) {
+    if (this.configError || !this.apiKey || !this.username) {
       return {
         success: false,
         error: this.configError || "Africa's Talking is not configured",
       };
     }
+
     try {
-      const res = await this.client.SMS.send({
-        to: [to],
+      const payload = new URLSearchParams({
+        username: this.username,
+        to,
         message,
-        from: process.env.AT_SENDER_ID, // Optional: e.g., 'RENTFLOW'
       });
+
+      if (this.senderId) {
+        payload.append("from", this.senderId);
+      }
+
+      const httpResponse = await fetch(this.endpoint, {
+        method: "POST",
+        headers: {
+          apiKey: this.apiKey,
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+        body: payload.toString(),
+      });
+
+      if (!httpResponse.ok) {
+        const bodyText = await httpResponse.text();
+        return {
+          success: false,
+          error:
+            bodyText ||
+            `Africa's Talking API request failed with status ${httpResponse.status}`,
+        };
+      }
+
+      const res = (await httpResponse.json()) as AfricasTalkingResponse;
       const recipient = res?.SMSMessageData?.Recipients?.[0];
+
       if (!recipient) {
         return {
           success: false,

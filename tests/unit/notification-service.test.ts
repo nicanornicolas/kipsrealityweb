@@ -1,14 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NotificationCategory } from "@prisma/client";
-import { prisma } from "@/lib/db";
-import { NotificationService } from "@/lib/notifications/notification-service";
-import { SmsFactory } from "@/lib/notifications/sms-factory";
+import { NotificationService } from "../../src/lib/notifications/notification-service";
+import { SmsFactory } from "../../src/lib/notifications/sms-factory";
+import { mockPrismaInstance } from "./setup";
 
-const prismaMock = prisma as unknown as {
-  user: { findUnique: ReturnType<typeof vi.fn> };
-  notificationPreference: { findUnique: ReturnType<typeof vi.fn> };
-  smsNotification: { create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
-};
+const prismaMock = mockPrismaInstance as any;
+
+vi.mocked = vi.mocked || ((fn: any) => fn);
 
 describe("NotificationService.sendSmsNotification", () => {
   const sendSmsMock = vi.fn();
@@ -159,3 +157,4 @@ describe("NotificationService.sendSmsNotification", () => {
     });
   });
 });
+

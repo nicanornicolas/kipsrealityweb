@@ -1,6 +1,9 @@
 const MAX_ATTEMPTS = Number(process.env.WAIT_FOR_SERVER_ATTEMPTS || 30);
 const DELAY_MS = Number(process.env.WAIT_FOR_SERVER_DELAY_MS || 2000);
-const SERVER_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const SERVER_URL = process.env.NEXT_PUBLIC_APP_URL;
+if (!SERVER_URL) {
+  throw new Error("NEXT_PUBLIC_APP_URL is required for wait-for-server.mjs");
+}
 const HEALTH_URL = `${SERVER_URL.replace(/\/$/, "")}/api/health`;
 
 async function sleep(ms) {

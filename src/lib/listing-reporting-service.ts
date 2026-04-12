@@ -586,7 +586,7 @@ export class ListingReportingService {
             'Total Revenue'
         ];
 
-        let columns = [...baseColumns];
+        const columns = [...baseColumns];
         
         // Add custom fields if specified
         if (options?.customFields) {

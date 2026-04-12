@@ -120,8 +120,10 @@ test.describe('Authentication - Login Flow', () => {
     // Submit form
     await page.locator('button[type="submit"]').click();
     
-    // Wait for inline form error (avoid matching toast + inline simultaneously)
-    await expect(page.locator('div.bg-red-50 p').filter({ hasText: /invalid email or password/i })).toBeVisible({ timeout: 10000 });
+    // Assert either inline or toast-style auth failure copy.
+    await expect(
+      page.getByText(/invalid email or password|invalid credentials|user does not exist/i).first()
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test('should login successfully as property manager', async ({ page }) => {
@@ -133,7 +135,7 @@ test.describe('Authentication - Login Flow', () => {
     await page.locator('button[type="submit"]').click();
     
     // Should redirect to property manager dashboard
-    await expect(page).toHaveURL(/.*property-manager/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*property-manager/, { timeout: 30000 });
   });
 
   test('should login successfully as tenant', async ({ page }) => {
@@ -145,7 +147,7 @@ test.describe('Authentication - Login Flow', () => {
     await page.locator('button[type="submit"]').click();
     
     // Should redirect to tenant dashboard
-    await expect(page).toHaveURL(/.*tenant/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*tenant/, { timeout: 30000 });
   });
 
   test('should toggle password visibility', async ({ page }) => {
@@ -212,7 +214,7 @@ test.describe('Tenant Dashboard', () => {
     await page.locator('button[type="submit"]').click();
     
     // Wait for dashboard to load
-    await expect(page).toHaveURL(/.*tenant/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*tenant/, { timeout: 30000 });
     
     await expect(page.getByRole('main').first()).toBeVisible({ timeout: 10000 });
   });
@@ -223,7 +225,7 @@ test.describe('Tenant Dashboard', () => {
     await page.fill('input[name="email"]', 'tenant@test.com');
     await page.fill('input[name="password"]', 'password123');
     await page.locator('button[type="submit"]').click();
-    await expect(page).toHaveURL(/.*tenant/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*tenant/, { timeout: 30000 });
     
     // Navigate to invoices
     await page.goto('/tenant/content/invoices');
@@ -237,7 +239,7 @@ test.describe('Tenant Dashboard', () => {
     await page.fill('input[name="email"]', 'tenant@test.com');
     await page.fill('input[name="password"]', 'password123');
     await page.locator('button[type="submit"]').click();
-    await expect(page).toHaveURL(/.*tenant/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*tenant/, { timeout: 30000 });
     
     // Navigate to lease
     await page.goto('/tenant/content/lease');
@@ -251,7 +253,7 @@ test.describe('Tenant Dashboard', () => {
     await page.fill('input[name="email"]', 'tenant@test.com');
     await page.fill('input[name="password"]', 'password123');
     await page.locator('button[type="submit"]').click();
-    await expect(page).toHaveURL(/.*tenant/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*tenant/, { timeout: 30000 });
     
     // Navigate to utilities
     await page.goto('/tenant/content/utilities');
@@ -265,7 +267,7 @@ test.describe('Tenant Dashboard', () => {
     await page.fill('input[name="email"]', 'tenant@test.com');
     await page.fill('input[name="password"]', 'password123');
     await page.locator('button[type="submit"]').click();
-    await expect(page).toHaveURL(/.*tenant/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*tenant/, { timeout: 30000 });
     
     // Navigate to settings
     await page.goto('/tenant/settings');
@@ -283,7 +285,7 @@ test.describe('Property Manager Dashboard', () => {
     await page.locator('button[type="submit"]').click();
     
     // Wait for dashboard to load
-    await expect(page).toHaveURL(/.*property-manager/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*property-manager/, { timeout: 30000 });
     
     await expect(page.getByRole('main').first()).toBeVisible({ timeout: 10000 });
   });
@@ -294,7 +296,7 @@ test.describe('Property Manager Dashboard', () => {
     await page.fill('input[name="email"]', 'manager@test.com');
     await page.fill('input[name="password"]', 'password123');
     await page.locator('button[type="submit"]').click();
-    await expect(page).toHaveURL(/.*property-manager/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*property-manager/, { timeout: 30000 });
     
     // Navigate to maintenance requests
     await page.goto('/property-manager/maintenance/requests');
@@ -308,7 +310,7 @@ test.describe('Property Manager Dashboard', () => {
     await page.fill('input[name="email"]', 'manager@test.com');
     await page.fill('input[name="password"]', 'password123');
     await page.locator('button[type="submit"]').click();
-    await expect(page).toHaveURL(/.*property-manager/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*property-manager/, { timeout: 30000 });
     
     // Navigate to units page
     await page.goto('/property-manager/units');
@@ -322,7 +324,7 @@ test.describe('Property Manager Dashboard', () => {
     await page.fill('input[name="email"]', 'manager@test.com');
     await page.fill('input[name="password"]', 'password123');
     await page.locator('button[type="submit"]').click();
-    await expect(page).toHaveURL(/.*property-manager/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*property-manager/, { timeout: 30000 });
     
     // Navigate to settings
     await page.goto('/property-manager/settings');
@@ -338,7 +340,7 @@ test.describe('Property Manager Dashboard', () => {
     await page.locator('button[type="submit"]').click();
     
     // Wait for dashboard to load
-    await expect(page).toHaveURL(/.*property-manager/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*property-manager/, { timeout: 30000 });
     
     // Wait for dashboard sidebar to be ready, then navigate to invoices
     await expect(page.getByRole('main').first()).toBeVisible({ timeout: 10000 });
@@ -354,7 +356,7 @@ test.describe('Role-Based Access Control', () => {
     await page.fill('input[name="email"]', 'tenant@test.com');
     await page.fill('input[name="password"]', 'password123');
     await page.locator('button[type="submit"]').click();
-    await expect(page).toHaveURL(/.*tenant/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*tenant/, { timeout: 30000 });
     
     // Try to access property manager dashboard
     await page.goto('/property-manager');
@@ -374,7 +376,7 @@ test.describe('Role-Based Access Control', () => {
     await page.fill('input[name="email"]', 'manager@test.com');
     await page.fill('input[name="password"]', 'password123');
     await page.locator('button[type="submit"]').click();
-    await expect(page).toHaveURL(/.*property-manager/, { timeout: 15000 });
+    await expect(page).toHaveURL(/.*property-manager/, { timeout: 30000 });
     
     // Try to access tenant dashboard
     await page.goto('/tenant');

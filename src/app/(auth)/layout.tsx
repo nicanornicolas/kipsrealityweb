@@ -7,13 +7,10 @@ import Image from 'next/image';
 
 interface AuthLayoutProps {
     children: ReactNode;
-    mode?: 'login' | 'register';
 }
 
-export default function AuthLayout({ children, mode = 'login' }: AuthLayoutProps) {
-    const headline = mode === 'login'
-        ? "Welcome to RentFlow360"
-        : "Join RentFlow360 Today";
+export default function AuthLayout({ children }: AuthLayoutProps) {
+    const headline = "Welcome to RentFlow360";
 
     const subheading = "Start streamlining your property management Today!"
 

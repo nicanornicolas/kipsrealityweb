@@ -26,10 +26,24 @@ async function gotoWithRetry(page: Page, path: string, attempts = 3) {
 }
 
 async function loginAs(page: Page, email: string) {
-  await gotoWithRetry(page, '/login');
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', 'password123');
-  await page.locator('button[type="submit"]').click();
+  const response = await page.request.post('/api/auth/login', {
+    data: {
+      email,
+      password: 'password123',
+    },
+  });
+  expect(response.ok()).toBe(true);
+
+  const dashboardByEmail: Record<string, string> = {
+    'vendor@test.com': '/vendor',
+    'admin@test.com': '/admin',
+    'agent@test.com': '/agent',
+    'tenant@test.com': '/tenant',
+    'manager@test.com': '/property-manager',
+  };
+
+  const targetDashboard = dashboardByEmail[email] ?? '/';
+  await gotoWithRetry(page, targetDashboard);
 }
 
 // ─────────────────────────────── VENDOR ────────────────────────────────────

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/Getcurrentuser";
 import { leaseListingIntegration } from "@/lib/lease-listing-integration";
 import { sendTenantInviteEmail } from "@/lib/mail-service";
+import { getServerBaseUrl } from "@/lib/server-base-url";
 
 export async function POST(
   req: NextRequest,
@@ -268,7 +269,7 @@ export async function POST(
       // === SEND TENANT INVITE EMAIL IF TENANT HASN'T SIGNED YET ===
       if (!lease.tenantSignedAt && updated.tenant?.email) {
         try {
-          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+          const baseUrl = await getServerBaseUrl();
           const invite = await prisma.invite.findFirst({
             where: {
               leaseId: leaseId,

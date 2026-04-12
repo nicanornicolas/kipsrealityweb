@@ -4,7 +4,7 @@ import { requireSystemAdmin } from "@/lib/rbac/requireRole";
 
 const prisma = new PrismaClient();
 interface RouteContext {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }
 
 

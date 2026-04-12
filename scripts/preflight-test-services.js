@@ -12,8 +12,12 @@ function logError(message) {
 }
 
 function getDatabaseTarget() {
-  const fallback = 'mysql://test_user:test_password@localhost:3307/rentflow_test';
-  const raw = process.env.DATABASE_URL || fallback;
+  const raw = process.env.DATABASE_URL;
+
+  if (!raw) {
+    logError('DATABASE_URL is not set. Load .env.test before running preflight checks.');
+    process.exit(1);
+  }
 
   try {
     const parsed = new URL(raw);

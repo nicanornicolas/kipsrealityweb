@@ -53,7 +53,7 @@ export async function getNextSigner(documentId: string): Promise<WorkflowResult>
     return {
         isComplete: false,
         nextStep: nextParticipant.stepOrder,
-        nextRole: nextParticipant.role
+        nextRole: nextParticipant.role as unknown as WorkflowResult["nextRole"]
     };
 }
 

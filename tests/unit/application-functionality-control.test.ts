@@ -237,3 +237,4 @@ describe('Property 13: Application Functionality Control', () => {
     });
   });
 });
+

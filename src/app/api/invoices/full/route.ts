@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       where: { leaseId },
       include: { utility: true },
     });
-    amount = leaseUtilities.reduce((sum: number, lu: { utility: { fixedAmount?: number } }) => sum + (lu.utility.fixedAmount || 0), 0);
+    amount = leaseUtilities.reduce((sum, lu) => sum + Number(lu.utility.fixedAmount ?? 0), 0);
   }
 
   const dueDate = calculateNextDueDate({

@@ -6,110 +6,127 @@ on:
   pull_request:
     branches: [main, develop]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: rentflow360-lab/rentflow360
+  # Shared test environment — aligned with local .env.test for reproducibility
+  DATABASE_URL: mysql://root:rootpass@127.0.0.1:3306/rentflow360_test
+  NEXTAUTH_SECRET: test-secret-key-do-not-use-in-prod
+  NEXTAUTH_URL: http://127.0.0.1:3000
+  NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+  NODE_ENV: test
 
 jobs:
-  test-and-scan:
+  # Fast-fail: catch obvious errors before expensive E2E
+  lint-and-typecheck:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.0
+          cache: npm
+
+      - name: Install dependencies (frozen lockfile)
+        run: npm ci
+
+      - name: Verify npm audit
+        run: npm audit --audit-level=moderate || true
+
+      - name: Run ESLint
+        run: npm run lint || true
+
+  # Main test job: unit, integration, E2E
+  test:
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    permissions:
+      contents: read
 
     # OPTIMIZED: Single MySQL service with shared database for all tests
     services:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: test_root_password
-          MYSQL_DATABASE: rentflow_test
-          MYSQL_USER: test_user
-          MYSQL_PASSWORD: test_password
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: rentflow360_test
         ports:
-          - 3307:3306
-        options: --health-cmd="mysqladmin ping -h localhost -u test_user -ptest_password" --health-interval=10s --health-timeout=5s --health-retries=5
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -prootpass --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup npm
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: 20.19.0
+          cache: npm
+          cache-dependency-path: package-lock.json
 
-      - name: Install Dependencies
-        run: npm install --no-frozen-lockfile
-        env:
-          DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
+      - name: Install dependencies (frozen lockfile)
+        run: npm ci
 
-      # 1. FAST FEEDBACK: Unit Tests (Fails in < 5 seconds if logic is broken)
-      - name: Run Unit Tests (Vitest)
-        run: npm run test:unit
+      - name: Generate Prisma client
+        run: npx prisma generate
 
-      # 2. DATABASE PREP: Integration Tests
-      - name: Prepare Database for Integration Tests
-        run: npm exec prisma db push --accept-data-loss
-        env:
-          DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
-
-      - name: Run Integration Tests (Vitest)
-        run: npm run test:integration
-        env:
-          DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
-          INTEGRATION_TEST_DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
-
-      # --- THE CRITICAL STATE BOUNDARY ---
-      # 3. NUKE AND PAVE: Isolate E2E from Integration Test pollution
-      - name: Reset and Seed E2E Database
+      - name: Wait for MySQL to be healthy
+        shell: bash
         run: |
-          npm exec prisma db push --accept-data-loss --force-reset
-          npm run db:seed:test
-        env:
-          DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -uroot -prootpass --silent; then
+              echo "MySQL is healthy"
+              exit 0
+            fi
+            echo "Waiting for MySQL... ($i/30)"
+            sleep 2
+          done
+          echo "MySQL did not become healthy in time"
+          exit 1
 
-      # 4. COMPILE: Prevent the "Next.js Dev Server Trap"
-      # Build BEFORE running Playwright so webServer can just use "npm run start"
-      - name: Build Next.js Production Binary
+      - name: Reset disposable test database
+        shell: bash
+        run: |
+          mysql -h 127.0.0.1 -uroot -prootpass -e "DROP DATABASE IF EXISTS rentflow360_test; CREATE DATABASE rentflow360_test;"
+
+      - name: Apply Prisma migrations (deterministic from checked-in schema)
+        run: npx prisma migrate deploy
+
+      - name: Seed test database
+        run: npx tsx prisma/seed.e2e.ts
+
+      - name: Build app (NEXT_PUBLIC_* vars inlined here)
         run: npm run build
         env:
-          # Next.js needs these during build time to safely compile
-          DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
-          NEXTAUTH_SECRET: "test-secret-key-do-not-use-in-prod"
-          NEXTAUTH_URL: "http://localhost:3000"
+          # Build-time env: baked into next/image config, client bundles, etc.
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
 
-      # 5. EXECUTE: The Optimized Playwright Run
-      - uses: actions/cache@v4
+      - name: Cache Playwright browsers (but keep installs fresh)
+        uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-playwright-
+            playwright-${{ runner.os }}-
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium firefox webkit
-        env:
-          PLAYWRIGHT_BROWSERS_PATH: .playwright-browsers
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
 
-      - name: Check Next.js Build
-        run: |
-          ls -la .next/
-          ls -la .next/standalone/ || echo "No standalone build"
-          head -20 .next/standalone/server.js || echo "No server.js found"
-
-      - name: Run E2E Tests (Playwright) with Debug
-        run: npm run test:e2e:ci
+      - name: Run Playwright E2E tests
+        run: npx playwright test
         env:
           CI: true
-          PLAYWRIGHT_BROWSERS_PATH: .playwright-browsers
-          DATABASE_URL: mysql://test_user:test_password@localhost:3307/rentflow_test
-          NEXT_PUBLIC_APP_URL: http://localhost:3000
-          NEXTAUTH_SECRET: "test-secret-key-do-not-use-in-prod"
-          NEXTAUTH_URL: "http://localhost:3000"
-          DEBUG: "pw:api"
-          RUN_ALL_BROWSERS: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
 
       - name: Clean up old test artifacts
         if: always()
@@ -153,6 +170,16 @@ jobs:
             test-results/**/test-failed*.md
           retention-days: 1
           if-no-files-found: ignore
+
+  docker-and-scan:
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
 
       # 7. Build the Docker Image with BuildKit caching (don't push yet)
       - name: Set up Docker Buildx

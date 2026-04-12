@@ -24,10 +24,14 @@ async function gotoWithRetry(page: Page, path: string, attempts = 3) {
 }
 
 async function loginAsManager(page: Page) {
-  await gotoWithRetry(page, '/login');
-  await page.fill('input[name="email"]', 'manager@test.com');
-  await page.fill('input[name="password"]', 'password123');
-  await page.locator('button[type="submit"]').click();
+  const response = await page.request.post('/api/auth/login', {
+    data: {
+      email: 'manager@test.com',
+      password: 'password123',
+    },
+  });
+  expect(response.ok()).toBe(true);
+  await gotoWithRetry(page, '/property-manager');
   await expect(page).toHaveURL(/.*property-manager/, { timeout: 30000 });
 }
 

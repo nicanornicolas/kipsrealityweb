@@ -4,6 +4,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { LeaseDocumentType, Prisma } from "@prisma/client";
 import { randomUUID } from "crypto";
 
+function buildLeaseDocumentUrl(leaseId: string, fileName: string): string {
+  const baseUrl = process.env.LEASE_DOCUMENT_BASE_URL;
+  if (!baseUrl) {
+    throw new Error("LEASE_DOCUMENT_BASE_URL is not configured");
+  }
+
+  const normalizedBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  return `${normalizedBase}/leases/${leaseId}/${encodeURIComponent(fileName)}`;
+}
+
 // POST: Upload a lease document
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,7 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
     if (!lease) return NextResponse.json({ error: "Lease not found" }, { status: 404 });
 
-    const fileUrl = `https://storage.example.com/leases/${leaseId}/${file.name}`;
+    const fileUrl = buildLeaseDocumentUrl(leaseId, file.name);
 
     const document = await prisma.leaseDocument.create({
       data: {
