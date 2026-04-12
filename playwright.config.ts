@@ -45,7 +45,7 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
-    actionTimeout: 10000, // Explicitly timeout actions after 10s to fail fast
+    actionTimeout: 20000, // Allow slower dev-server interactions before failing actions
   },
 
   // Only run Chromium in CI for PRs to save time. Run all on 'main'.
@@ -79,20 +79,20 @@ export default defineConfig({
     timeout: 180000, // 3 minutes for CI - give it time to connect to DB
     // Add health check endpoint
     env: {
-      DATABASE_URL: process.env.DATABASE_URL,
-      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-      JWT_SECRET: process.env.JWT_SECRET,
-      JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
-      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-      STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-      STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,
-      STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
-      MPESA_CONSUMER_KEY: process.env.MPESA_CONSUMER_KEY,
-      MPESA_CONSUMER_SECRET: process.env.MPESA_CONSUMER_SECRET,
-      MPESA_SHORTCODE: process.env.MPESA_SHORTCODE,
-      MPESA_PASSKEY: process.env.MPESA_PASSKEY,
-      MPESA_ENV: process.env.MPESA_ENV,
+      ...(process.env.DATABASE_URL && { DATABASE_URL: process.env.DATABASE_URL }),
+      ...(process.env.NEXTAUTH_SECRET && { NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET }),
+      ...(process.env.NEXTAUTH_URL && { NEXTAUTH_URL: process.env.NEXTAUTH_URL }),
+      ...(process.env.JWT_SECRET && { JWT_SECRET: process.env.JWT_SECRET }),
+      ...(process.env.JWT_REFRESH_SECRET && { JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET }),
+      ...(process.env.NEXT_PUBLIC_APP_URL && { NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL }),
+      ...(process.env.STRIPE_SECRET_KEY && { STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY }),
+      ...(process.env.STRIPE_PUBLISHABLE_KEY && { STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY }),
+      ...(process.env.STRIPE_WEBHOOK_SECRET && { STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET }),
+      ...(process.env.MPESA_CONSUMER_KEY && { MPESA_CONSUMER_KEY: process.env.MPESA_CONSUMER_KEY }),
+      ...(process.env.MPESA_CONSUMER_SECRET && { MPESA_CONSUMER_SECRET: process.env.MPESA_CONSUMER_SECRET }),
+      ...(process.env.MPESA_SHORTCODE && { MPESA_SHORTCODE: process.env.MPESA_SHORTCODE }),
+      ...(process.env.MPESA_PASSKEY && { MPESA_PASSKEY: process.env.MPESA_PASSKEY }),
+      ...(process.env.MPESA_ENV && { MPESA_ENV: process.env.MPESA_ENV }),
     },
   },
 });

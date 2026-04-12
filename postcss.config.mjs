@@ -5,3 +5,5 @@ export default {
     autoprefixer: {},
   },
 };
+
+export default postcssConfig;
