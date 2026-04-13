@@ -1,33 +1,36 @@
-"use client";
+'use client';
 
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import type {
   PaymentInitializationRequest,
   PaymentInitializationResponse,
-} from "./";
-import { useMemo } from "react";
+} from '@rentflow/payments/client';
+import { useMemo } from 'react';
 
 function createIdempotencyKey(invoiceId: string) {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID === 'function'
+  ) {
     return `${invoiceId}-${crypto.randomUUID()}`;
   }
   return `${invoiceId}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export function useInitializePayment() {
-  useMemo(() => createIdempotencyKey("payment"), []);
+  useMemo(() => createIdempotencyKey('payment'), []);
 
   return useMutation({
     mutationFn: async (
-      payload: PaymentInitializationRequest
+      payload: PaymentInitializationRequest,
     ): Promise<PaymentInitializationResponse> => {
       const key = createIdempotencyKey(payload.invoiceId) || idempotencyKey;
-      const response = await fetch("/api/payments/initialize", {
-        method: "POST",
+      const response = await fetch('/api/payments/initialize', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          "Idempotency-Key": key,
+          'Content-Type': 'application/json',
+          'Idempotency-Key': key,
         },
         body: JSON.stringify(payload),
       });
@@ -37,7 +40,7 @@ export function useInitializePayment() {
         const message =
           errorData?.message ||
           errorData?.error ||
-          "Failed to initialize payment";
+          'Failed to initialize payment';
         throw new Error(message);
       }
 
@@ -47,7 +50,7 @@ export function useInitializePayment() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "An error occurred during payment initialization."
+          : 'An error occurred during payment initialization.',
       );
     },
   });
@@ -55,23 +58,23 @@ export function useInitializePayment() {
 
 export function usePaymentStatus(paymentId: string | null, enabled = true) {
   return useQuery({
-    queryKey: ["payment-status", paymentId],
+    queryKey: ['payment-status', paymentId],
     queryFn: async () => {
       if (!paymentId) {
-        throw new Error("Missing payment id");
+        throw new Error('Missing payment id');
       }
       const response = await fetch(`/api/payments/${paymentId}`, {
-        cache: "no-store",
+        cache: 'no-store',
       });
       if (!response.ok) {
-        throw new Error("Failed to fetch payment status");
+        throw new Error('Failed to fetch payment status');
       }
       return response.json();
     },
     enabled: Boolean(paymentId) && enabled,
     refetchInterval: (query) => {
       const status = query.state.data?.status;
-      if (status === "SETTLED" || status === "FAILED") {
+      if (status === 'SETTLED' || status === 'FAILED') {
         return false;
       }
       return 3000;
