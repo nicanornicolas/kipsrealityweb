@@ -1,9 +1,8 @@
 // src/components/PropertyManager/UnitsModal.tsx
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import UnitsTable from "./UnitsTable";
-import { fetchUnits } from "./";
+import { useEffect, useState } from 'react';
+import UnitsTable from './UnitsTable';
 
 interface Props {
   propertyId: string;
@@ -18,10 +17,12 @@ export default function UnitsModal({ propertyId, onClose }: Props) {
   useEffect(() => {
     const loadUnits = async () => {
       try {
-        const data = await fetchUnits(propertyId);
+        const res = await fetch(`/api/units?propertyId=${propertyId}`);
+        if (!res.ok) throw new Error('Failed to fetch units');
+        const data = await res.json();
         setUnits(data);
       } catch (err: any) {
-        setError(err.message || "Failed to fetch units");
+        setError(err.message || 'Failed to fetch units');
       } finally {
         setLoading(false);
       }
@@ -44,7 +45,9 @@ export default function UnitsModal({ propertyId, onClose }: Props) {
 
         {loading && <p>Loading units...</p>}
         {error && <p className="text-red-500">{error}</p>}
-        {!loading && !error && <UnitsTable propertyId={propertyId} units={units} inModal />}
+        {!loading && !error && (
+          <UnitsTable propertyId={propertyId} units={units} inModal />
+        )}
       </div>
     </div>
   );
