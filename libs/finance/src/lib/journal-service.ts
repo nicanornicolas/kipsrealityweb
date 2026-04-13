@@ -1,6 +1,7 @@
 import { Decimal } from '@prisma/client/runtime/library';
 import { PostJournalInput, IFinanceModule } from '../index';
 import { PrismaClient } from '@prisma/client';
+import { prisma } from '@rentflow/iam';
 
 /**
  * JournalService implements the core financial invariants of our Engineering Constitution:
@@ -109,3 +110,5 @@ export class JournalService implements IFinanceModule {
     throw new Error('Not implemented');
   }
 }
+
+export const journalService = new JournalService(prisma);
