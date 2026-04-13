@@ -1,11 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import { getPropertyById } from "@/lib/property-manager";
-import { Card, CardContent } from "@/components/ui/card";
-import { Building2, Home, MapPin, Bed, Bath, ArrowLeft } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { Card, CardContent } from '@/components/ui/card';
+import { Building2, Home, MapPin, Bed, Bath, ArrowLeft } from 'lucide-react';
 
 export default function ViewPropertyPage() {
   const { id } = useParams();
@@ -18,10 +17,12 @@ export default function ViewPropertyPage() {
 
     const fetchProperty = async () => {
       try {
-        const data = await getPropertyById(id as string);
+        const res = await fetch(`/api/properties/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch property');
+        const data = await res.json();
         setProperty(data);
       } catch (err: any) {
-        setError("Failed to fetch property");
+        setError('Failed to fetch property');
         console.error(err);
       } finally {
         setLoading(false);
@@ -32,14 +33,18 @@ export default function ViewPropertyPage() {
   }, [id]);
 
   if (loading)
-    return <div className="text-center text-gray-500 mt-10">Loading property...</div>;
+    return (
+      <div className="text-center text-gray-500 mt-10">Loading property...</div>
+    );
   if (error)
     return <div className="text-center text-red-500 mt-10">{error}</div>;
   if (!property)
-    return <div className="text-center text-gray-500 mt-10">Property not found</div>;
+    return (
+      <div className="text-center text-gray-500 mt-10">Property not found</div>
+    );
 
-  const isApartment = property.type?.toLowerCase() === "apartment";
-  const isHouse = property.type?.toLowerCase() === "house";
+  const isApartment = property.type?.toLowerCase() === 'apartment';
+  const isHouse = property.type?.toLowerCase() === 'house';
   const details = property.propertyDetails;
 
   return (
@@ -63,56 +68,90 @@ export default function ViewPropertyPage() {
             ) : (
               <Home className="text-navy-700 w-6 h-6" />
             )}
-            <h1 className="text-3xl font-bold text-gray-900">{property.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {property.name}
+            </h1>
           </div>
 
           {/* Address & Badges */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2 text-gray-600">
               <MapPin className="w-4 h-4" />
-              <span>{property.city}, {property.address}</span>
+              <span>
+                {property.city}, {property.address}
+              </span>
             </div>
             <div className="flex gap-2">
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${property.isFurnished ? "bg-navy-100 text-green-800" : "bg-gray-200 text-gray-700"}`}>
-                {property.isFurnished ? "Furnished" : "Unfurnished"}
+              <span
+                className={`px-2 py-1 text-xs font-medium rounded-full ${property.isFurnished ? 'bg-navy-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}
+              >
+                {property.isFurnished ? 'Furnished' : 'Unfurnished'}
               </span>
               <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                {property.availabilityStatus || "Unknown"}
+                {property.availabilityStatus || 'Unknown'}
               </span>
             </div>
           </div>
 
           {/* Property Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700">
-            <p><strong>Type:</strong> {property.type || "N/A"}</p>
-            {property.amenities && <p><strong>Amenities:</strong> {property.amenities}</p>}
-            <p><strong>Total Units:</strong> {property.totalUnits || 0}</p>
+            <p>
+              <strong>Type:</strong> {property.type || 'N/A'}
+            </p>
+            {property.amenities && (
+              <p>
+                <strong>Amenities:</strong> {property.amenities}
+              </p>
+            )}
+            <p>
+              <strong>Total Units:</strong> {property.totalUnits || 0}
+            </p>
           </div>
 
           {/* Type-Specific Details */}
           {isApartment && (
             <div className="pt-4 border-t border-gray-200 space-y-2">
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">Apartment Complex Details</h2>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                Apartment Complex Details
+              </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-gray-700">
-                <p><strong>Building:</strong> {details?.buildingName || "N/A"}</p>
-                <p><strong>Floors:</strong> {details?.totalFloors || "N/A"}</p>
-                <p><strong>Units:</strong> {details?.totalUnits || "N/A"}</p>
+                <p>
+                  <strong>Building:</strong> {details?.buildingName || 'N/A'}
+                </p>
+                <p>
+                  <strong>Floors:</strong> {details?.totalFloors || 'N/A'}
+                </p>
+                <p>
+                  <strong>Units:</strong> {details?.totalUnits || 'N/A'}
+                </p>
               </div>
             </div>
           )}
 
           {isHouse && (
             <div className="pt-4 border-t border-gray-200 space-y-2">
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">House Details</h2>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                House Details
+              </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-gray-700">
                 <div className="flex items-center gap-1">
-                  <Bed className="w-5 h-5" /> <span>{details?.bedrooms || "N/A"} bedrooms</span>
+                  <Bed className="w-5 h-5" />{' '}
+                  <span>{details?.bedrooms || 'N/A'} bedrooms</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Bath className="w-5 h-5" /> <span>{details?.bathrooms || "N/A"} bathrooms</span>
+                  <Bath className="w-5 h-5" />{' '}
+                  <span>{details?.bathrooms || 'N/A'} bathrooms</span>
                 </div>
-                {details?.size && <p><strong>Size:</strong> {details.size} sqft</p>}
-                {details?.numberOfFloors && <p><strong>Floors:</strong> {details.numberOfFloors}</p>}
+                {details?.size && (
+                  <p>
+                    <strong>Size:</strong> {details.size} sqft
+                  </p>
+                )}
+                {details?.numberOfFloors && (
+                  <p>
+                    <strong>Floors:</strong> {details.numberOfFloors}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -120,7 +159,7 @@ export default function ViewPropertyPage() {
           {/* View Units Button */}
           <div className="pt-4 border-t border-gray-200">
             <Link
-              href={`/property-manager/view-own-property/${property.id}/units?type=${isApartment ? "apartment" : "house"}`}
+              href={`/property-manager/view-own-property/${property.id}/units?type=${isApartment ? 'apartment' : 'house'}`}
               className="inline-block w-full text-center px-4 py-3 bg-blue-600 mb-4 text-white font-medium rounded-lg hover:bg-blue-700 transition"
             >
               View Units
@@ -131,7 +170,6 @@ export default function ViewPropertyPage() {
             >
               Manage Units & Leases
             </Link>
-
           </div>
         </CardContent>
       </Card>
