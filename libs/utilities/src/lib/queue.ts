@@ -6,6 +6,13 @@ const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 // Shared Redis connection for BullMQ queues
 export const connection = new IORedis(redisUrl, {
   maxRetriesPerRequest: null,
+  retryStrategy: (attempts: number) => Math.min(attempts * 50, 3000),
+});
+
+connection.on('error', (err: Error) => {
+  if (process.env.npm_lifecycle_event === 'build') return;
+  if (process.env.NODE_ENV === 'production') throw err;
+  console.warn('[Redis] Connection error:', err.message);
 });
 
 export const defaultJobOptions: DefaultJobOptions = {
