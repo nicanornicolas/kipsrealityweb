@@ -1,96 +1,108 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { Plus, Trash2, Edit, Layers, Eye, ArrowLeft, RefreshCw, Image, Layout } from 'lucide-react'
+import { useEffect, useState } from 'react';
+import {
+  Plus,
+  Trash2,
+  Edit,
+  Layers,
+  Eye,
+  ArrowLeft,
+  RefreshCw,
+  Image,
+  Layout,
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 interface HeroSection {
-  id: number
-  page: string
-  title?: string
-  subtitle?: string
-  description?: string
-  buttonText?: string
-  buttonUrl?: string
-  imageUrl?: string
-  iconUrl?: string
-  searchBar?: boolean
-  gradient?: string
-  layout?: string
+  id: number;
+  page: string;
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  buttonText?: string;
+  buttonUrl?: string;
+  imageUrl?: string;
+  iconUrl?: string;
+  searchBar?: boolean;
+  gradient?: string;
+  layout?: string;
 }
 
-import HeroSectionForm from './HeroSectionForm'
+import HeroSectionForm from './HeroSectionForm';
 
 export default function HeroSectionAdmin() {
-  const [heroSections, setHeroSections] = useState<HeroSection[]>([])
-  const [selectedHero, setSelectedHero] = useState<HeroSection | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [showForm, setShowForm] = useState(false)
+  const [heroSections, setHeroSections] = useState<HeroSection[]>([]);
+  const [selectedHero, setSelectedHero] = useState<HeroSection | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
   const fetchHeroSections = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch('/api/hero')
-      const data = await res.json()
-      setHeroSections(data)
+      const res = await fetch('/api/hero');
+      const data = await res.json();
+      setHeroSections(data);
     } catch (err) {
-      console.error(err)
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleRefresh = async () => {
-    setRefreshing(true)
-    await fetchHeroSections()
-    setRefreshing(false)
-  }
+    setRefreshing(true);
+    await fetchHeroSections();
+    setRefreshing(false);
+  };
 
   useEffect(() => {
-    fetchHeroSections()
-  }, [])
+    fetchHeroSections();
+  }, []);
 
   const handleDelete = async (id: number, e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!confirm('Are you sure you want to delete this hero section?')) return
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this hero section?')) return;
     try {
-      await fetch(`/api/hero/${id}`, { method: 'DELETE' })
-      fetchHeroSections()
+      await fetch(`/api/hero/${id}`, { method: 'DELETE' });
+      fetchHeroSections();
       if (selectedHero?.id === id) {
-        setSelectedHero(null)
-        setShowForm(false)
+        setSelectedHero(null);
+        setShowForm(false);
       }
     } catch (err) {
       console.error(err)
-      alert('Failed to delete hero section')
+      toast.error('Failed to delete hero section')
     }
   }
+  };
 
   const handleSave = () => {
-    fetchHeroSections()
-    setShowForm(false)
-    setSelectedHero(null)
-  }
+    fetchHeroSections();
+    setShowForm(false);
+    setSelectedHero(null);
+  };
 
   const handleEdit = (hero: HeroSection) => {
-    setSelectedHero(hero)
-    setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+    setSelectedHero(hero);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleCreateNew = () => {
-    setSelectedHero(null)
-    setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+    setSelectedHero(null);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Calculate statistics
   const stats = {
     total: heroSections.length,
-    withImages: heroSections.filter(h => h.imageUrl || h.iconUrl).length,
-    withButtons: heroSections.filter(h => h.buttonText).length,
-    pages: [...new Set(heroSections.map(h => h.page))].length,
-  }
+    withImages: heroSections.filter((h) => h.imageUrl || h.iconUrl).length,
+    withButtons: heroSections.filter((h) => h.buttonText).length,
+    pages: [...new Set(heroSections.map((h) => h.page))].length,
+  };
 
   if (loading) {
     return (
@@ -100,11 +112,13 @@ export default function HeroSectionAdmin() {
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#30D5C8]/20 border-t-[#30D5C8] mx-auto"></div>
             <Layers className="w-8 h-8 text-[#30D5C8] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <p className="text-white mt-6 text-base sm:text-lg font-medium">Loading hero sections...</p>
+          <p className="text-white mt-6 text-base sm:text-lg font-medium">
+            Loading hero sections...
+          </p>
           <p className="text-gray-400 mt-2 text-sm">Please wait</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -128,7 +142,7 @@ export default function HeroSectionAdmin() {
                   </p>
                 </div>
               </div>
-              
+
               {!showForm && (
                 <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
                   <button
@@ -136,7 +150,9 @@ export default function HeroSectionAdmin() {
                     disabled={refreshing}
                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-[#15386a] hover:bg-[#1a4575] active:bg-[#1a4575] text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-[#30D5C8]/20 text-sm sm:text-base touch-manipulation"
                   >
-                    <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                    <RefreshCw
+                      className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
+                    />
                     <span>Refresh</span>
                   </button>
                   <button
@@ -154,32 +170,48 @@ export default function HeroSectionAdmin() {
             {!showForm && (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
                 <div className="bg-[#15386a]/50 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-[#30D5C8]/10 hover:border-[#30D5C8]/30 transition-all">
-                  <div className="text-xl sm:text-2xl font-bold text-[#30D5C8] mb-0.5 sm:mb-1">{stats.total}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide">Total Sections</div>
+                  <div className="text-xl sm:text-2xl font-bold text-[#30D5C8] mb-0.5 sm:mb-1">
+                    {stats.total}
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide">
+                    Total Sections
+                  </div>
                 </div>
-                
+
                 <div className="bg-[#15386a]/50 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-[#30D5C8]/10 hover:border-[#30D5C8]/30 transition-all">
                   <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
                     <Layout className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
-                    <div className="text-xl sm:text-2xl font-bold text-blue-400">{stats.pages}</div>
+                    <div className="text-xl sm:text-2xl font-bold text-blue-400">
+                      {stats.pages}
+                    </div>
                   </div>
-                  <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide">Pages</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide">
+                    Pages
+                  </div>
                 </div>
-                
+
                 <div className="bg-[#15386a]/50 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-[#30D5C8]/10 hover:border-[#30D5C8]/30 transition-all">
                   <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
                     <Image className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
-                    <div className="text-xl sm:text-2xl font-bold text-purple-400">{stats.withImages}</div>
+                    <div className="text-xl sm:text-2xl font-bold text-purple-400">
+                      {stats.withImages}
+                    </div>
                   </div>
-                  <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide">With Media</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide">
+                    With Media
+                  </div>
                 </div>
-                
+
                 <div className="bg-[#15386a]/50 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-[#30D5C8]/10 hover:border-[#30D5C8]/30 transition-all">
                   <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
                     <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
-                    <div className="text-xl sm:text-2xl font-bold text-green-400">{stats.withButtons}</div>
+                    <div className="text-xl sm:text-2xl font-bold text-green-400">
+                      {stats.withButtons}
+                    </div>
                   </div>
-                  <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide">With CTAs</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide">
+                    With CTAs
+                  </div>
                 </div>
               </div>
             )}
@@ -195,7 +227,9 @@ export default function HeroSectionAdmin() {
                   <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#30D5C8]/10 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
                     <Layers className="w-8 h-8 sm:w-10 sm:h-10 text-[#30D5C8]" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">No Hero Sections Yet</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">
+                    No Hero Sections Yet
+                  </h3>
                   <p className="text-sm sm:text-base lg:text-lg text-gray-400 mb-6 sm:mb-8 px-4">
                     Get started by creating your first hero section
                   </p>
@@ -210,7 +244,7 @@ export default function HeroSectionAdmin() {
               </div>
             ) : (
               <div className="grid gap-4 sm:gap-5 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {heroSections.map(hero => (
+                {heroSections.map((hero) => (
                   <div
                     key={hero.id}
                     className="bg-[#0b1f3a]/80 backdrop-blur-sm rounded-2xl border border-[#30D5C8]/20 overflow-hidden hover:border-[#30D5C8]/40 hover:shadow-2xl hover:shadow-[#30D5C8]/10 transition-all duration-300 group"
@@ -218,15 +252,21 @@ export default function HeroSectionAdmin() {
                     {/* Preview */}
                     <div
                       className="h-40 sm:h-48 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden"
-                      style={{ 
-                        background: hero.gradient || 'linear-gradient(135deg, #30D5C8 0%, #1a4575 100%)'
+                      style={{
+                        background:
+                          hero.gradient ||
+                          'linear-gradient(135deg, #30D5C8 0%, #1a4575 100%)',
                       }}
                     >
                       <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all"></div>
                       <div className="text-center text-white relative z-10 w-full px-2">
                         {hero.iconUrl && (
                           <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-2 sm:mb-3 bg-white/10 backdrop-blur-sm rounded-xl p-2 group-hover:scale-110 transition-transform">
-                            <img src={hero.iconUrl} alt="icon" className="w-full h-full object-contain" />
+                            <img
+                              src={hero.iconUrl}
+                              alt="icon"
+                              className="w-full h-full object-contain"
+                            />
                           </div>
                         )}
                         <h3 className="text-lg sm:text-xl font-bold truncate drop-shadow-lg">
@@ -285,8 +325,8 @@ export default function HeroSectionAdmin() {
             <div className="space-y-4 sm:space-y-6">
               <button
                 onClick={() => {
-                  setShowForm(false)
-                  setSelectedHero(null)
+                  setShowForm(false);
+                  setSelectedHero(null);
                 }}
                 className="flex items-center gap-2 text-[#30D5C8] hover:text-[#25b9ad] active:text-[#1fa89c] font-medium transition-colors group touch-manipulation text-sm sm:text-base"
               >
@@ -311,7 +351,9 @@ export default function HeroSectionAdmin() {
                     )}
                   </h2>
                   <p className="text-xs sm:text-sm text-gray-400 mt-1">
-                    {selectedHero ? 'Update the hero section details below' : 'Fill in the details to create a new hero section'}
+                    {selectedHero
+                      ? 'Update the hero section details below'
+                      : 'Fill in the details to create a new hero section'}
                   </p>
                 </div>
                 <div className="p-4 sm:p-6">
@@ -323,5 +365,5 @@ export default function HeroSectionAdmin() {
         )}
       </div>
     </div>
-  )
+  );
 }

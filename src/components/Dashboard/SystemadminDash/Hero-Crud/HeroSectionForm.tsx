@@ -1,14 +1,18 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react';
+import { ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface HeroSectionFormProps {
-  hero?: any
-  onSave: (updated: any) => void
+  hero?: any;
+  onSave: (updated: any) => void;
 }
 
-export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) {
+export default function HeroSectionForm({
+  hero,
+  onSave,
+}: HeroSectionFormProps) {
   const [formData, setFormData] = useState({
     page: '',
     title: '',
@@ -20,7 +24,7 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
     iconUrl: '',
     searchBar: false,
     gradient: 'linear-gradient(to right, #6EE7B7, #3B82F6)',
-  })
+  });
 
   // Update form when hero changes
   useEffect(() => {
@@ -35,8 +39,9 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
         imageUrl: hero.imageUrl || '',
         iconUrl: hero.iconUrl || '',
         searchBar: hero.searchBar || false,
-        gradient: hero.gradient || 'linear-gradient(to right, #6EE7B7, #3B82F6)',
-      })
+        gradient:
+          hero.gradient || 'linear-gradient(to right, #6EE7B7, #3B82F6)',
+      });
     } else {
       // Reset form for new hero
       setFormData({
@@ -50,41 +55,45 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
         iconUrl: '',
         searchBar: false,
         gradient: 'linear-gradient(to right, #6EE7B7, #3B82F6)',
-      })
+      });
     }
-  }, [hero])
+  }, [hero]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const target = e.target as HTMLInputElement
-    const { name, value, type, checked } = target
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
+    const target = e.target as HTMLInputElement;
+    const { name, value, type, checked } = target;
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
-    }))
-  }
+    }));
+  };
 
   const handleSave = async () => {
     try {
-      if (!formData.page) return alert('Please select a page')
-      const method = hero?.id ? 'PUT' : 'POST'
-      const url = hero?.id ? `/api/hero/${hero.id}` : '/api/hero'
+      if (!formData.page) return toast.error('Please select a page');
+      const method = hero?.id ? 'PUT' : 'POST';
+      const url = hero?.id ? `/api/hero/${hero.id}` : '/api/hero';
 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
-      })
+      });
 
-      if (!res.ok) throw new Error('Failed to save')
-      const data = await res.json()
-      onSave(data)
-      alert('Hero section saved successfully!')
+      if (!res.ok) throw new Error('Failed to save');
+      const data = await res.json();
+      onSave(data);
+      toast.success('Hero section saved successfully!');
     } catch (error) {
-      console.error(error)
-      alert('Failed to save hero section')
+      console.error(error);
+      toast.error('Failed to save hero section');
     }
-  }
+  };
 
   // Preset gradients
   const presetGradients = [
@@ -94,7 +103,7 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
     'linear-gradient(135deg, #667eea, #764ba2)',
     'linear-gradient(to right, #1E3A8A, #3B82F6)',
     'linear-gradient(to right, #065F46, #10B981)',
-  ]
+  ];
 
   return (
     <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
@@ -133,7 +142,9 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
         {/* Content Fields */}
         <div className="space-y-3 sm:space-y-4">
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Title</label>
+            <label className="block text-sm font-semibold text-gray-700">
+              Title
+            </label>
             <input
               type="text"
               name="title"
@@ -145,7 +156,9 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Subtitle</label>
+            <label className="block text-sm font-semibold text-gray-700">
+              Subtitle
+            </label>
             <textarea
               name="subtitle"
               value={formData.subtitle}
@@ -157,7 +170,9 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Description</label>
+            <label className="block text-sm font-semibold text-gray-700">
+              Description
+            </label>
             <textarea
               name="description"
               value={formData.description}
@@ -172,7 +187,9 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
         {/* Button Settings */}
         <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Button Text</label>
+            <label className="block text-sm font-semibold text-gray-700">
+              Button Text
+            </label>
             <input
               type="text"
               name="buttonText"
@@ -184,7 +201,9 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Button URL</label>
+            <label className="block text-sm font-semibold text-gray-700">
+              Button URL
+            </label>
             <input
               type="text"
               name="buttonUrl"
@@ -199,7 +218,9 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
         {/* Media URLs */}
         <div className="space-y-3 sm:space-y-4">
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Icon URL</label>
+            <label className="block text-sm font-semibold text-gray-700">
+              Icon URL
+            </label>
             <input
               type="text"
               name="iconUrl"
@@ -211,7 +232,9 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Image URL</label>
+            <label className="block text-sm font-semibold text-gray-700">
+              Image URL
+            </label>
             <input
               type="text"
               name="imageUrl"
@@ -225,7 +248,9 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
 
         {/* Gradient Picker */}
         <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">Background Gradient</label>
+          <label className="block text-sm font-semibold text-gray-700">
+            Background Gradient
+          </label>
           <input
             type="text"
             name="gradient"
@@ -238,7 +263,9 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
             {presetGradients.map((grad, idx) => (
               <button
                 key={idx}
-                onClick={() => setFormData(prev => ({ ...prev, gradient: grad }))}
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, gradient: grad }))
+                }
                 className="h-10 sm:h-12 rounded-lg border-2 border-gray-300 hover:border-blue-500 active:border-blue-600 transition touch-manipulation"
                 style={{ background: grad }}
                 aria-label={`Select gradient ${idx + 1}`}
@@ -257,7 +284,10 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
             onChange={handleChange}
             className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 touch-manipulation"
           />
-          <label htmlFor="searchBar" className="text-sm font-medium text-gray-700 cursor-pointer">
+          <label
+            htmlFor="searchBar"
+            className="text-sm font-medium text-gray-700 cursor-pointer"
+          >
             Show Search Bar
           </label>
         </div>
@@ -273,39 +303,43 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
 
       <div className="space-y-3 sm:space-y-4">
         <div>
-          <h3 className="text-lg sm:text-xl font-bold text-white">Live Preview</h3>
-          <p className="text-xs sm:text-sm text-white mt-1">See how your hero section will look</p>
+          <h3 className="text-lg sm:text-xl font-bold text-white">
+            Live Preview
+          </h3>
+          <p className="text-xs sm:text-sm text-white mt-1">
+            See how your hero section will look
+          </p>
         </div>
-        
+
         <div className="border rounded-lg overflow-hidden shadow-lg">
           <div
             className="relative p-6 sm:p-8 md:p-12 flex flex-col items-center justify-center gap-3 sm:gap-4 min-h-[300px] sm:min-h-[400px]"
             style={{ background: formData.gradient }}
           >
             {formData.iconUrl && (
-              <img 
-                src={formData.iconUrl} 
-                alt="icon" 
-                className="w-12 h-12 sm:w-16 sm:h-16 object-contain" 
+              <img
+                src={formData.iconUrl}
+                alt="icon"
+                className="w-12 h-12 sm:w-16 sm:h-16 object-contain"
               />
             )}
-            
+
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-center text-white drop-shadow-sm">
               {formData.title || 'Your Title Here'}
             </h1>
-            
+
             {formData.subtitle && (
               <p className="text-center text-base sm:text-lg md:text-xl text-white max-w-2xl px-4">
                 {formData.subtitle}
               </p>
             )}
-            
+
             {formData.description && (
               <p className="text-center text-sm sm:text-base text-white max-w-xl px-4">
                 {formData.description}
               </p>
             )}
-            
+
             {formData.searchBar && (
               <input
                 type="text"
@@ -313,7 +347,7 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
                 className="mt-2 p-2.5 sm:p-3 w-full max-w-md rounded-lg border-2 border-gray-300 bg-white/90 backdrop-blur-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm sm:text-base"
               />
             )}
-            
+
             {formData.buttonText && (
               <a
                 href={formData.buttonUrl || '#'}
@@ -323,7 +357,7 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
                 <ChevronRight size={18} className="sm:w-5 sm:h-5" />
               </a>
             )}
-            
+
             {formData.imageUrl && (
               <img
                 src={formData.imageUrl}
@@ -333,9 +367,7 @@ export default function HeroSectionForm({ hero, onSave }: HeroSectionFormProps) 
             )}
           </div>
         </div>
-
-        
       </div>
     </div>
-  )
+  );
 }

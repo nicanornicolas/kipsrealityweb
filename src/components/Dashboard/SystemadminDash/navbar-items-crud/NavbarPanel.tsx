@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, GripVertical, ChevronDown, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  GripVertical,
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 interface NavbarItem {
   id: number;
@@ -47,14 +57,14 @@ const NavbarAdminPanel = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      const url = editingItem 
+      const url = editingItem
         ? `/api/navbar-items/${editingItem.id}`
         : '/api/navbar-items';
-      
+
       const method = editingItem ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -71,7 +81,7 @@ const NavbarAdminPanel = () => {
       setEditingItem(null);
     } catch (error) {
       console.error('Error saving item:', error);
-      alert('Failed to save item');
+      toast.error('Failed to save item');
     }
   };
 
@@ -103,7 +113,7 @@ const NavbarAdminPanel = () => {
       await fetchItems();
     } catch (error) {
       console.error('Error deleting item:', error);
-      alert('Failed to delete item');
+      toast.error('Failed to delete item');
     }
   };
 
@@ -142,11 +152,11 @@ const NavbarAdminPanel = () => {
   };
 
   // Get top-level items
-  const topLevelItems = items.filter(item => !item.parentId);
+  const topLevelItems = items.filter((item) => !item.parentId);
 
   // Organize children
   const getChildren = (parentId: number) => {
-    return items.filter(item => item.parentId === parentId);
+    return items.filter((item) => item.parentId === parentId);
   };
 
   const renderItem = (item: NavbarItem, level = 0) => {
@@ -224,9 +234,7 @@ const NavbarAdminPanel = () => {
 
         {/* Render children if expanded */}
         {hasChildren && isExpanded && (
-          <div>
-            {children.map(child => renderItem(child, level + 1))}
-          </div>
+          <div>{children.map((child) => renderItem(child, level + 1))}</div>
         )}
       </div>
     );
@@ -259,7 +267,7 @@ const NavbarAdminPanel = () => {
             No items yet. Click "Add Item" to create one.
           </div>
         ) : (
-          topLevelItems.map(item => renderItem(item))
+          topLevelItems.map((item) => renderItem(item))
         )}
       </div>
 
@@ -276,25 +284,33 @@ const NavbarAdminPanel = () => {
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full border rounded px-3 py-2"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Link (href)</label>
+                <label className="block text-sm font-medium mb-1">
+                  Link (href)
+                </label>
                 <input
                   type="text"
                   value={formData.href}
-                  onChange={(e) => setFormData({ ...formData, href: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, href: e.target.value })
+                  }
                   className="w-full border rounded px-3 py-2"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Parent Item</label>
+                <label className="block text-sm font-medium mb-1">
+                  Parent Item
+                </label>
                 <select
                   value={formData.parentId || ''}
                   onChange={(e) =>
@@ -307,8 +323,8 @@ const NavbarAdminPanel = () => {
                 >
                   <option value="">None (Top-level)</option>
                   {topLevelItems
-                    .filter(item => item.id !== editingItem?.id)
-                    .map(item => (
+                    .filter((item) => item.id !== editingItem?.id)
+                    .map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name}
                       </option>
@@ -345,7 +361,10 @@ const NavbarAdminPanel = () => {
                     type="checkbox"
                     checked={formData.isAvailable}
                     onChange={(e) =>
-                      setFormData({ ...formData, isAvailable: e.target.checked })
+                      setFormData({
+                        ...formData,
+                        isAvailable: e.target.checked,
+                      })
                     }
                   />
                   <span className="text-sm">Available</span>
