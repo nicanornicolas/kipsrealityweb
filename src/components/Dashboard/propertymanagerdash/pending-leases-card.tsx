@@ -1,9 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { api } from './';
+import { toast } from 'sonner';
 
 interface PendingLease {
   id: string;
@@ -24,12 +31,14 @@ interface PendingLease {
 }
 
 // Helper function for safe tenant name display
-const getTenantName = (tenant?: { firstName?: string | null; lastName?: string | null } | null): string => {
-  if (!tenant) return "Unknown Tenant";
-  const firstName = tenant.firstName || "";
-  const lastName = tenant.lastName || "";
-  const name = [firstName, lastName].filter(Boolean).join(" ");
-  return name || "Unknown Tenant";
+const getTenantName = (
+  tenant?: { firstName?: string | null; lastName?: string | null } | null,
+): string => {
+  if (!tenant) return 'Unknown Tenant';
+  const firstName = tenant.firstName || '';
+  const lastName = tenant.lastName || '';
+  const name = [firstName, lastName].filter(Boolean).join(' ');
+  return name || 'Unknown Tenant';
 };
 
 export function PendingLeasesCard() {
@@ -45,8 +54,11 @@ export function PendingLeasesCard() {
     try {
       setLoading(true);
       setError(null);
-      
-      const result = await api.get<{ success: boolean; leases: PendingLease[] }>('/api/lease/pending');
+
+      const result = await api.get<{
+        success: boolean;
+        leases: PendingLease[];
+      }>('/api/lease/pending');
 
       if (result.error) {
         // Handle API client errors (including 401 redirects)
@@ -74,37 +86,41 @@ export function PendingLeasesCard() {
   }
 
   async function handleActivateLease(leaseId: string) {
-    if (!confirm('Activate this lease? This will generate the first invoice and mark the unit as occupied.')) {
+    if (
+      !confirm(
+        'Activate this lease? This will generate the first invoice and mark the unit as occupied.',
+      )
+    ) {
       return;
     }
 
     try {
       const result = await api.post<{ success: boolean; error?: string }>(
         `/api/lease/${leaseId}/sign/landlord`,
-        {}
+        {},
       );
 
       if (result.error) {
         // Handle API client errors (including 401 redirects)
         if (result.status === 401) {
-          alert('Session expired. Please log in again.');
+          toast.error('Session expired. Please log in again.');
           return;
         }
-        alert(`Activation failed: ${result.error}`);
+        toast.error(`Activation failed: ${result.error}`);
         return;
       }
 
       if (!result.data?.success) {
-        alert('Activation failed: Unknown error');
+        toast.error('Activation failed: Unknown error');
         return;
       }
 
-      alert('Lease activated successfully!');
+      toast.success('Lease activated successfully!');
       fetchPendingLeases(); // Refresh the list
     } catch (err) {
-      // Only show alert if it's not a 401 (which already redirected)
+      // Only show toast if it's not a 401 (which already redirected)
       if (err instanceof Error && !err.message.includes('Session expired')) {
-        alert(`Error: ${err.message}`);
+        toast.error(`Error: ${err.message}`);
       }
     }
   }
@@ -130,7 +146,9 @@ export function PendingLeasesCard() {
       <Card>
         <CardHeader>
           <CardTitle>Pending Leases</CardTitle>
-          <CardDescription className="text-red-600">Error: {error}</CardDescription>
+          <CardDescription className="text-red-600">
+            Error: {error}
+          </CardDescription>
         </CardHeader>
       </Card>
     );
@@ -141,8 +159,8 @@ export function PendingLeasesCard() {
       <CardHeader>
         <CardTitle>Pending Leases</CardTitle>
         <CardDescription>
-          {leases.length === 0 
-            ? 'No pending leases requiring activation' 
+          {leases.length === 0
+            ? 'No pending leases requiring activation'
             : `${leases.length} lease${leases.length === 1 ? '' : 's'} awaiting landlord signature`}
         </CardDescription>
       </CardHeader>
@@ -166,23 +184,27 @@ export function PendingLeasesCard() {
                       </h3>
                       <Badge variant="secondary">{lease.leaseStatus}</Badge>
                     </div>
-                    
+
                     <div className="space-y-1 text-sm text-gray-600">
                       <p>
-                        <span className="font-medium">Property:</span> {lease.property.name || 'Unnamed Property'}
+                        <span className="font-medium">Property:</span>{' '}
+                        {lease.property.name || 'Unnamed Property'}
                       </p>
                       <p>
-                        <span className="font-medium">Unit:</span> {lease.unit.unitNumber}
+                        <span className="font-medium">Unit:</span>{' '}
+                        {lease.unit.unitNumber}
                       </p>
                       <p>
-                        <span className="font-medium">Rent:</span> ${lease.rentAmount.toLocaleString()}/month
+                        <span className="font-medium">Rent:</span> $
+                        {lease.rentAmount.toLocaleString()}/month
                       </p>
                       <p>
                         <span className="font-medium">Start Date:</span>{' '}
                         {new Date(lease.startDate).toLocaleDateString()}
                       </p>
                       <p>
-                        <span className="font-medium">Email:</span> {lease.tenant?.email || 'N/A'}
+                        <span className="font-medium">Email:</span>{' '}
+                        {lease.tenant?.email || 'N/A'}
                       </p>
                     </div>
                   </div>
