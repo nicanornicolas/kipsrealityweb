@@ -44,6 +44,7 @@ export interface CreateMaintenanceRequestData {
   description: string;
   priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
   category?: "EMERGENCY" | "URGENT" | "ROUTINE" | "STANDARD";
+  mediaUrls?: string[];
 }
 
 export function useMaintenanceRequests(propertyId?: string, unitId?: string): UseMaintenanceRequestsState {
