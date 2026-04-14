@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { createManualInvoice } from "./";
-import { ManualInvoiceInput, Invoice } from "@/app/data/FinanceData";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { createManualInvoice } from '@/lib/Invoice';
+import { ManualInvoiceInput, Invoice } from '@/app/data/FinanceData';
+import { toast } from 'sonner';
 
 interface ManualInvoiceFormProps {
   leaseId: string;
 }
 
 export default function ManualInvoiceForm({ leaseId }: ManualInvoiceFormProps) {
-  const [amount, setAmount] = useState<string>("");
-  const [dueDate, setDueDate] = useState<string>("");
+  const [amount, setAmount] = useState<string>('');
+  const [dueDate, setDueDate] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!amount || !dueDate) {
-      toast.error("Please fill in all required fields");
+      toast.error('Please fill in all required fields');
       return;
     }
 
     const data: ManualInvoiceInput = {
       leaseId: leaseId,
-      type: "RENT", // fixed type
+      type: 'RENT', // fixed type
       amount: parseFloat(amount),
       dueDate,
     };
@@ -34,10 +34,10 @@ export default function ManualInvoiceForm({ leaseId }: ManualInvoiceFormProps) {
       const invoice: Invoice = await createManualInvoice(data);
       toast.success(`Manual Rent invoice created: ${invoice.id}`);
       // Reset form
-      setAmount("");
-      setDueDate("");
+      setAmount('');
+      setDueDate('');
     } catch (err: any) {
-      toast.error(err.message || "Failed to create manual invoice");
+      toast.error(err.message || 'Failed to create manual invoice');
     } finally {
       setLoading(false);
     }
@@ -46,8 +46,6 @@ export default function ManualInvoiceForm({ leaseId }: ManualInvoiceFormProps) {
   return (
     <div className="flex  bg-gray-50">
       <div className="bg-white shadow rounded-xl p-6 max-w-md w-full">
-
-
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Amount */}
           <div>
@@ -81,7 +79,7 @@ export default function ManualInvoiceForm({ leaseId }: ManualInvoiceFormProps) {
             disabled={loading}
             className="w-full bg-green-500  text-white py-2 rounded-lg hover:bg-green-600 disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Create Rent Invoice"}
+            {loading ? 'Creating...' : 'Create Rent Invoice'}
           </button>
         </form>
       </div>

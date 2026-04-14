@@ -18,6 +18,7 @@ export default function SigningRoomPage() {
   const documentId = params?.id as string;
 
   const [docData, setDocData] = useState<any>(null);
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState(false);
 
@@ -33,6 +34,12 @@ export default function SigningRoomPage() {
         if (!res.ok) throw new Error(data.error || "Failed to load");
 
         setDocData(data);
+
+        const viewRes = await fetch(`/api/dss/documents/${documentId}/view`);
+        const viewData = await viewRes.json();
+        if (viewRes.ok) {
+          setViewUrl(viewData.document?.viewUrl || null);
+        }
       } catch (error: any) {
         toast.error(error.message);
       } finally {
@@ -124,8 +131,8 @@ export default function SigningRoomPage() {
 
         {/* Main Content: PDF */}
         <div className="lg:col-span-2">
-           {document.originalFileUrl ? (
-             <PdfViewer url={document.originalFileUrl} />
+           {viewUrl || document.originalFileUrl ? (
+             <PdfViewer url={viewUrl || document.originalFileUrl} />
            ) : (
              <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
                No document file available

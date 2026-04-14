@@ -58,6 +58,8 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
 
+  allowedDevOrigins: ['192.168.32.1'],
+
   // Note: ESLint configuration is handled in eslint.config.mjs, not in NextConfig.
   // If you need to ignore ESLint errors during build, configure it in package.json
   // scripts or use ESLint's own ignore mechanisms.

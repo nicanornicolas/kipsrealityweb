@@ -11,10 +11,14 @@
       "@/*": ["./src/*"],
       "@rentflow/iam": ["libs/iam/src/index.ts"],
       "@rentflow/property": ["libs/property/src/index.ts"],
+      "@rentflow/property/client": ["libs/property/src/client.ts"],
       "@rentflow/finance": ["libs/finance/src/index.ts"],
+      "@rentflow/finance/client": ["libs/finance/src/client.ts"],
       "@rentflow/payments": ["libs/payments/src/index.ts"],
+      "@rentflow/payments/client": ["libs/payments/src/client.ts"],
       "@rentflow/lease": ["libs/lease/src/index.ts"],
       "@rentflow/utilities": ["libs/utilities/src/index.ts"],
+      "@rentflow/utilities/client": ["libs/utilities/src/client.ts"],
       "@rentflow/dss": ["libs/dss/src/index.ts"]
     }
   },

@@ -1,11 +1,24 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useRef } from "react";
-import { getProperties, deleteProperty } from "@/lib/property-manager";
-import { Building2, Home, MapPin, Bed, Bath, User, Building, MoreVertical, Eye, FileText, Edit, Trash2 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState, useRef } from 'react';
+import {
+  Building2,
+  Home,
+  MapPin,
+  Bed,
+  Bath,
+  User,
+  Building,
+  MoreVertical,
+  Eye,
+  FileText,
+  Edit,
+  Trash2,
+} from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import PropertyForm from '@/components/website/PropertyManager/RegisterPropertyForm';
 import EditPropertyForm from '@/components/website/PropertyManager/UpdatePropertyForm';
+import { deleteProperty } from '@rentflow/property/client';
 
 export default function PropertyManagerPage() {
   const [properties, setProperties] = useState<any[]>([]);
@@ -26,15 +39,18 @@ export default function PropertyManagerPage() {
     const handleClickOutside = (event: MouseEvent) => {
       if (openMenu) {
         const dropdownElement = dropdownRefs.current[openMenu];
-        if (dropdownElement && !dropdownElement.contains(event.target as Node)) {
+        if (
+          dropdownElement &&
+          !dropdownElement.contains(event.target as Node)
+        ) {
           setOpenMenu(null);
         }
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [openMenu]);
 
@@ -49,25 +65,28 @@ export default function PropertyManagerPage() {
         console.error('Missing user data:', {
           hasUser: !!user,
           hasOrgUserId: !!user?.organizationUserId,
-          hasOrgId: !!user?.organization?.id
+          hasOrgId: !!user?.organization?.id,
         });
-        setError("Please log in to view properties");
+        setError('Please log in to view properties');
         setLoading(false);
         return;
       }
 
       try {
-        console.log('Calling getProperties...');
-        const data = await getProperties(
-          user.organizationUserId,
-          user.organization.id
+        console.log('Fetching properties from API...');
+        const res = await fetch(
+          `/api/properties?organizationId=${user.organization.id}`,
         );
+        if (!res.ok) throw new Error('Failed to fetch properties');
+        const data = await res.json();
         console.log('Properties received:', data);
         setProperties(data);
         setError(null);
       } catch (err) {
         console.error('Error in fetchProperties:', err);
-        setError(err instanceof Error ? err.message : "Failed to fetch properties");
+        setError(
+          err instanceof Error ? err.message : 'Failed to fetch properties',
+        );
       } finally {
         setLoading(false);
       }
@@ -81,15 +100,20 @@ export default function PropertyManagerPage() {
       console.error('Cannot refresh - missing user data');
       return;
     }
-    
+
     setLoading(true);
     try {
-      const data = await getProperties(user.organizationUserId, user.organization.id);
+      const data = await getProperties(
+        user.organizationUserId,
+        user.organization.id,
+      );
       setProperties(data);
       setError(null);
     } catch (err) {
       console.error('Error refreshing properties:', err);
-      setError(err instanceof Error ? err.message : "Failed to refresh properties");
+      setError(
+        err instanceof Error ? err.message : 'Failed to refresh properties',
+      );
     } finally {
       setLoading(false);
     }
@@ -105,10 +129,12 @@ export default function PropertyManagerPage() {
         >
           ✕
         </button>
-        <PropertyForm onSuccess={() => {
-          setIsModalOpen(false);
-          refreshProperties();
-        }} />
+        <PropertyForm
+          onSuccess={() => {
+            setIsModalOpen(false);
+            refreshProperties();
+          }}
+        />
       </div>
     </div>
   );
@@ -146,22 +172,25 @@ export default function PropertyManagerPage() {
       {user?.organization && (
         <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg">
           <Building className="w-5 h-5 text-blue-600" />
-          <span className="text-sm font-medium text-blue-900">{user.organization.name}</span>
+          <span className="text-sm font-medium text-blue-900">
+            {user.organization.name}
+          </span>
         </div>
       )}
-      
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-semibold text-gray-800">My Properties</h1>
+          <h1 className="text-3xl font-semibold text-gray-800">
+            My Properties
+          </h1>
           <p className="text-gray-500 mt-1">
-            {properties.length === 0 
-              ? "No properties yet. Add your first property to get started."
-              : `Managing ${properties.length} ${properties.length === 1 ? "property" : "properties"}`
-            }
+            {properties.length === 0
+              ? 'No properties yet. Add your first property to get started.'
+              : `Managing ${properties.length} ${properties.length === 1 ? 'property' : 'properties'}`}
           </p>
         </div>
-        
+
         <button
           onClick={() => setIsModalOpen(true)}
           className="bg-blue-600 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 font-medium"
@@ -180,9 +209,9 @@ export default function PropertyManagerPage() {
           <h2 className="text-xl font-semibold mb-4">Update Property</h2>
           <EditPropertyForm
             initialData={selectedProperty}
-            onSuccess={() => { 
-              setEditModalOpen(false); 
-              refreshProperties(); 
+            onSuccess={() => {
+              setEditModalOpen(false);
+              refreshProperties();
             }}
           />
         </Modal>
@@ -193,7 +222,9 @@ export default function PropertyManagerPage() {
         <Modal close={() => setDeleteModalOpen(false)}>
           <h2 className="text-xl font-semibold text-red-600">Confirm Delete</h2>
           <p className="text-gray-700 mt-3">
-            Are you sure you want to delete <strong>{selectedProperty.name}</strong>? This action cannot be undone.
+            Are you sure you want to delete{' '}
+            <strong>{selectedProperty.name}</strong>? This action cannot be
+            undone.
           </p>
           <div className="flex justify-end gap-3 mt-6">
             <button
@@ -210,7 +241,7 @@ export default function PropertyManagerPage() {
                   refreshProperties();
                 } catch (err) {
                   console.error(err);
-                  alert("Failed to delete property.");
+                  alert('Failed to delete property.');
                 }
               }}
               className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
@@ -225,9 +256,12 @@ export default function PropertyManagerPage() {
       {properties.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center">
           <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">No Properties Yet</h3>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">
+            No Properties Yet
+          </h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            You haven't added any properties yet. Start by adding your first property to manage units, leases, and tenants.
+            You haven't added any properties yet. Start by adding your first
+            property to manage units, leases, and tenants.
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -243,13 +277,27 @@ export default function PropertyManagerPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">Property</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">Type</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">Location</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">Details</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">Manager</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">Status</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">Actions</th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">
+                    Property
+                  </th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">
+                    Type
+                  </th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">
+                    Location
+                  </th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">
+                    Details
+                  </th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">
+                    Manager
+                  </th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">
+                    Status
+                  </th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -260,7 +308,7 @@ export default function PropertyManagerPage() {
                   >
                     <td className="py-5 px-6">
                       <div className="flex items-center gap-3">
-                        {p.type?.toLowerCase() === "apartment" ? (
+                        {p.type?.toLowerCase() === 'apartment' ? (
                           <Building2 className="text-blue-600 w-6 h-6" />
                         ) : (
                           <Home className="text-navy-700 w-6 h-6" />
@@ -269,11 +317,12 @@ export default function PropertyManagerPage() {
                           <h2 className="text-lg font-semibold text-gray-800 group-hover:text-blue-600">
                             {p.type}
                           </h2>
-                          {p.type?.toLowerCase() === "apartment" && p.details?.buildingName && (
-                            <p className="text-sm text-blue-600 font-medium mt-1">
-                              {p.details.buildingName}
-                            </p>
-                          )}
+                          {p.type?.toLowerCase() === 'apartment' &&
+                            p.details?.buildingName && (
+                              <p className="text-sm text-blue-600 font-medium mt-1">
+                                {p.details.buildingName}
+                              </p>
+                            )}
                           {p.details?.houseName && (
                             <p className="text-sm text-blue-600 font-medium mt-1">
                               {p.details.houseName}
@@ -290,26 +339,30 @@ export default function PropertyManagerPage() {
                     <td className="py-5 px-6">
                       <div className="flex items-center gap-2 text-gray-600">
                         <MapPin className="w-4 h-4 text-gray-400" />
-                        <span className="max-w-[200px] truncate">{p.city}, {p.address}</span>
+                        <span className="max-w-[200px] truncate">
+                          {p.city}, {p.address}
+                        </span>
                       </div>
                     </td>
                     <td className="py-5 px-6">
-                      {p.type?.toLowerCase() === "apartment" ? (
+                      {p.type?.toLowerCase() === 'apartment' ? (
                         <div className="space-y-1 text-sm text-gray-600">
-                          <div>Floors: {p.details?.totalFloors || "N/A"}</div>
-                          <div>Units: {p.details?.totalUnits || "N/A"}</div>
+                          <div>Floors: {p.details?.totalFloors || 'N/A'}</div>
+                          <div>Units: {p.details?.totalUnits || 'N/A'}</div>
                         </div>
                       ) : (
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <div className="flex items-center gap-1">
                             <Bed className="w-4 h-4" />
-                            <span>{p.details?.bedrooms || "N/A"}</span>
+                            <span>{p.details?.bedrooms || 'N/A'}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Bath className="w-4 h-4" />
-                            <span>{p.details?.bathrooms || "N/A"}</span>
+                            <span>{p.details?.bathrooms || 'N/A'}</span>
                           </div>
-                          {p.details?.size && <span>{p.details.size} sqft</span>}
+                          {p.details?.size && (
+                            <span>{p.details.size} sqft</span>
+                          )}
                         </div>
                       )}
                     </td>
@@ -318,8 +371,12 @@ export default function PropertyManagerPage() {
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-gray-400" />
                           <div className="text-sm">
-                            <div className="font-medium text-gray-700">{p.manager.firstName} {p.manager.lastName}</div>
-                            <div className="text-xs text-gray-500 capitalize">{p.manager.role?.replace(/_/g, ' ').toLowerCase()}</div>
+                            <div className="font-medium text-gray-700">
+                              {p.manager.firstName} {p.manager.lastName}
+                            </div>
+                            <div className="text-xs text-gray-500 capitalize">
+                              {p.manager.role?.replace(/_/g, ' ').toLowerCase()}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -328,21 +385,32 @@ export default function PropertyManagerPage() {
                       <div className="space-y-1">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            p.availabilityStatus === "available" ? "bg-navy-100 text-green-800" : "bg-gray-100 text-gray-800"
+                            p.availabilityStatus === 'available'
+                              ? 'bg-navy-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
                           }`}
                         >
-                          {p.availabilityStatus || "Unknown"}
+                          {p.availabilityStatus || 'Unknown'}
                         </span>
-                        <div className="text-xs text-gray-500">{p.isFurnished ? "Furnished" : "Unfurnished"}</div>
+                        <div className="text-xs text-gray-500">
+                          {p.isFurnished ? 'Furnished' : 'Unfurnished'}
+                        </div>
                       </div>
                     </td>
-                    <td className="py-5 px-6 relative" onClick={(e) => e.stopPropagation()}>
-                      <div 
+                    <td
+                      className="py-5 px-6 relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div
                         className="relative"
-                        ref={(el) => { dropdownRefs.current[p.id] = el; }}
+                        ref={(el) => {
+                          dropdownRefs.current[p.id] = el;
+                        }}
                       >
                         <button
-                          onClick={() => setOpenMenu(openMenu === p.id ? null : p.id)}
+                          onClick={() =>
+                            setOpenMenu(openMenu === p.id ? null : p.id)
+                          }
                           className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm text-gray-700 transition-all duration-200 shadow-sm hover:shadow-md"
                         >
                           <MoreVertical className="w-4 h-4" />
@@ -352,10 +420,14 @@ export default function PropertyManagerPage() {
                         {openMenu === p.id && (
                           <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
                             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                              <p className="text-sm font-semibold text-gray-800 truncate">{p.name}</p>
-                              <p className="text-xs text-gray-500 capitalize mt-1">{p.type} • {p.city}</p>
+                              <p className="text-sm font-semibold text-gray-800 truncate">
+                                {p.name}
+                              </p>
+                              <p className="text-xs text-gray-500 capitalize mt-1">
+                                {p.type} • {p.city}
+                              </p>
                             </div>
-                            
+
                             <div className="py-2">
                               <button
                                 onClick={() => {
@@ -367,7 +439,9 @@ export default function PropertyManagerPage() {
                                 <Eye className="w-4 h-4 mr-3 text-gray-400 group-hover:text-blue-600" />
                                 <div className="text-left">
                                   <div className="font-medium">View Units</div>
-                                  <div className="text-xs text-gray-500 group-hover:text-blue-600">Browse all property units</div>
+                                  <div className="text-xs text-gray-500 group-hover:text-blue-600">
+                                    Browse all property units
+                                  </div>
                                 </div>
                               </button>
 
@@ -380,40 +454,52 @@ export default function PropertyManagerPage() {
                               >
                                 <FileText className="w-4 h-4 mr-3 text-gray-400 group-hover:text-blue-600" />
                                 <div className="text-left">
-                                  <div className="font-medium">Manage Units & Leases</div>
-                                  <div className="text-xs text-gray-500 group-hover:text-blue-600">Leases and contracts</div>
+                                  <div className="font-medium">
+                                    Manage Units & Leases
+                                  </div>
+                                  <div className="text-xs text-gray-500 group-hover:text-blue-600">
+                                    Leases and contracts
+                                  </div>
                                 </div>
                               </button>
 
                               <div className="border-t border-gray-100 my-1"></div>
 
                               <button
-                                onClick={() => { 
-                                  setSelectedProperty(p); 
-                                  setEditModalOpen(true); 
-                                  setOpenMenu(null); 
+                                onClick={() => {
+                                  setSelectedProperty(p);
+                                  setEditModalOpen(true);
+                                  setOpenMenu(null);
                                 }}
                                 className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-navy-50 hover:text-navy-900 transition-colors group"
                               >
                                 <Edit className="w-4 h-4 mr-3 text-gray-400 group-hover:text-navy-700" />
                                 <div className="text-left">
-                                  <div className="font-medium">Update Property</div>
-                                  <div className="text-xs text-gray-500 group-hover:text-navy-700">Edit property details</div>
+                                  <div className="font-medium">
+                                    Update Property
+                                  </div>
+                                  <div className="text-xs text-gray-500 group-hover:text-navy-700">
+                                    Edit property details
+                                  </div>
                                 </div>
                               </button>
 
                               <button
-                                onClick={() => { 
-                                  setSelectedProperty(p); 
-                                  setDeleteModalOpen(true); 
-                                  setOpenMenu(null); 
+                                onClick={() => {
+                                  setSelectedProperty(p);
+                                  setDeleteModalOpen(true);
+                                  setOpenMenu(null);
                                 }}
                                 className="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors group"
                               >
                                 <Trash2 className="w-4 h-4 mr-3 text-red-400 group-hover:text-red-600" />
                                 <div className="text-left">
-                                  <div className="font-medium">Delete Property</div>
-                                  <div className="text-xs text-red-500 group-hover:text-red-600">Remove permanently</div>
+                                  <div className="font-medium">
+                                    Delete Property
+                                  </div>
+                                  <div className="text-xs text-red-500 group-hover:text-red-600">
+                                    Remove permanently
+                                  </div>
                                 </div>
                               </button>
                             </div>
@@ -433,12 +519,28 @@ export default function PropertyManagerPage() {
 }
 
 const PlusIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+  <svg
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M12 4v16m8-8H4"
+    />
   </svg>
 );
 
-const Modal = ({ children, close }: { children: React.ReactNode; close: () => void }) => (
+const Modal = ({
+  children,
+  close,
+}: {
+  children: React.ReactNode;
+  close: () => void;
+}) => (
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
     <div className="bg-white rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto w-full max-w-3xl p-6 relative">
       <button

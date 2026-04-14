@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@rentflow/iam";
 import { verifyAccessToken } from "@rentflow/iam"; // Adjust path if needed
 import { cookies } from "next/headers";
-import { canUserSignNow } from "@rentflow/dss"; // The logic we built in Phase 2
+import { canUserSignNow, getDocumentForViewing } from "@rentflow/dss"; // The logic we built in Phase 2
 
 export async function GET(
   request: Request,
@@ -24,22 +23,13 @@ export async function GET(
     try {
       // Decode token to get User ID and Email
       user = verifyAccessToken(token);
-    } catch (err) {
+    } catch {
       return NextResponse.json({ error: "Invalid Token" }, { status: 401 });
     }
 
-    // 3. Fetch Document & Participants
-    const document = await prisma.dssDocument.findUnique({
-      where: { id: documentId },
-      include: {
-        participants: {
-          orderBy: { stepOrder: 'asc' } // Show list in order
-        },
-        organization: {
-          select: { name: true } // Show org name
-        }
-      }
-    });
+    // 3. Fetch Document & Generate Signed URL
+    const viewingPayload = await getDocumentForViewing(documentId);
+    const document = viewingPayload?.document;
 
     if (!document) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
@@ -70,7 +60,7 @@ export async function GET(
         id: document.id,
         title: document.title,
         status: document.status,
-        originalFileUrl: document.originalFileUrl, // Used by PDF Viewer
+        originalFileUrl: viewingPayload?.originalFileUrl ?? null, // Signed URL for PDF Viewer
         currentStep: document.currentStep,
         participants: document.participants.map(p => ({
           name: p.fullName,

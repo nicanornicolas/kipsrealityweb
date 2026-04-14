@@ -1,6 +1,6 @@
 // src/app/(dashboard)/property-manager/view-own-property/[id]/units/[unitNumber]/edit/page.tsx
-import EditUnitForm from "@/components/Dashboard/propertymanagerdash/units/EditUnitForm";
-import { fetchUnitDetails } from "@/lib/units";
+import EditUnitForm from '@/components/Dashboard/propertymanagerdash/units/EditUnitForm';
+import { fetchUnitDetails } from '@rentflow/property/client';
 
 export default async function EditUnitPage({
   params,

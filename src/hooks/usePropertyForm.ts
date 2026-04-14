@@ -1,17 +1,26 @@
-import { useForm } from "react-hook-form";
-import { useState, useEffect } from "react";
-import { Property } from "@/app/data/PropertyData";
-import { PropertyType } from "@/app/data/PropertTypeData";
-import { Appliance } from "@/app/data/ApplianceData";
-import { fetchPropertyTypes } from "./";
-import { fetchAppliances } from "./";
-import toast from "react-hot-toast";
+import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
+import { Property } from '@/app/data/PropertyData';
+import { PropertyType } from '@/app/data/PropertTypeData';
+import { Appliance } from '@/app/data/ApplianceData';
+import { fetchPropertyTypes, fetchAppliances } from '@rentflow/property/client';
+import toast from 'react-hot-toast';
 
 export function usePropertyForm() {
   const form = useForm<Property>({
     defaultValues: {
-      houseDetail: { houseName: "", numberOfFloors: 0, bedrooms: 0, bathrooms: 0, size: 0 },
-      apartmentComplexDetail: { buildingName: "", totalFloors: 0, totalUnits: 0 },
+      houseDetail: {
+        houseName: '',
+        numberOfFloors: 0,
+        bedrooms: 0,
+        bathrooms: 0,
+        size: 0,
+      },
+      apartmentComplexDetail: {
+        buildingName: '',
+        totalFloors: 0,
+        totalUnits: 0,
+      },
       applianceIds: [],
       isFurnished: false,
     },
@@ -30,8 +39,8 @@ export function usePropertyForm() {
         setPropertyTypes(types);
         setAppliances(apps);
       } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error("Failed to load property types or appliances.");
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load property types or appliances.');
       }
     };
     getData();

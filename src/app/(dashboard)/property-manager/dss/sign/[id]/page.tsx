@@ -16,6 +16,7 @@ export default function SigningRoomPage() {
   const documentId = params.id as string;
 
   const [document, setDocument] = useState<any>(null); // TODO: Define proper type
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState(false);
   const [canSign, setCanSign] = useState(false);
@@ -31,6 +32,12 @@ export default function SigningRoomPage() {
 
         setDocument(data.document);
         setCanSign(data.canSign);
+
+        const viewRes = await fetch(`/api/dss/documents/${documentId}/view`);
+        const viewData = await viewRes.json();
+        if (viewRes.ok) {
+          setViewUrl(viewData.document?.viewUrl || null);
+        }
       } catch (error) {
         console.error(error);
         toast.error("Failed to load document");
@@ -91,8 +98,8 @@ export default function SigningRoomPage() {
         )}
       </div>
 
-      {document.originalFileUrl ? (
-        <PdfViewer url={document.originalFileUrl} />
+      {viewUrl || document.originalFileUrl ? (
+        <PdfViewer url={viewUrl || document.originalFileUrl} />
       ) : (
         <div className="bg-gray-100 h-96 flex items-center justify-center rounded text-gray-500">
           File URL not found.
