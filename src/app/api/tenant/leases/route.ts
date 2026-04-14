@@ -43,6 +43,7 @@ export async function GET(request: Request) {
     const transformedLeases = leases.map(lease => ({
       id: lease.id,
       property: {
+        propertyName: lease.property?.name || 'Unnamed Property',
         name: lease.property?.name || 'Unnamed Property',
         address: lease.property?.address || ''
       },

@@ -132,7 +132,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, description, priority = "NORMAL", category = "STANDARD" } = body;
+    const {
+      title,
+      description,
+      priority = "NORMAL",
+      category = "STANDARD",
+      mediaUrls = [],
+    } = body;
 
     if (!title || !description) {
       return NextResponse.json({ 
@@ -196,7 +202,7 @@ export async function POST(req: NextRequest) {
         unitId: activeLease.unitId,
         requestedById: orgUser.id,
         title,
-        description,
+        description: descriptionWithMedia,
         priority: priority as "LOW" | "NORMAL" | "HIGH" | "URGENT",
         category: category as "EMERGENCY" | "URGENT" | "ROUTINE" | "STANDARD",
         status: "OPEN", // Default status
@@ -229,3 +235,11 @@ export async function POST(req: NextRequest) {
 }
 
 
+    const sanitizedMediaUrls = Array.isArray(mediaUrls)
+      ? mediaUrls.filter((url) => typeof url === "string" && url.startsWith("http")).slice(0, 3)
+      : [];
+
+    const descriptionWithMedia =
+      sanitizedMediaUrls.length > 0
+        ? `${description}\n\nMedia Attachments:\n${sanitizedMediaUrls.map((url) => `- ${url}`).join("\n")}`
+        : description;

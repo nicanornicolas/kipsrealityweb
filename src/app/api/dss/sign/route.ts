@@ -22,15 +22,35 @@ export async function POST(req: Request) {
 
     // 2. Parse Body
     const body = await req.json();
-    const { documentId, signatureData } = body;
+    const { documentId, signatureData, signatureMode, agreementMetadata } = body;
 
-    if (!documentId || !signatureData) {
+    if (!documentId) {
+      return NextResponse.json({ error: "Missing document ID" }, { status: 400 });
+    }
+
+    const inferredIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+
+    const normalizedSignatureData =
+      signatureMode === "tap_to_agree"
+        ? JSON.stringify({
+            mode: "tap_to_agree",
+            agreedAt: agreementMetadata?.timestamp || new Date().toISOString(),
+            ipAddress: inferredIp,
+            deviceFingerprint: agreementMetadata?.deviceFingerprint || "unknown",
+            source: "tenant_mobile_web",
+          })
+        : signatureData;
+
+    if (!normalizedSignatureData) {
       return NextResponse.json({ error: "Missing document ID or signature data" }, { status: 400 });
     }
 
     // 3. Call Service (The "Manager" we built in Phase 2)
     // This handles validation, DB updates, and workflow progression
-    const result = await signDocument(documentId, user.email, signatureData);
+    const result = await signDocument(documentId, user.email, normalizedSignatureData);
 
     return NextResponse.json({
       success: true,
