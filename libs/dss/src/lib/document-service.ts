@@ -30,6 +30,53 @@ interface AddParticipantInput {
 
 export class DocumentService {
   /**
+   * Lists DSS documents for an organization.
+   */
+  async listDocuments(organizationId: string) {
+    return prisma.dssDocument.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        participants: true,
+      },
+    });
+  }
+
+  /**
+   * Fetches a document and returns a temporary signed URL for browser viewing.
+   */
+  async getDocumentForViewing(documentId: string, organizationId: string) {
+    const doc = await prisma.dssDocument.findFirst({
+      where: { id: documentId, organizationId },
+      include: {
+        fields: true,
+        participants: {
+          orderBy: { stepOrder: 'asc' },
+        },
+        organization: {
+          select: { name: true },
+        },
+      },
+    });
+
+    if (!doc) {
+      throw new Error('Document not found');
+    }
+
+    const storageKey = doc.originalFileKey || doc.originalFileUrl;
+    if (!storageKey) {
+      throw new Error('Document file not found');
+    }
+
+    const secureUrl = await StorageService.getSignedUrl(storageKey);
+
+    return {
+      ...doc,
+      viewUrl: secureUrl,
+    };
+  }
+
+  /**
    * Adds a participant to a DRAFT document only.
    */
   async addParticipant(

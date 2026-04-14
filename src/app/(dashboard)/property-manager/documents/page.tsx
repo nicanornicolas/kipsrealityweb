@@ -55,6 +55,11 @@ interface ApiDocument {
   unit?: { unitNumber?: string };
 }
 
+interface ApiDocumentListResponse {
+  success?: boolean;
+  documents?: ApiDocument[];
+}
+
 export default function DocumentsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -75,9 +80,10 @@ export default function DocumentsPage() {
         // Fetch documents from API
         const res = await fetch('/api/dss/documents');
         if (!res.ok) throw new Error('Failed to fetch documents');
-        const data = (await res.json()) as ApiDocument[];
-        
-        const docs: Document[] = Array.isArray(data) ? data.map((d) => ({
+        const data = (await res.json()) as ApiDocument[] | ApiDocumentListResponse;
+        const rawDocuments = Array.isArray(data) ? data : (data.documents || []);
+
+        const docs: Document[] = rawDocuments.map((d) => ({
           id: d.id,
           name: d.title || d.name || d.fileName || 'Untitled',
           type: d.type || 'PDF',
@@ -87,7 +93,7 @@ export default function DocumentsPage() {
           property: d.property?.name || '',
           unit: d.unit?.unitNumber || '',
           status: d.status || 'active'
-        })) : [];
+        }));
         
         setDocuments(docs);
         
