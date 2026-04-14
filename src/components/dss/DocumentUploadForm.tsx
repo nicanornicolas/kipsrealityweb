@@ -64,7 +64,9 @@ export default function DocumentUploadForm() {
 
             const data = await res.json();
 
-            if (!res.ok) throw new Error(data.error);
+            if (!res.ok) {
+                throw new Error(data?.error || data?.message || "Failed to create document");
+            }
 
             toast.success("Document created & hashed successfully!");
             // Redirect to the "Signing Room" or List (We will build this next)

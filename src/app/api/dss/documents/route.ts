@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@rentflow/iam";
 import { createDocument, DocumentService } from "@rentflow/dss";
-import { verifyAccessToken } from "@rentflow/iam";
-import { cookies } from "next/headers";
 import { DssParticipantRole } from "@prisma/client";
 import { enforceFeatureLimit } from "../../../../lib/guards/requireFeature";
 import { UsageService } from '@rentflow/payments';
@@ -35,38 +32,19 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+    const authError = await requireRole(["PROPERTY_MANAGER", "SYSTEM_ADMIN"], req);
+    if (authError) return authError;
+
     try {
-        // 1. Auth Check
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-
-        // Authentication check
-        if (!token) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-        
-        const user = verifyAccessToken(token);
-        let orgId = user.organizationId;
-        
-        // If organizationId is not in token, try to get it from the user's organization
-        if (!orgId) {
-            const userRecord = await prisma.user.findUnique({
-                where: { id: user.userId },
-                include: { organizationUsers: true }
-            });
-            
-            if (userRecord?.organizationUsers[0]?.organizationId) {
-                orgId = userRecord.organizationUsers[0].organizationId;
-            }
-        }
-
-        // SECURITY: Do not fall back to first organization - fail closed instead
-        if (!orgId) {
+        const currentUser = await getCurrentUser(req);
+        if (!currentUser?.organizationId) {
             return NextResponse.json(
                 { error: "Forbidden - No organization context found. Please contact support." },
                 { status: 403 }
             );
         }
+
+        const orgId = currentUser.organizationId;
 
         // === THE MONETIZATION GATE ===
         // Stops the request immediately if they've hit their tier limit
@@ -75,12 +53,20 @@ export async function POST(req: Request) {
 
         // 2. Parse FormData
         const formData = await req.formData();
-        const file = formData.get("file") as File;
-        const title = formData.get("title") as string;
-        const participantsJson = formData.get("participants") as string;
+        const file = formData.get("file");
+        const title = formData.get("title");
+        const participantsJson = formData.get("participants");
 
-        if (!file || !title || !participantsJson) {
+        if (!(file instanceof File) || typeof title !== "string" || typeof participantsJson !== "string") {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        }
+
+        if (file.type && file.type !== "application/pdf") {
+            return NextResponse.json({ error: "Only PDF documents are supported" }, { status: 400 });
+        }
+
+        if (!title.trim()) {
+            return NextResponse.json({ error: "Document title is required" }, { status: 400 });
         }
 
         // 3. Convert File to Buffer
@@ -88,18 +74,46 @@ export async function POST(req: Request) {
         const fileBuffer = Buffer.from(arrayBuffer);
 
         // 4. Parse Participants
-        const participants = JSON.parse(participantsJson);
+        let parsedParticipants: unknown;
+        try {
+            parsedParticipants = JSON.parse(participantsJson);
+        } catch {
+            return NextResponse.json({ error: "Invalid participants payload" }, { status: 400 });
+        }
+
+        if (!Array.isArray(parsedParticipants)) {
+            return NextResponse.json({ error: "Participants must be an array" }, { status: 400 });
+        }
+
+        const validRoles = new Set(Object.values(DssParticipantRole));
+        const rawParticipants = parsedParticipants as Array<any>;
+        const participants = parsedParticipants
+            .map((p: any) => ({
+                email: typeof p?.email === "string" ? p.email.trim() : "",
+                name: typeof p?.fullName === "string"
+                    ? p.fullName.trim()
+                    : typeof p?.name === "string"
+                        ? p.name.trim()
+                        : "",
+                role: typeof p?.role === "string" ? p.role.trim().toUpperCase() : "",
+            }))
+            .filter((p) => p.email && p.role && validRoles.has(p.role as DssParticipantRole))
+            .map((p) => ({
+                email: p.email,
+                name: p.name || undefined,
+                role: p.role as DssParticipantRole,
+            }));
+
+        if (rawParticipants.length > 0 && participants.length !== rawParticipants.length) {
+            return NextResponse.json({ error: "One or more participants are invalid" }, { status: 400 });
+        }
 
         // 5. Call Service
         const newDoc = await createDocument({
-            title,
+            title: title.trim(),
             organizationId: orgId,
             fileBuffer,
-            participants: participants.map((p: { email: string; fullName: string; role: string }) => ({
-                email: p.email,
-                name: p.fullName,
-                role: p.role as DssParticipantRole,
-            }))
+            participants
         });
 
         // === RECORD USAGE (Only charge them if the DB write succeeded!) ===
@@ -107,9 +121,10 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: true, data: newDoc });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("[DSS Upload Error]", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : "Failed to upload document";
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
