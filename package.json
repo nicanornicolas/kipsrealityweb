@@ -9,7 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "nx dev --webpack",
+    "dev": "nx dev --turbo",
     "postinstall": "prisma generate",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=6144 nx build --webpack",
     "// --- DEPLOYMENT SCRIPTS ---": "",
