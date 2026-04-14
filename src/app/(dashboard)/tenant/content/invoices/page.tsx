@@ -1312,6 +1312,18 @@ export default function TenantInvoices() {
               return (
                 <Card key={inv.id} className="shadow-sm">
                   <CardContent className="p-4 space-y-3">
+                    <span
+                      className={`inline-flex w-full justify-center rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-wider ${
+                        inv.status === 'PAID'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : inv.status === 'OVERDUE'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      {inv.status}
+                    </span>
+
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                       <div>
                         <div className="text-sm font-semibold text-slate-900">
@@ -1319,17 +1331,12 @@ export default function TenantInvoices() {
                         </div>
                         <div className="text-xs text-slate-500">{inv.type}</div>
                       </div>
-                      <span
-                        className={`inline-flex px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${
-                          inv.status === 'PAID'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : inv.status === 'OVERDUE'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-amber-100 text-amber-800'
-                        }`}
-                      >
-                        {inv.status}
-                      </span>
+                      <div className="text-right">
+                        <p className="text-[11px] text-slate-500">Due Date</p>
+                        <p className="text-xs font-semibold text-slate-800">
+                          {new Date(inv.dueDate).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 text-xs text-slate-600">
