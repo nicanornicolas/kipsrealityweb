@@ -1,28 +1,22 @@
+'use client';
 
-"use client";
+import Image from 'next/image';
+import Link from 'next/link';
 
-import Image
-  from "next/image";
-import Link from "next/link";
-
-import { MapPin, Clock, ArrowLeft, Phone, Mail } from "lucide-react";
-import React from "react";
-import { MarketplaceItem } from "@/app/data/marketplaceData"
-
-
+import { MapPin, Clock, ArrowLeft, Phone, Mail } from 'lucide-react';
+import React from 'react';
+import { MarketplaceItem } from '@/app/data/marketplaceData';
+import { toast } from 'sonner';
 
 interface ListingDetailsPageProps {
   listing: MarketplaceItem;
 }
-export default function ListingDetailsPage({ listing }: ListingDetailsPageProps) {
-
+export default function ListingDetailsPage({
+  listing,
+}: ListingDetailsPageProps) {
   return (
-
     <section className="max-w-6xl flex flex-col mx-auto p-6 md:p-10 ">
-
-
       <article className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ">
-
         <div className="relative w-full h-[300px]  aspect-3/2 overflow-hidden">
           <Image
             src={listing.image}
@@ -30,7 +24,6 @@ export default function ListingDetailsPage({ listing }: ListingDetailsPageProps)
             fill
             className="object-cover transition-transform duration-700 hover:scale-105"
           />
-
         </div>
 
         {/* Content */}
@@ -86,13 +79,16 @@ export default function ListingDetailsPage({ listing }: ListingDetailsPageProps)
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            alert("Your message has been sent to the seller!");
+            toast.success('Your message has been sent to the seller!');
             (e.target as HTMLFormElement).reset();
           }}
           className="space-y-4"
         >
           <div>
-            <label htmlFor="message" className="block text-base font-semibold text-blue-600 mb-2">
+            <label
+              htmlFor="message"
+              className="block text-base font-semibold text-blue-600 mb-2"
+            >
               Your Message
             </label>
             <textarea
@@ -112,11 +108,8 @@ export default function ListingDetailsPage({ listing }: ListingDetailsPageProps)
           </button>
         </form>
 
-        <div className="text-center mt-6">
-
-        </div>
+        <div className="text-center mt-6"></div>
       </div>
-
     </section>
   );
 }

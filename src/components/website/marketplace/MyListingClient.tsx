@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import { useState } from "react";
-import { MapPin, Clock, Phone } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { MarketplaceItem } from "@/app/data/marketplaceData";
+import Image from 'next/image';
+import { useState } from 'react';
+import { MapPin, Clock, Phone } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MarketplaceItem } from '@/app/data/marketplaceData';
+import { toast } from 'sonner';
 
 interface ListingDetailsPageProps {
   listing: MarketplaceItem;
@@ -12,15 +13,20 @@ interface ListingDetailsPageProps {
 
 export default function MyListing({ listing }: ListingDetailsPageProps) {
   const [editableListing, setEditableListing] = useState(listing);
-  const [activeTab, setActiveTab] = useState<"view" | "edit" | "inquiries">("view");
+  const [activeTab, setActiveTab] = useState<'view' | 'edit' | 'inquiries'>(
+    'view',
+  );
 
-  const handleChange = (field: keyof MarketplaceItem, value: string | number) => {
+  const handleChange = (
+    field: keyof MarketplaceItem,
+    value: string | number,
+  ) => {
     setEditableListing((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Listing updated successfully!");
+    toast.success('Listing updated successfully!');
   };
 
   return (
@@ -38,30 +44,30 @@ export default function MyListing({ listing }: ListingDetailsPageProps) {
 
         {/* Tabs */}
         <div className="mt-8 border-b border-gray-200 flex divide-x divide-gray-300 rounded-t-xl overflow-hidden">
-          {["view", "edit", "inquiries"].map((tab) => (
+          {['view', 'edit', 'inquiries'].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab as "view" | "edit" | "inquiries")}
+              onClick={() => setActiveTab(tab as 'view' | 'edit' | 'inquiries')}
               className={`flex-1 py-3 text-sm font-semibold transition-colors
-        ${activeTab === tab
-                  ? "text-blue-600 border-b-2 border-blue-600 bg-gray-50"
-                  : "text-gray-500 hover:text-gray-700"
-                }`}
+        ${
+          activeTab === tab
+            ? 'text-blue-600 border-b-2 border-blue-600 bg-gray-50'
+            : 'text-gray-500 hover:text-gray-700'
+        }`}
             >
-              {tab === "view"
-                ? "Overview"
-                : tab === "edit"
-                  ? "Edit Listing"
-                  : "Inquiries"}
+              {tab === 'view'
+                ? 'Overview'
+                : tab === 'edit'
+                  ? 'Edit Listing'
+                  : 'Inquiries'}
             </button>
           ))}
         </div>
 
-
         {/* Content Area */}
         <div className="p-6 md:p-10">
           <AnimatePresence mode="wait">
-            {activeTab === "view" && (
+            {activeTab === 'view' && (
               <motion.div
                 key="view"
                 initial={{ opacity: 0, y: 10 }}
@@ -102,14 +108,13 @@ export default function MyListing({ listing }: ListingDetailsPageProps) {
                   </p>
                 </div>
 
-
                 <p className="text-sm text-gray-500 mt-4">
                   <strong>You Posted as:</strong> {editableListing.postedBy}
                 </p>
               </motion.div>
             )}
 
-            {activeTab === "edit" && (
+            {activeTab === 'edit' && (
               <motion.form
                 key="edit"
                 onSubmit={handleSave}
@@ -124,15 +129,16 @@ export default function MyListing({ listing }: ListingDetailsPageProps) {
                   <input
                     type="text"
                     value={editableListing.title}
-                    onChange={(e) => handleChange("title", e.target.value)}
+                    onChange={(e) => handleChange('title', e.target.value)}
                     className="text-2xl md:text-3xl font-bold text-gray-900 border-b border-gray-300 focus:outline-none focus:border-blue-500"
                     style={{ width: `${editableListing.title.length + 2}ch` }}
-
                   />
                   <input
                     type="number"
                     value={editableListing.price}
-                    onChange={(e) => handleChange("price", Number(e.target.value))}
+                    onChange={(e) =>
+                      handleChange('price', Number(e.target.value))
+                    }
                     className="text-blue-600 font-semibold text-lg bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -140,18 +146,16 @@ export default function MyListing({ listing }: ListingDetailsPageProps) {
                 <input
                   type="text"
                   value={editableListing.location}
-                  onChange={(e) => handleChange("location", e.target.value)}
+                  onChange={(e) => handleChange('location', e.target.value)}
                   className="w-full border-b border-gray-300 focus:outline-none focus:border-blue-500 py-2"
                 />
 
                 <textarea
                   value={editableListing.description}
-                  onChange={(e) => handleChange("description", e.target.value)}
+                  onChange={(e) => handleChange('description', e.target.value)}
                   rows={5}
                   className="w-full text-gray-900 border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                 />
-
-
 
                 <button
                   type="submit"
@@ -162,7 +166,7 @@ export default function MyListing({ listing }: ListingDetailsPageProps) {
               </motion.form>
             )}
 
-            {activeTab === "inquiries" && (
+            {activeTab === 'inquiries' && (
               <motion.div
                 key="inquiries"
                 initial={{ opacity: 0, y: 10 }}
