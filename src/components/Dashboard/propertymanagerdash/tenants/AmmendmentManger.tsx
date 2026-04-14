@@ -1,7 +1,8 @@
 // components/lease/AmendmentManager.tsx
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
   FileEdit,
   Plus,
@@ -13,7 +14,7 @@ import {
   AlertTriangle,
   ArrowRight,
   History,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface Amendment {
   id: string;
@@ -39,12 +40,14 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
   const [amendments, setAmendments] = useState<Amendment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedAmendment, setSelectedAmendment] = useState<Amendment | null>(null);
+  const [selectedAmendment, setSelectedAmendment] = useState<Amendment | null>(
+    null,
+  );
 
   const [amendmentForm, setAmendmentForm] = useState({
-    amendmentType: "RENT_CHANGE",
-    effectiveDate: "",
-    description: "",
+    amendmentType: 'RENT_CHANGE',
+    effectiveDate: '',
+    description: '',
     changes: {} as any,
     requiresSignature: true,
   });
@@ -53,56 +56,55 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
     fetchAmendments();
   }, [leaseId]);
 
- async function fetchAmendments() {
-  try {
-    const res = await fetch(`/api/lease/${leaseId}/ammendment`);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Unknown error" }));
-      throw new Error(err.error);
+  async function fetchAmendments() {
+    try {
+      const res = await fetch(`/api/lease/${leaseId}/ammendment`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(err.error);
+      }
+      const data = await res.json();
+      setAmendments(data);
+    } catch (error) {
+      console.error('Failed to fetch amendments:', error);
+      setAmendments([]);
+    } finally {
+      setLoading(false);
     }
-    const data = await res.json();
-    setAmendments(data);
-  } catch (error) {
-    console.error("Failed to fetch amendments:", error);
-    setAmendments([]);
-  } finally {
-    setLoading(false);
   }
-}
-
 
   async function createAmendment() {
     try {
       const res = await fetch(`/api/lease/${leaseId}/ammendment`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(amendmentForm),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        alert("Amendment created successfully");
+        toast.success('Amendment created successfully');
         setAmendments([data, ...amendments]);
         setShowCreateForm(false);
         resetForm();
       } else {
-        alert(data.error || "Failed to create ammendment");
+        toast.error(data.error || 'Failed to create amendment');
       }
     } catch (error) {
-      console.error("Create amendment error:", error);
-      alert("An error occurred");
+      console.error('Create amendment error:', error);
+      toast.error('An error occurred');
     }
   }
 
   async function updateAmendmentStatus(
     amendmentId: string,
-    action: "APPROVE" | "REJECT" | "EXECUTE"
+    action: 'APPROVE' | 'REJECT' | 'EXECUTE',
   ) {
     const confirmMessages = {
-      APPROVE: "Are you sure you want to approve this amendment?",
-      REJECT: "Are you sure you want to reject this amendment?",
-      EXECUTE: "This will apply the changes to the lease. Continue?",
+      APPROVE: 'Are you sure you want to approve this amendment?',
+      REJECT: 'Are you sure you want to reject this amendment?',
+      EXECUTE: 'This will apply the changes to the lease. Continue?',
     };
 
     if (!confirm(confirmMessages[action])) return;
@@ -111,54 +113,56 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
       const res = await fetch(
         `/api/lease/${leaseId}/ammendment/${amendmentId}`,
         {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action }),
-        }
+        },
       );
 
       const data = await res.json();
 
       if (res.ok) {
-        alert(`Amendment ${action.toLowerCase()}d successfully`);
+        toast.success(`Amendment ${action.toLowerCase()}d successfully`);
         fetchAmendments();
       } else {
-        alert(data.error || `Failed to ${action.toLowerCase()} amendment`);
+        toast.error(
+          data.error || `Failed to ${action.toLowerCase()} amendment`,
+        );
       }
     } catch (error) {
-      console.error("Update amendment error:", error);
-      alert("An error occurred");
+      console.error('Update amendment error:', error);
+      toast.error('An error occurred');
     }
   }
 
   async function deleteAmendment(amendmentId: string) {
-    if (!confirm("Are you sure you want to delete this amendment?")) return;
+    if (!confirm('Are you sure you want to delete this amendment?')) return;
 
     try {
       const res = await fetch(
         `/api/lease/${leaseId}/ammendment/${amendmentId}`,
         {
-          method: "DELETE",
-        }
+          method: 'DELETE',
+        },
       );
 
       if (res.ok) {
-        alert("Amendment deleted");
+        toast.success('Amendment deleted');
         setAmendments(amendments.filter((a) => a.id !== amendmentId));
       } else {
-        alert("Failed to delete amendment");
+        toast.error('Failed to delete amendment');
       }
     } catch (error) {
-      console.error("Delete error:", error);
-      alert("An error occurred");
+      console.error('Delete error:', error);
+      toast.error('An error occurred');
     }
   }
 
   function resetForm() {
     setAmendmentForm({
-      amendmentType: "RENT_CHANGE",
-      effectiveDate: "",
-      description: "",
+      amendmentType: 'RENT_CHANGE',
+      effectiveDate: '',
+      description: '',
       changes: {},
       requiresSignature: true,
     });
@@ -166,28 +170,28 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      case "APPROVED":
-        return "bg-blue-100 text-blue-800 border-blue-300";
-      case "EXECUTED":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "REJECTED":
-        return "bg-red-100 text-red-800 border-red-300";
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'APPROVED':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'EXECUTED':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'REJECTED':
+        return 'bg-red-100 text-red-800 border-red-300';
       default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
+        return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "PENDING":
+      case 'PENDING':
         return <Clock className="w-4 h-4" />;
-      case "APPROVED":
+      case 'APPROVED':
         return <CheckCircle className="w-4 h-4" />;
-      case "EXECUTED":
+      case 'EXECUTED':
         return <CheckCircle className="w-4 h-4" />;
-      case "REJECTED":
+      case 'REJECTED':
         return <XCircle className="w-4 h-4" />;
       default:
         return null;
@@ -243,11 +247,17 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
               >
                 <option value="RENT_CHANGE">Rent Change</option>
                 <option value="TERM_EXTENSION">Term Extension</option>
-                <option value="UTILITY_CHANGE">Utility Responsibility Change</option>
-                <option value="RESPONSIBILITY_CHANGE">Responsibility Change</option>
+                <option value="UTILITY_CHANGE">
+                  Utility Responsibility Change
+                </option>
+                <option value="RESPONSIBILITY_CHANGE">
+                  Responsibility Change
+                </option>
                 <option value="TENANT_CHANGE">Tenant Change</option>
                 <option value="DEPOSIT_CHANGE">Deposit Change</option>
-                <option value="FEE_STRUCTURE_CHANGE">Fee Structure Change</option>
+                <option value="FEE_STRUCTURE_CHANGE">
+                  Fee Structure Change
+                </option>
                 <option value="OTHER">Other</option>
               </select>
             </div>
@@ -311,7 +321,10 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
                   })
                 }
               />
-              <label htmlFor="requiresSignature" className="text-sm text-gray-700">
+              <label
+                htmlFor="requiresSignature"
+                className="text-sm text-gray-700"
+              >
                 Requires new signatures from both parties
               </label>
             </div>
@@ -320,8 +333,8 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
               <div className="bg-yellow-50 border border-yellow-200 rounded p-3 flex items-start gap-2">
                 <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-yellow-800">
-                  This amendment will reset all signatures. Both landlord and tenant
-                  will need to re-sign the lease.
+                  This amendment will reset all signatures. Both landlord and
+                  tenant will need to re-sign the lease.
                 </p>
               </div>
             )}
@@ -370,11 +383,11 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-semibold text-lg text-gray-900">
-                      {amendment.amendmentType.replace(/_/g, " ")}
+                      {amendment.amendmentType.replace(/_/g, ' ')}
                     </h3>
                     <span
                       className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
-                        amendment.status
+                        amendment.status,
                       )}`}
                     >
                       {getStatusIcon(amendment.status)}
@@ -386,10 +399,12 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
                   </p>
                   <div className="flex items-center gap-4 text-xs text-gray-500">
                     <span>
-                      Effective: {new Date(amendment.effectiveDate).toLocaleDateString()}
+                      Effective:{' '}
+                      {new Date(amendment.effectiveDate).toLocaleDateString()}
                     </span>
                     <span>
-                      Created: {new Date(amendment.createdAt).toLocaleDateString()}
+                      Created:{' '}
+                      {new Date(amendment.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
@@ -404,11 +419,11 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
                     <Eye className="w-4 h-4" />
                   </button>
 
-                  {amendment.status === "PENDING" && (
+                  {amendment.status === 'PENDING' && (
                     <>
                       <button
                         onClick={() =>
-                          updateAmendmentStatus(amendment.id, "APPROVE")
+                          updateAmendmentStatus(amendment.id, 'APPROVE')
                         }
                         className="p-2 text-green-500 hover:bg-green-50 rounded-lg"
                         title="Approve"
@@ -417,7 +432,7 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
                       </button>
                       <button
                         onClick={() =>
-                          updateAmendmentStatus(amendment.id, "REJECT")
+                          updateAmendmentStatus(amendment.id, 'REJECT')
                         }
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                         title="Reject"
@@ -434,10 +449,10 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
                     </>
                   )}
 
-                  {amendment.status === "APPROVED" && (
+                  {amendment.status === 'APPROVED' && (
                     <button
                       onClick={() =>
-                        updateAmendmentStatus(amendment.id, "EXECUTE")
+                        updateAmendmentStatus(amendment.id, 'EXECUTE')
                       }
                       className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm font-medium flex items-center gap-1"
                     >
@@ -449,19 +464,22 @@ export default function AmendmentManager({ leaseId }: AmendmentManagerProps) {
               </div>
 
               {/* Changes Preview */}
-              {amendment.changes && Object.keys(amendment.changes).length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-xs font-medium text-gray-500 mb-2">Changes:</p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    {Object.entries(amendment.changes).map(([key, value]) => (
-                      <div key={key} className="flex items-center gap-2">
-                        <span className="text-gray-600">{key}:</span>
-                        <span className="font-medium">{String(value)}</span>
-                      </div>
-                    ))}
+              {amendment.changes &&
+                Object.keys(amendment.changes).length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <p className="text-xs font-medium text-gray-500 mb-2">
+                      Changes:
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      {Object.entries(amendment.changes).map(([key, value]) => (
+                        <div key={key} className="flex items-center gap-2">
+                          <span className="text-gray-600">{key}:</span>
+                          <span className="font-medium">{String(value)}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           ))}
         </div>
@@ -493,7 +511,7 @@ function AmendmentFields({
   };
 
   switch (amendmentType) {
-    case "RENT_CHANGE":
+    case 'RENT_CHANGE':
       return (
         <div className="space-y-3">
           <div>
@@ -504,16 +522,16 @@ function AmendmentFields({
               type="number"
               step="0.01"
               className="w-full border border-gray-300 rounded-lg px-4 py-2"
-              value={changes.rentAmount || ""}
+              value={changes.rentAmount || ''}
               onChange={(e) =>
-                updateChange("rentAmount", parseFloat(e.target.value))
+                updateChange('rentAmount', parseFloat(e.target.value))
               }
             />
           </div>
         </div>
       );
 
-    case "TERM_EXTENSION":
+    case 'TERM_EXTENSION':
       return (
         <div className="space-y-3">
           <div>
@@ -523,21 +541,21 @@ function AmendmentFields({
             <input
               type="date"
               className="w-full border border-gray-300 rounded-lg px-4 py-2"
-              value={changes.endDate || ""}
-              onChange={(e) => updateChange("endDate", e.target.value)}
+              value={changes.endDate || ''}
+              onChange={(e) => updateChange('endDate', e.target.value)}
             />
           </div>
         </div>
       );
 
-    case "UTILITY_CHANGE":
+    case 'UTILITY_CHANGE':
       return (
         <div className="space-y-2">
           {[
-            ["tenantPaysElectric", "Electricity"],
-            ["tenantPaysWater", "Water"],
-            ["tenantPaysTrash", "Trash"],
-            ["tenantPaysInternet", "Internet"],
+            ['tenantPaysElectric', 'Electricity'],
+            ['tenantPaysWater', 'Water'],
+            ['tenantPaysTrash', 'Trash'],
+            ['tenantPaysInternet', 'Internet'],
           ].map(([key, label]) => (
             <label key={key} className="flex items-center gap-2">
               <input
@@ -551,7 +569,7 @@ function AmendmentFields({
         </div>
       );
 
-    case "DEPOSIT_CHANGE":
+    case 'DEPOSIT_CHANGE':
       return (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -561,9 +579,9 @@ function AmendmentFields({
             type="number"
             step="0.01"
             className="w-full border border-gray-300 rounded-lg px-4 py-2"
-            value={changes.securityDeposit || ""}
+            value={changes.securityDeposit || ''}
             onChange={(e) =>
-              updateChange("securityDeposit", parseFloat(e.target.value))
+              updateChange('securityDeposit', parseFloat(e.target.value))
             }
           />
         </div>
@@ -606,7 +624,7 @@ function AmendmentDetailModal({
             <div>
               <p className="text-sm text-gray-500">Type</p>
               <p className="font-semibold">
-                {amendment.amendmentType.replace(/_/g, " ")}
+                {amendment.amendmentType.replace(/_/g, ' ')}
               </p>
             </div>
 
@@ -636,12 +654,14 @@ function AmendmentDetailModal({
                     Previous Values
                   </p>
                   <div className="bg-gray-50 rounded p-3 space-y-1">
-                    {Object.entries(amendment.previousValues).map(([key, value]) => (
-                      <div key={key} className="flex justify-between text-sm">
-                        <span className="text-gray-600">{key}:</span>
-                        <span className="font-medium">{String(value)}</span>
-                      </div>
-                    ))}
+                    {Object.entries(amendment.previousValues).map(
+                      ([key, value]) => (
+                        <div key={key} className="flex justify-between text-sm">
+                          <span className="text-gray-600">{key}:</span>
+                          <span className="font-medium">{String(value)}</span>
+                        </div>
+                      ),
+                    )}
                   </div>
                 </div>
               )}

@@ -1,7 +1,8 @@
 // components/lease/DocumentManager.tsx
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
   FileText,
   Upload,
@@ -11,7 +12,7 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface LeaseDocument {
   id: string;
@@ -38,8 +39,8 @@ export default function DocumentManager({ leaseId }: DocumentManagerProps) {
 
   const [uploadForm, setUploadForm] = useState({
     file: null as File | null,
-    documentType: "LEASE_AGREEMENT",
-    description: "",
+    documentType: 'LEASE_AGREEMENT',
+    description: '',
   });
 
   useEffect(() => {
@@ -54,7 +55,7 @@ export default function DocumentManager({ leaseId }: DocumentManagerProps) {
         setDocuments(data);
       }
     } catch (error) {
-      console.error("Failed to fetch documents:", error);
+      console.error('Failed to fetch documents:', error);
     } finally {
       setLoading(false);
     }
@@ -62,83 +63,83 @@ export default function DocumentManager({ leaseId }: DocumentManagerProps) {
 
   async function handleUpload() {
     if (!uploadForm.file) {
-      alert("Please select a file");
+      toast.warning('Please select a file');
       return;
     }
 
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("file", uploadForm.file);
-      formData.append("documentType", uploadForm.documentType);
-      formData.append("description", uploadForm.description);
+      formData.append('file', uploadForm.file);
+      formData.append('documentType', uploadForm.documentType);
+      formData.append('description', uploadForm.description);
 
       const res = await fetch(`/api/lease/${leaseId}/document`, {
-        method: "POST",
+        method: 'POST',
         body: formData,
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        alert("Document uploaded successfully");
+        toast.success('Document uploaded successfully');
         setDocuments([...documents, data]);
         setShowUploadForm(false);
         setUploadForm({
           file: null,
-          documentType: "LEASE_AGREEMENT",
-          description: "",
+          documentType: 'LEASE_AGREEMENT',
+          description: '',
         });
       } else {
-        alert(data.error || "Upload failed");
+        toast.error(data.error || 'Upload failed');
       }
     } catch (error) {
-      console.error("Upload error:", error);
-      alert("An error occurred");
+      console.error('Upload error:', error);
+      toast.error('An error occurred');
     } finally {
       setUploading(false);
     }
   }
 
   async function handleDelete(docId: string) {
-    if (!confirm("Are you sure you want to delete this document?")) return;
+    if (!confirm('Are you sure you want to delete this document?')) return;
 
     try {
       const res = await fetch(`/api/lease/${leaseId}/document/${docId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (res.ok) {
         setDocuments(documents.filter((d) => d.id !== docId));
-        alert("Document deleted");
+        toast.success('Document deleted');
       } else {
-        alert("Failed to delete document");
+        toast.error('Failed to delete document');
       }
     } catch (error) {
-      console.error("Delete error:", error);
-      alert("An error occurred");
+      console.error('Delete error:', error);
+      toast.error('An error occurred');
     }
   }
 
   const getDocumentTypeColor = (type: string) => {
     switch (type) {
-      case "LEASE_AGREEMENT":
-        return "bg-blue-100 text-blue-800";
-      case "ADDENDUM":
-        return "bg-purple-100 text-purple-800";
-      case "AMENDMENT":
-        return "bg-orange-100 text-orange-800";
-      case "RENEWAL_NOTICE":
-        return "bg-green-100 text-green-800";
+      case 'LEASE_AGREEMENT':
+        return 'bg-blue-100 text-blue-800';
+      case 'ADDENDUM':
+        return 'bg-purple-100 text-purple-800';
+      case 'AMENDMENT':
+        return 'bg-orange-100 text-orange-800';
+      case 'RENEWAL_NOTICE':
+        return 'bg-green-100 text-green-800';
       default:
-        return "bg-gray-100 text-gray-800";
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   if (loading) {
@@ -230,12 +231,12 @@ export default function DocumentManager({ leaseId }: DocumentManagerProps) {
                 disabled={uploading || !uploadForm.file}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
                   uploading || !uploadForm.file
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
                 } text-white`}
               >
                 <Upload className="w-4 h-4" />
-                {uploading ? "Uploading..." : "Upload"}
+                {uploading ? 'Uploading...' : 'Upload'}
               </button>
               <button
                 onClick={() => setShowUploadForm(false)}
@@ -266,14 +267,16 @@ export default function DocumentManager({ leaseId }: DocumentManagerProps) {
                   <div className="flex items-center gap-3 mb-2">
                     <FileText className="w-5 h-5 text-gray-400" />
                     <div>
-                      <p className="font-semibold text-gray-900">{doc.fileName}</p>
+                      <p className="font-semibold text-gray-900">
+                        {doc.fileName}
+                      </p>
                       <div className="flex items-center gap-2 mt-1">
                         <span
                           className={`text-xs px-2 py-1 rounded-full font-medium ${getDocumentTypeColor(
-                            doc.documentType
+                            doc.documentType,
                           )}`}
                         >
-                          {doc.documentType.replace("_", " ")}
+                          {doc.documentType.replace('_', ' ')}
                         </span>
                         <span className="text-xs text-gray-500">
                           v{doc.version}
@@ -286,7 +289,9 @@ export default function DocumentManager({ leaseId }: DocumentManagerProps) {
                   </div>
 
                   {doc.description && (
-                    <p className="text-sm text-gray-600 mb-2">{doc.description}</p>
+                    <p className="text-sm text-gray-600 mb-2">
+                      {doc.description}
+                    </p>
                   )}
 
                   <div className="flex items-center gap-3 text-xs text-gray-500">
@@ -297,7 +302,9 @@ export default function DocumentManager({ leaseId }: DocumentManagerProps) {
                     {doc.isSigned ? (
                       <span className="flex items-center gap-1 text-green-500">
                         <CheckCircle className="w-3 h-3" />
-                        Signed {doc.signedAt && `on ${new Date(doc.signedAt).toLocaleDateString()}`}
+                        Signed{' '}
+                        {doc.signedAt &&
+                          `on ${new Date(doc.signedAt).toLocaleDateString()}`}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-gray-400">

@@ -1,9 +1,10 @@
 //src/components/Dashboard/propertymanagerdash/tenants/Lease-Signing.tsx
 //lease creation form with steps
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 /* ✅ Define type for the fetched application */
 interface ApplicationData {
@@ -42,7 +43,6 @@ interface ApplicationData {
   moveInDate?: string;
 }
 
-
 /* ✅ Define the Lease Form type */
 interface LeaseForm {
   startDate: string;
@@ -76,7 +76,7 @@ interface LeaseForm {
 export default function LeaseSigningPage() {
   const searchParams = useSearchParams();
 
-  const applicationId = searchParams.get("applicationId");
+  const applicationId = searchParams.get('applicationId');
 
   const [application, setApplication] = useState<ApplicationData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,31 +86,31 @@ export default function LeaseSigningPage() {
 
   /* ✅ Default Form Values */
   const [form, setForm] = useState<LeaseForm>({
-    startDate: "",
-    endDate: "",
-    leaseTerm: "12 months",
+    startDate: '',
+    endDate: '',
+    leaseTerm: '12 months',
 
-    rentAmount: "",
-    securityDeposit: "",
+    rentAmount: '',
+    securityDeposit: '',
 
     paymentDueDay: 1,
-    paymentFrequency: "MONTHLY",
+    paymentFrequency: 'MONTHLY',
 
-    lateFeeFlat: "",
-    lateFeeDaily: "",
-    gracePeriodDays: "",
+    lateFeeFlat: '',
+    lateFeeDaily: '',
+    gracePeriodDays: '',
 
-    tenantResponsibilities: "",
-    landlordResponsibilities: "",
+    tenantResponsibilities: '',
+    landlordResponsibilities: '',
 
     tenantPaysElectric: true,
     tenantPaysWater: false,
     tenantPaysTrash: false,
     tenantPaysInternet: false,
 
-    usageType: "Residential",
+    usageType: 'Residential',
 
-    earlyTerminationFee: "",
+    earlyTerminationFee: '',
     terminationNoticeDays: 30,
   });
 
@@ -121,14 +121,15 @@ export default function LeaseSigningPage() {
         const res = await fetch(`/api/tenant-application/${applicationId}`);
         const data = await res.json();
 
-        if (!res.ok) throw new Error(data.error || "Failed to fetch application");
+        if (!res.ok)
+          throw new Error(data.error || 'Failed to fetch application');
 
         setApplication(data);
 
         // Pre-fill rent amount from the unit
         setForm((prev) => ({
           ...prev,
-          rentAmount: data.unit?.rentAmount || "",
+          rentAmount: data.unit?.rentAmount || '',
         }));
       } catch (err: any) {
         setError(err.message);
@@ -150,32 +151,32 @@ export default function LeaseSigningPage() {
   }
 
   // In your LeaseSigningPage component (the form with steps)
-async function createLease() {
-  try {
-    if (!application) throw new Error("Missing application data.");
+  async function createLease() {
+    try {
+      if (!application) throw new Error('Missing application data.');
 
-    const res = await fetch("/api/lease", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        applicationId,
-        tenantId: application.userId ?? null,
-        propertyId: application.propertyId,
-        unitId: application.unitId,
-        ...form,
-      }),
-    });
+      const res = await fetch('/api/lease', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationId,
+          tenantId: application.userId ?? null,
+          propertyId: application.propertyId,
+          unitId: application.unitId,
+          ...form,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) throw new Error(data.error || "Failed to create lease");
+      if (!res.ok) throw new Error(data.error || 'Failed to create lease');
 
-    alert("Lease created successfully!");
-    window.location.href = `/property-manager/content/lease/${data.id}/sign`;
-  } catch (err: any) {
-    alert(err.message);
+      toast.success('Lease created successfully!');
+      window.location.href = `/property-manager/content/lease/${data.id}/sign`;
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   }
-}
 
   if (loading) return <p className="p-10 text-center">Loading...</p>;
   if (error) return <p className="p-10 text-center text-red-600">{error}</p>;
@@ -190,7 +191,7 @@ async function createLease() {
           <div
             key={num}
             className={`flex-1 h-1 mx-1 rounded ${
-              step >= num ? "bg-blue-600" : "bg-gray-300"
+              step >= num ? 'bg-blue-600' : 'bg-gray-300'
             }`}
           ></div>
         ))}
@@ -198,7 +199,6 @@ async function createLease() {
 
       {/* ✅ Form Wrapper */}
       <div className="bg-white p-6 rounded-xl shadow space-y-6">
-
         {/* ✅ STEP 1 — Lease Basics */}
         {step === 1 && (
           <div>
@@ -210,7 +210,9 @@ async function createLease() {
                   type="date"
                   className="w-full border p-2 rounded"
                   value={form.startDate}
-                  onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, startDate: e.target.value })
+                  }
                 />
               </div>
 
@@ -220,7 +222,9 @@ async function createLease() {
                   type="date"
                   className="w-full border p-2 rounded"
                   value={form.endDate}
-                  onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, endDate: e.target.value })
+                  }
                 />
               </div>
 
@@ -230,7 +234,9 @@ async function createLease() {
                   type="text"
                   className="w-full border p-2 rounded"
                   value={form.leaseTerm}
-                  onChange={(e) => setForm({ ...form, leaseTerm: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, leaseTerm: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -240,7 +246,9 @@ async function createLease() {
         {/* ✅ STEP 2 — Payment Terms */}
         {step === 2 && (
           <div>
-            <h2 className="text-xl font-semibold mb-3">Step 2: Payment Terms</h2>
+            <h2 className="text-xl font-semibold mb-3">
+              Step 2: Payment Terms
+            </h2>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -262,7 +270,10 @@ async function createLease() {
                   className="w-full border p-2 rounded"
                   value={form.securityDeposit}
                   onChange={(e) =>
-                    setForm({ ...form, securityDeposit: Number(e.target.value) })
+                    setForm({
+                      ...form,
+                      securityDeposit: Number(e.target.value),
+                    })
                   }
                 />
               </div>
@@ -301,7 +312,9 @@ async function createLease() {
         {/* ✅ STEP 3 — Late Fees */}
         {step === 3 && (
           <div>
-            <h2 className="text-xl font-semibold mb-3">Step 3: Late Fees & Penalties</h2>
+            <h2 className="text-xl font-semibold mb-3">
+              Step 3: Late Fees & Penalties
+            </h2>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -335,7 +348,10 @@ async function createLease() {
                   className="w-full border p-2 rounded"
                   value={form.gracePeriodDays}
                   onChange={(e) =>
-                    setForm({ ...form, gracePeriodDays: Number(e.target.value) })
+                    setForm({
+                      ...form,
+                      gracePeriodDays: Number(e.target.value),
+                    })
                   }
                 />
               </div>
@@ -350,10 +366,10 @@ async function createLease() {
 
             <div className="space-y-3">
               {[
-                ["tenantPaysElectric", "Electricity"],
-                ["tenantPaysWater", "Water"],
-                ["tenantPaysTrash", "Trash"],
-                ["tenantPaysInternet", "Internet"],
+                ['tenantPaysElectric', 'Electricity'],
+                ['tenantPaysWater', 'Water'],
+                ['tenantPaysTrash', 'Trash'],
+                ['tenantPaysInternet', 'Internet'],
               ].map(([key, label]) => (
                 <label key={key} className="flex items-center gap-2">
                   <input
@@ -411,139 +427,148 @@ async function createLease() {
         )}
 
         {/* ✅ STEP 6 — FINAL REVIEW */}
-{step === 6 && (
-  <div>
-    <h2 className="text-xl font-semibold mb-3">
-      Step 6: Termination & Final Review
-    </h2>
+        {step === 6 && (
+          <div>
+            <h2 className="text-xl font-semibold mb-3">
+              Step 6: Termination & Final Review
+            </h2>
 
-    {/* Termination Fields */}
-    <div className="grid grid-cols-2 gap-4 mb-6">
-      <div>
-        <label>Early Termination Fee</label>
-        <input
-          type="number"
-          className="w-full border p-2 rounded"
-          value={form.earlyTerminationFee}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              earlyTerminationFee: Number(e.target.value),
-            })
-          }
-        />
-      </div>
+            {/* Termination Fields */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <label>Early Termination Fee</label>
+                <input
+                  type="number"
+                  className="w-full border p-2 rounded"
+                  value={form.earlyTerminationFee}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      earlyTerminationFee: Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
 
-      <div>
-        <label>Notice Period (days)</label>
-        <input
-          type="number"
-          className="w-full border p-2 rounded"
-          value={form.terminationNoticeDays}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              terminationNoticeDays: Number(e.target.value),
-            })
-          }
-        />
-      </div>
-    </div>
+              <div>
+                <label>Notice Period (days)</label>
+                <input
+                  type="number"
+                  className="w-full border p-2 rounded"
+                  value={form.terminationNoticeDays}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      terminationNoticeDays: Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
+            </div>
 
-    {/* ✅ REVIEW SUMMARY */}
-        <h3 className="text-lg font-semibold mb-3">Review Summary</h3>
+            {/* ✅ REVIEW SUMMARY */}
+            <h3 className="text-lg font-semibold mb-3">Review Summary</h3>
 
-        <div className="bg-gray-50 p-4 rounded border space-y-3">
+            <div className="bg-gray-50 p-4 rounded border space-y-3">
+              {/* ✅ Tenant Info */}
+              <div>
+                <p className="font-semibold text-gray-700">
+                  Tenant Information
+                </p>
+                <p>Name: {application?.fullName}</p>
+                <p>Email: {application?.email}</p>
+                <p>Phone: {application?.phone}</p>
+              </div>
 
-        {/* ✅ Tenant Info */}
-        <div>
-            <p className="font-semibold text-gray-700">Tenant Information</p>
-            <p>Name: {application?.fullName}</p>
-            <p>Email: {application?.email}</p>
-            <p>Phone: {application?.phone}</p>
-        </div>
+              {/* ✅ Property Info */}
+              <div>
+                <p className="font-semibold text-gray-700">
+                  Property Information
+                </p>
+                <p>
+                  Property:{' '}
+                  {application?.property?.name || application?.property?.city}
+                </p>
+              </div>
 
-        {/* ✅ Property Info */}
-        <div>
-            <p className="font-semibold text-gray-700">Property Information</p>
-            <p>
-            Property: {application?.property?.name || application?.property?.city}
-            </p>
-        </div>
+              {/* ✅ Unit Info */}
+              <div>
+                <p className="font-semibold text-gray-700">Unit Information</p>
+                <p>Unit Number: {application?.unit?.unitNumber}</p>
+                <p>
+                  Bedrooms/Bathrooms: {application?.unit?.bedrooms} bed /{' '}
+                  {application?.unit?.bathrooms} bath
+                </p>
+                <p>Monthly Rent: ${form.rentAmount}</p>
+              </div>
 
-        {/* ✅ Unit Info */}
-        <div>
-            <p className="font-semibold text-gray-700">Unit Information</p>
-            <p>Unit Number: {application?.unit?.unitNumber}</p>
-            <p>Bedrooms/Bathrooms: {application?.unit?.bedrooms} bed / {application?.unit?.bathrooms} bath</p>
-            <p>Monthly Rent: ${form.rentAmount}</p>
-        </div>
+              {/* ✅ Lease Basics */}
+              <div>
+                <p className="font-semibold text-gray-700">Lease Term</p>
+                <p>
+                  {form.startDate} → {form.endDate} ({form.leaseTerm})
+                </p>
+              </div>
 
-        {/* ✅ Lease Basics */}
-        <div>
-            <p className="font-semibold text-gray-700">Lease Term</p>
-            <p>
-            {form.startDate} → {form.endDate} ({form.leaseTerm})
-            </p>
-        </div>
+              {/* ✅ Payment Terms */}
+              <div>
+                <p className="font-semibold text-gray-700">Payment Terms</p>
+                <p>Rent Amount: ${form.rentAmount}</p>
+                <p>Deposit: ${form.securityDeposit || '0'}</p>
+                <p>Payment Due Day: {form.paymentDueDay}</p>
+                <p>Payment Frequency: {form.paymentFrequency}</p>
+              </div>
 
-        {/* ✅ Payment Terms */}
-        <div>
-            <p className="font-semibold text-gray-700">Payment Terms</p>
-            <p>Rent Amount: ${form.rentAmount}</p>
-            <p>Deposit: ${form.securityDeposit || "0"}</p>
-            <p>Payment Due Day: {form.paymentDueDay}</p>
-            <p>Payment Frequency: {form.paymentFrequency}</p>
-        </div>
+              {/* ✅ Late Fees */}
+              <div>
+                <p className="font-semibold text-gray-700">
+                  Late Fees & Penalties
+                </p>
+                <p>Flat Late Fee: ${form.lateFeeFlat || '0'}</p>
+                <p>Daily Late Fee: ${form.lateFeeDaily || '0'}</p>
+                <p>Grace Period: {form.gracePeriodDays || 0} days</p>
+              </div>
 
-        {/* ✅ Late Fees */}
-        <div>
-            <p className="font-semibold text-gray-700">Late Fees & Penalties</p>
-            <p>Flat Late Fee: ${form.lateFeeFlat || "0"}</p>
-            <p>Daily Late Fee: ${form.lateFeeDaily || "0"}</p>
-            <p>Grace Period: {form.gracePeriodDays || 0} days</p>
-        </div>
+              {/* ✅ Utilities */}
+              <div>
+                <p className="font-semibold text-gray-700">
+                  Utilities Tenant Pays
+                </p>
+                <p>
+                  {[
+                    form.tenantPaysElectric && 'Electricity',
+                    form.tenantPaysWater && 'Water',
+                    form.tenantPaysTrash && 'Trash',
+                    form.tenantPaysInternet && 'Internet',
+                  ]
+                    .filter(Boolean)
+                    .join(', ') || 'None'}
+                </p>
+              </div>
 
-        {/* ✅ Utilities */}
-        <div>
-            <p className="font-semibold text-gray-700">Utilities Tenant Pays</p>
-            <p>
-            {[
-                form.tenantPaysElectric && "Electricity",
-                form.tenantPaysWater && "Water",
-                form.tenantPaysTrash && "Trash",
-                form.tenantPaysInternet && "Internet",
-            ]
-                .filter(Boolean)
-                .join(", ") || "None"}
-            </p>
-        </div>
+              {/* ✅ Usage */}
+              <div>
+                <p className="font-semibold text-gray-700">Usage Type</p>
+                <p>{form.usageType}</p>
+              </div>
 
-        {/* ✅ Usage */}
-        <div>
-            <p className="font-semibold text-gray-700">Usage Type</p>
-            <p>{form.usageType}</p>
-        </div>
+              {/* ✅ Termination */}
+              <div>
+                <p className="font-semibold text-gray-700">Termination Rules</p>
+                <p>Early Termination Fee: ${form.earlyTerminationFee || '0'}</p>
+                <p>Notice Period: {form.terminationNoticeDays} days</p>
+              </div>
+            </div>
 
-        {/* ✅ Termination */}
-        <div>
-            <p className="font-semibold text-gray-700">Termination Rules</p>
-            <p>Early Termination Fee: ${form.earlyTerminationFee || "0"}</p>
-            <p>Notice Period: {form.terminationNoticeDays} days</p>
-        </div>
-
-        </div>
-
-        {/* ✅ Create Lease Button */}
-        <button
-        onClick={createLease}
-        className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-        >
-        Create Lease
-        </button>
-    </div>
-    )}
-
+            {/* ✅ Create Lease Button */}
+            <button
+              onClick={createLease}
+              className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Create Lease
+            </button>
+          </div>
+        )}
 
         {/* ✅ Navigation Buttons */}
         <div className="flex justify-between pt-4">
