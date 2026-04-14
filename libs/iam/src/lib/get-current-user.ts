@@ -1,5 +1,6 @@
-import { verifyAccessToken } from "./auth";
-import { cookies } from "next/headers";
+import 'server-only';
+import { verifyAccessToken } from './auth';
+import { cookies } from 'next/headers';
 
 export async function getCurrentUser(req?: Request) {
   try {
@@ -7,16 +8,16 @@ export async function getCurrentUser(req?: Request) {
 
     // Try to get token from Authorization header first (for API calls)
     if (req) {
-      const authHeader = req.headers.get("authorization");
-      if (authHeader && authHeader.startsWith("Bearer ")) {
-        token = authHeader.split(" ")[1];
+      const authHeader = req.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
       }
     }
 
     // If no token in header, try to get from cookies (for browser requests)
     if (!token) {
       const cookieStore = cookies();
-      const tokenCookie = (await cookieStore).get("token");
+      const tokenCookie = (await cookieStore).get('token');
       token = tokenCookie?.value || null;
     }
 

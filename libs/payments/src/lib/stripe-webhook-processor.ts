@@ -9,11 +9,11 @@ export interface StripeWebhookJobData {
 }
 
 const prisma = new PrismaClient();
-const subscriptionService = new SubscriptionService();
 
 export async function processStripeWebhookJob(
   job: Job<StripeWebhookJobData>
 ): Promise<void> {
+  const subscriptionService = new SubscriptionService();
   const { webhookEventId, stripeEventId } = job.data;
   const eventType = job.name;
 

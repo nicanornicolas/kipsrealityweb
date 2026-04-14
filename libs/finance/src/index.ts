@@ -1,31 +1,90 @@
-// libs/finance/src/index.ts
+import { Decimal } from '@prisma/client/runtime/library';
 
-/**
- * IFinanceModule - The facade interface that other modules use to interact
- * with the Finance bounded context.
- * 
- * This follows the Dependency Inversion Principle: @rentflow/utilities
- * depends on this abstraction, not on a concrete Finance implementation.
- */
-export interface IFinanceModule {
-  /**
-   * Posts an invoice to the General Ledger.
-   * This is called when a utility bill is approved and needs to generate
-   * tenant invoices.
-   */
-  postInvoiceToGL(params: {
-    tenantId: string;
-    amount: number;
-    type: string; // e.g., 'UTILITY', 'RENT', 'LATE_FEE'
-    referenceId: string; // The UtilityAllocation ID
-    description: string;
-  }): Promise<{ invoiceId: string }>;
+// Explicit USA/GAAP typings
+export type AccountCode =
+  | '1000'
+  | '1100'
+  | '1200'
+  | '1300'
+  | '1400'
+  | '1500'
+  | '2000'
+  | '2100'
+  | '2200'
+  | '2250'
+  | '3000'
+  | '3100'
+  | '3200'
+  | '4000'
+  | '4100'
+  | '4200'
+  | '4300'
+  | '4400'
+  | '5000'
+  | '5100'
+  | '5200'
+  | '5300'
+  | '6000'
+  | '6100'
+  | '6200'
+  | '6300';
+export type InvoiceType = 'RENT' | 'UTILITY' | 'DEPOSIT' | 'FEE' | 'TAX';
+
+export interface CreateInvoiceInput {
+  organizationId: string;
+  tenantId: string;
+  leaseId?: string;
+  propertyId: string;
+  unitId?: string;
+  amount: Decimal;
+  taxAmount?: Decimal; // USA Tax readiness
+  type: InvoiceType;
+  dueDate: Date;
+  description: string;
 }
 
-export * from './lib/finance';
+export interface JournalLineInput {
+  accountCode: AccountCode;
+  debit: Decimal;
+  credit: Decimal;
+  propertyId?: string; // Dimension tracking
+  tenantId?: string; // Dimension tracking
+}
+
+export interface PostJournalInput {
+  organizationId: string;
+  date: Date;
+  reference: string;
+  description: string;
+  lines: JournalLineInput[];
+}
+
+/**
+ * SQUAD 1 - CORE FINANCIAL CONTRACT
+ * Strict GAAP-compliant operations.
+ */
+export interface IFinanceModule {
+  // Invoices & Receivables
+  generateInvoice(input: CreateInvoiceInput): Promise<{ invoiceId: string }>;
+  getTenantBalance(tenantId: string): Promise<{ totalOutstanding: Decimal }>;
+
+  // Double-Entry Ledger
+  postJournalEntry(
+    input: PostJournalInput,
+  ): Promise<{ journalEntryId: string }>;
+
+  // Payment Allocation
+  recordPayment(
+    invoiceId: string,
+    amount: Decimal,
+    paymentMethodId: string,
+  ): Promise<void>;
+}
+
+// Export the concrete implementations as we build them
 export * from './lib/journal-service';
 export * from './lib/actions';
 export * from './lib/types';
-export * from './lib/utility-service';
-export * from './lib/maintenance-service';
 export * from './lib/setup';
+export * from './lib/maintenance-service';
+export * from './lib/utility-service';

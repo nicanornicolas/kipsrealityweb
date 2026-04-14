@@ -1,4 +1,5 @@
 'use client';
+'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { getProperties, deleteProperty } from '@/lib/property-manager';
@@ -17,8 +18,25 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useEffect, useState, useRef } from 'react';
+import {
+  Building2,
+  Home,
+  MapPin,
+  Bed,
+  Bath,
+  User,
+  Building,
+  MoreVertical,
+  Eye,
+  FileText,
+  Edit,
+  Trash2,
+} from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import PropertyForm from '@/components/website/PropertyManager/RegisterPropertyForm';
 import EditPropertyForm from '@/components/website/PropertyManager/UpdatePropertyForm';
+import { deleteProperty } from '@rentflow/property/client';
 import { toast } from 'sonner';
 
 export default function PropertyManagerPage() {
@@ -74,11 +92,12 @@ export default function PropertyManagerPage() {
       }
 
       try {
-        console.log('Calling getProperties...');
-        const data = await getProperties(
-          user.organizationUserId,
-          user.organization.id,
+        console.log('Fetching properties from API...');
+        const res = await fetch(
+          `/api/properties?organizationId=${user.organization.id}`,,
         );
+        if (!res.ok) throw new Error('Failed to fetch properties');
+        const data = await res.json();
         console.log('Properties received:', data);
         setProperties(data);
         setError(null);

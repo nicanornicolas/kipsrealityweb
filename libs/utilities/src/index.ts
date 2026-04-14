@@ -1,6 +1,10 @@
 // libs/utilities/src/index.ts
 
-export type SplitMethod = 'RUBS_OCCUPANCY' | 'SQUARE_FOOTAGE' | 'EQUAL' | 'DIRECT_METER';
+export type SplitMethod =
+  | 'RUBS_OCCUPANCY'
+  | 'SQUARE_FOOTAGE'
+  | 'EQUAL'
+  | 'DIRECT_METER';
 
 /**
  * This interface perfectly matches the JSON payload that the future
@@ -14,11 +18,11 @@ export interface UtilityAllocationPayload {
   splitMethod: SplitMethod;
   billingPeriodStart: Date;
   billingPeriodEnd: Date;
-  
+
   // AI Metadata (Nullable for manual entry)
   aiConfidenceScore?: number;
   anomalyFlag?: boolean;
-  
+
   allocations: {
     unitId: string;
     tenantId: string;
@@ -33,13 +37,18 @@ export interface IUtilityService {
   /**
    * Saves the allocation as a DRAFT for Property Manager review
    */
-  stageAllocation(payload: UtilityAllocationPayload): Promise<{ billId: string; status: string }>;
-  
+  stageAllocation(
+    payload: UtilityAllocationPayload,
+  ): Promise<{ billId: string; status: string }>;
+
   /**
-   * Approves the draft, generates Tenant Invoices via the Finance module, 
+   * Approves the draft, generates Tenant Invoices via the Finance module,
    * and posts to the General Ledger.
    */
-  approveAllocation(utilityBillId: string, managerId: string): Promise<{ billId: string; status: string; invoicesGenerated: number }>;
+  approveAllocation(
+    utilityBillId: string,
+    managerId: string,
+  ): Promise<{ billId: string; status: string; invoicesGenerated: number }>;
 }
 
 // Export the concrete implementation
@@ -59,5 +68,8 @@ export type { IFinanceModule } from '@rentflow/finance';
 
 export * from './lib/utilities';
 export * from './lib/queue';
+export * from './lib/dss-queue';
 export * from './lib/mail';
 export * from './lib/webhook-processors';
+export * from './lib/notification-service';
+export * from './lib/outbound-webhook';

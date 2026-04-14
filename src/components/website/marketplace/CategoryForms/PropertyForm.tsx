@@ -4,6 +4,17 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { PropertyType } from '@/app/data/PropertTypeData';
 import { Appliance } from '@/app/data/ApplianceData';
+import {
+  fetchPropertyTypes,
+  fetchAppliances,
+  postProperty,
+} from '@rentflow/property/client';
+import Footer from '@/components/website/Footer';
+import { HomeIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { PropertyType } from '@/app/data/PropertTypeData';
+import { Appliance } from '@/app/data/ApplianceData';
 import { fetchPropertyTypes } from './';
 import { fetchAppliances } from './';
 import { postProperty } from './';
@@ -55,8 +66,6 @@ export default function PropertyForm() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-200">
-      <Navbar />
-
       {/* Banner */}
       <section className="relative w-full bg-[#18181a] text-white py-28 text-center overflow-hidden mb-24">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-700/60 to-indigo-600/60 mix-blend-overlay"></div>

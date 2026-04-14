@@ -16,8 +16,6 @@ export default function ServiceForm() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       <section className="w-full bg-[#18181a] text-white py-24 flex flex-col items-center justify-center text-center">
         <h1 className="text-5xl md:text-6xl font-bold mb-4 text-gradient-primary">
           Create Service Listing

@@ -50,7 +50,8 @@ export default defineConfig(() => ({
     name: 'finance',
     watch: false,
     globals: true,
-    environment: 'jsdom',
+    environment: 'node',
+    environmentMatchGlobs: [['**/*.{spec,test}.tsx', 'jsdom']],
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],
     coverage: {

@@ -22,6 +22,8 @@ model Organization {
   paystackSubaccountCode String?                  @map("paystack_subaccount_code")
   region                 Region?                  @default(KEN)
   stripeConnectId        String?                  @map("stripe_connect_id")
+  irsEinEncrypted        String?                  @map("irs_ein_encrypted")
+  stateTaxIds            Json?                    @map("state_tax_ids") // Store state-specific IDs
   invites                Invite[]
   listings               Listing[]
   maintenanceRequests    MaintenanceRequest[]
@@ -36,9 +38,26 @@ model Organization {
   vendors                Vendor[]
   usageMetrics           UsageMetric[]
   subscriptionEvents     SubscriptionEvent[]
+  webhooks               OrganizationWebhook[]
 
   @@index([planId], map: "organizations_planId_fkey")
   @@map("organizations")
+}
+
+model OrganizationWebhook {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  name           String       @default("Default")
+  url            String       @db.Text
+  secret         String?      @db.Text
+  events         Json         @default("[\"document.completed\"]") @map("events")
+  isActive       Boolean      @default(true) @map("is_active")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId], map: "organization_webhooks_organization_id_fkey")
+  @@map("organization_webhooks")
 }
 
 model User {
@@ -172,6 +191,7 @@ model Vendor {
   MaintenanceRequest MaintenanceRequest[]
   organization       Organization         @relation(fields: [organizationId], references: [id])
   user               User                 @relation(fields: [userId], references: [id])
+  vendorTaxInfo      VendorTaxInfo?
 
   @@unique([organizationId, userId])
   @@index([userId], map: "vendors_user_id_fkey")
@@ -684,29 +704,36 @@ model Lease {
 
 model Invoice {
   id                 String              @id @default(uuid())
-  leaseId            String              @map("lease_id")
+  leaseId            String?             @map("lease_id")
+  organizationId     String?             @map("organization_id")
   type               InvoiceType
   totalAmount        Float               @map("amount")
   amountPaid         Float               @default(0) @map("amount_paid")
   balance            Float               @default(0)
+  taxAmount          Decimal?            @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  taxRate            Decimal?            @default(0) @map("tax_rate") @db.Decimal(5, 4)
+  taxExempt          Boolean             @default(false) @map("tax_exempt")
   dueDate            DateTime            @db.DateTime(0)
   status             InvoiceStatus?      @default(PENDING)
   postingStatus      PostingStatus       @default(PENDING) @map("posting_status")
   journalEntryId     String?             @unique @map("journal_entry_id")
   utilityBillId      String?             @map("utility_bill_id")
+  referenceType      String?             @map("reference_type")
+  referenceId        String?             @map("reference_id")
   createdAt          DateTime?           @default(now()) @db.DateTime(0)
   updatedAt          DateTime?           @default(now()) @db.DateTime(0)
   InvoiceItem        InvoiceItem[]
   maintenanceRequest MaintenanceRequest?
   journalEntry       JournalEntry?       @relation(fields: [journalEntryId], references: [id])
-  Lease              Lease               @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  Lease              Lease?              @relation(fields: [leaseId], references: [id], onDelete: Cascade)
   utilityBill        UtilityBill?        @relation(fields: [utilityBillId], references: [id])
   payments           Payment[]
   receipts           Receipt[]
   utilityAllocation  UtilityAllocation?
 
-  @@index([leaseId], map: "invoice_lease_id_fkey")
-  @@index([utilityBillId], map: "invoice_utility_bill_id_fkey")
+  @@index([leaseId], map: "invoice_lease_id_f420")
+  @@index([utilityBillId], map: "invoice_utility_bill_id_f420")
+  @@index([organizationId], map: "invoice_organization_id_fkey")
   @@map("invoice")
 }
 
@@ -846,6 +873,7 @@ model DssDocument {
   fileSizeBytes        Int?                    @map("file_size_bytes")
   originalPdfSha256Hex String                  @map("original_pdf_sha256_hex")
   finalPdfSha256Hex    String?                 @map("final_pdf_sha256_hex")
+  finalFileUrl         String?                 @map("final_file_url") @db.Text
   status               DssDocumentStatus       @default(DRAFT)
   signingMode          DssSigningMode          @default(SEQUENTIAL)
   currentStep          Int                     @default(1) @map("current_step")
@@ -861,6 +889,7 @@ model DssDocument {
   unit                 Unit?                   @relation(fields: [unitId], references: [id])
   participants         DssParticipant[]
   signatures           DssSignature[]
+  fields               DssField[]
 
   @@index([organizationId])
   @@index([leaseId])
@@ -886,6 +915,7 @@ model DssParticipant {
   organization    Organization       @relation(fields: [organizationId], references: [id])
   user            User?              @relation(fields: [userId], references: [id])
   signatures      DssSignature[]
+  fields          DssField[]
 
   @@unique([documentId, email], map: "uq_dss_participant_doc_email")
   @@index([organizationId], map: "dss_participants_organization_id_fkey")
@@ -901,12 +931,36 @@ model DssSignature {
   signedAt      DateTime       @default(now()) @map("signed_at")
   isProxy       Boolean        @default(false) @map("is_proxy")
   onBehalfOf    String?        @map("on_behalf_of")
+  ipAddress     String?        @map("ip_address") @db.VarChar(50)
+  userAgent     String?        @map("user_agent") @db.Text
   document      DssDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
   participant   DssParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
   @@unique([documentId, participantId], map: "uq_dss_signature_doc_participant")
   @@index([participantId], map: "dss_signatures_participant_id_fkey")
   @@map("dss_signatures")
+}
+
+model DssField {
+  id            String @id @default(uuid())
+  documentId    String @map("document_id")
+  participantId String @map("participant_id")
+
+  type       String // "SIGNATURE", "DATE", "INITIALS", "TEXT"
+  pageNumber Int    @map("page_number")
+
+  // Coordinates as percentages (0-100) to support responsive UI scaling
+  x      Float
+  y      Float
+  width  Float
+  height Float
+
+  value String? @db.Text // Used if type is "TEXT"
+
+  document    DssDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  participant DssParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@map("dss_fields")
 }
 
 model BlockchainNotaryRecord {
@@ -1281,6 +1335,7 @@ model Plan {
   stripePriceIdMonthly String?
   stripePriceIdYearly  String?
   trialDays            Int            @default(0)
+  signingFee           Float?         @default(9.99) @map("signing_fee")
   createdAt            DateTime       @default(now())
   updatedAt            DateTime?      @default(now())
   organizations        Organization[]
@@ -1551,6 +1606,7 @@ enum InvoiceType {
   UTILITY
   MAINTENANCE
   DAMAGE
+  FEE
 }
 
 enum UtilityType {
@@ -1571,6 +1627,7 @@ enum PaymentMethod {
 
 enum InvoiceStatus {
   DRAFT
+  ISSUED
   PENDING
   PAID
   OVERDUE
@@ -1975,4 +2032,19 @@ model WebhookEvent {
   @@index([status, nextRetryAt])
   @@index([gateway])
   @@map("webhook_events")
+}
+
+// 2. Add Vendor Tax Compliance (W-9 / 1099)
+model VendorTaxInfo {
+  id                String    @id @default(uuid())
+  vendorId          String    @unique @map("vendor_id")
+  w9Collected       Boolean   @default(false) @map("w9_collected")
+  w9CollectedAt     DateTime? @map("w9_collected_at")
+  taxIdType         String // "SSN", "EIN", "ITIN"
+  taxIdEncrypted    String    @map("tax_id_encrypted")
+  backupWithholding Boolean   @default(false) @map("backup_withholding")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@map("vendor_tax_info")
 }

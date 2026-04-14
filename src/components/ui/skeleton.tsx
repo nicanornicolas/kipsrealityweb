@@ -1,5 +1,5 @@
 // components/ui/skeleton.tsx
-import { cn } from './';
+import { cn } from "@/lib/utils";
 
 interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
 

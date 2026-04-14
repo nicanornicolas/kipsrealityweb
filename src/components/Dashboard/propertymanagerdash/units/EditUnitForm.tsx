@@ -2,12 +2,15 @@
 
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
-import { updateUnitDetails } from './';
+import { updateUnitDetails } from '@rentflow/property/client';
 import { ListingDecisionModal } from '@/components/Dashboard/listing/ListingDecisionModal';
-import { ListingStatus, UnitWithListingStatus } from './';
-import type { UnitFormData, ApplianceInput } from '@rentflow/property';
+import {
+  ListingStatus,
+  UnitWithListingStatus,
+} from '@rentflow/property/client';
+import type { UnitFormData, ApplianceInput } from '@rentflow/property/client';
 
 export default function EditUnitForm({
   propertyId,

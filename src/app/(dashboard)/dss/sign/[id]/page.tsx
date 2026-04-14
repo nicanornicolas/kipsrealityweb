@@ -43,6 +43,7 @@ export default function SigningRoom() {
   const [rejectReason, setRejectReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [document, setDocument] = useState<DocumentData | null>(null);
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [myRole, setMyRole] = useState<string>("");
   const [beneficiaryName, setBeneficiaryName] = useState<string>("");
@@ -57,6 +58,12 @@ export default function SigningRoom() {
 
         if (data.success) {
           setDocument(data.document);
+
+          const viewRes = await fetch(`/api/dss/documents/${documentId}/view`);
+          const viewData = await viewRes.json();
+          if (viewRes.ok) {
+            setViewUrl(viewData.document?.viewUrl || null);
+          }
 
           // Determine current user's role from participants
           const userEmail = await getUserEmail(); // This would come from auth context/token
@@ -200,10 +207,10 @@ export default function SigningRoom() {
         className="flex-1 overflow-y-auto p-8 flex justify-center"
         onScroll={handleScroll}
       >
-        {document.originalFileUrl ? (
+        {viewUrl || document.originalFileUrl ? (
           <div className="bg-white shadow-lg w-full max-w-4xl min-h-[1000px] p-10 border">
             <iframe
-              src={document.originalFileUrl}
+              src={viewUrl || document.originalFileUrl}
               className="w-full h-full min-h-[800px]"
               title="Document Viewer"
             />

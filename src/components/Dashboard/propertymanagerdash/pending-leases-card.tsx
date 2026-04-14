@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { api } from './';
+import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
 
 interface PendingLease {

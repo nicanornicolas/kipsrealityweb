@@ -10,7 +10,7 @@ import {
   AGENT_LINKS,
   SidebarCategory,
 } from './SidebarLinks';
-import { cn } from './';
+import { cn } from '@/lib/utils';
 import { ChevronDown, Building2 } from 'lucide-react';
 
 interface SidebarProps {
