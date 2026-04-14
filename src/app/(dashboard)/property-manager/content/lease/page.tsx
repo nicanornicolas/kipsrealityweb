@@ -1,8 +1,8 @@
 // app/dashboard/property-manager/leases/page.tsx
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   FileText,
   Clock,
@@ -21,7 +21,8 @@ import {
   CheckSquare,
   FolderOpen,
   MoreVertical,
-} from "lucide-react";
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 interface LeaseWithDetails {
   id: string;
@@ -50,8 +51,8 @@ export default function EnhancedLeaseManagementDashboard() {
   const router = useRouter();
   const [leases, setLeases] = useState<LeaseWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("ALL");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState('ALL');
+  const [searchTerm, setSearchTerm] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedLease, setSelectedLease] = useState<string | null>(null);
 
@@ -61,13 +62,13 @@ export default function EnhancedLeaseManagementDashboard() {
 
   async function fetchLeases() {
     try {
-      const res = await fetch("/api/lease");
+      const res = await fetch('/api/lease');
       const data = await res.json();
       if (res.ok) {
         setLeases(data);
       }
     } catch (error) {
-      console.error("Failed to fetch leases:", error);
+      console.error('Failed to fetch leases:', error);
     } finally {
       setLoading(false);
     }
@@ -75,32 +76,32 @@ export default function EnhancedLeaseManagementDashboard() {
 
   async function handleLeaseAction(leaseId: string, action: string) {
     const confirmations: { [key: string]: string } = {
-      APPROVE: "Are you sure you want to approve this lease?",
-      ACTIVATE: "This will activate the lease. Continue?",
-      TERMINATE: "Are you sure you want to terminate this lease?",
+      APPROVE: 'Are you sure you want to approve this lease?',
+      ACTIVATE: 'This will activate the lease. Continue?',
+      TERMINATE: 'Are you sure you want to terminate this lease?',
     };
 
     if (!confirm(confirmations[action])) return;
 
     setActionLoading(leaseId);
     try {
-      const res = await fetch("/api/lease/workflow", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/lease/workflow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ leaseId, action }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        alert(`Lease ${action.toLowerCase()}d successfully`);
+        toast.success(`Lease ${action.toLowerCase()}d successfully`);
         fetchLeases(); // Refresh data
       } else {
-        alert(data.error || `Failed to ${action.toLowerCase()} lease`);
+        toast.error(data.error || `Failed to ${action.toLowerCase()} lease`);
       }
     } catch (error) {
-      console.error("Action error:", error);
-      alert("An error occurred");
+      console.error('Action error:', error);
+      toast.error('An error occurred');
     } finally {
       setActionLoading(null);
     }
@@ -108,24 +109,24 @@ export default function EnhancedLeaseManagementDashboard() {
 
   const stats = {
     total: leases.length,
-    active: leases.filter((l) => l.leaseStatus === "ACTIVE").length,
-    expiring: leases.filter((l) => l.leaseStatus === "EXPIRING_SOON").length,
-    draft: leases.filter((l) => l.leaseStatus === "DRAFT").length,
-    pendingApproval: leases.filter((l) => l.leaseStatus === "PENDING_APPROVAL")
+    active: leases.filter((l) => l.leaseStatus === 'ACTIVE').length,
+    expiring: leases.filter((l) => l.leaseStatus === 'EXPIRING_SOON').length,
+    draft: leases.filter((l) => l.leaseStatus === 'DRAFT').length,
+    pendingApproval: leases.filter((l) => l.leaseStatus === 'PENDING_APPROVAL')
       .length,
-    compliance: leases.filter((l) => l.complianceStatus === "NON_COMPLIANT")
+    compliance: leases.filter((l) => l.complianceStatus === 'NON_COMPLIANT')
       .length,
     renewals: leases.filter((l) => l.hasRenewalOption && isExpiringSoon(l))
       .length,
     escalations: leases.filter(
-      (l) => l.nextEscalationDate && isEscalationSoon(l)
+      (l) => l.nextEscalationDate && isEscalationSoon(l),
     ).length,
   };
 
   function isExpiringSoon(lease: LeaseWithDetails) {
     const daysUntilExpiry = Math.ceil(
       (new Date(lease.endDate).getTime() - new Date().getTime()) /
-        (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24),
     );
     return daysUntilExpiry <= 60 && daysUntilExpiry > 0;
   }
@@ -134,15 +135,15 @@ export default function EnhancedLeaseManagementDashboard() {
     if (!lease.nextEscalationDate) return false;
     const daysUntilEscalation = Math.ceil(
       (new Date(lease.nextEscalationDate).getTime() - new Date().getTime()) /
-        (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24),
     );
     return daysUntilEscalation <= 30 && daysUntilEscalation > 0;
   }
 
   const filteredLeases = leases.filter((lease) => {
-    const matchesFilter = filter === "ALL" || lease.leaseStatus === filter;
+    const matchesFilter = filter === 'ALL' || lease.leaseStatus === filter;
     const matchesSearch =
-      searchTerm === "" ||
+      searchTerm === '' ||
       lease.tenant?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lease.application?.fullName
         .toLowerCase()
@@ -154,24 +155,24 @@ export default function EnhancedLeaseManagementDashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "ACTIVE":
-        return "bg-navy-100 text-green-800 border-green-300";
-      case "EXPIRING_SOON":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      case "DRAFT":
-        return "bg-gray-100 text-gray-800 border-gray-300";
-      case "PENDING_APPROVAL":
-        return "bg-orange-100 text-orange-800 border-orange-300";
-      case "APPROVED":
-        return "bg-blue-100 text-blue-800 border-blue-300";
-      case "SIGNED":
-        return "bg-emerald-100 text-emerald-800 border-emerald-300";
-      case "EXPIRED":
-        return "bg-red-100 text-red-800 border-red-300";
-      case "TERMINATED":
-        return "bg-purple-100 text-purple-800 border-purple-300";
+      case 'ACTIVE':
+        return 'bg-navy-100 text-green-800 border-green-300';
+      case 'EXPIRING_SOON':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'DRAFT':
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'PENDING_APPROVAL':
+        return 'bg-orange-100 text-orange-800 border-orange-300';
+      case 'APPROVED':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'SIGNED':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      case 'EXPIRED':
+        return 'bg-red-100 text-red-800 border-red-300';
+      case 'TERMINATED':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
       default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
+        return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
@@ -206,7 +207,9 @@ export default function EnhancedLeaseManagementDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Total</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.total}
+                </p>
               </div>
               <FileText className="w-6 h-6 text-blue-500" />
             </div>
@@ -216,7 +219,9 @@ export default function EnhancedLeaseManagementDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Active</p>
-                <p className="text-2xl font-bold text-navy-700">{stats.active}</p>
+                <p className="text-2xl font-bold text-navy-700">
+                  {stats.active}
+                </p>
               </div>
               <CheckCircle2 className="w-6 h-6 text-navy-700" />
             </div>
@@ -226,7 +231,9 @@ export default function EnhancedLeaseManagementDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Expiring</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.expiring}</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {stats.expiring}
+                </p>
               </div>
               <Clock className="w-6 h-6 text-yellow-500" />
             </div>
@@ -236,7 +243,9 @@ export default function EnhancedLeaseManagementDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Draft</p>
-                <p className="text-2xl font-bold text-gray-600">{stats.draft}</p>
+                <p className="text-2xl font-bold text-gray-600">
+                  {stats.draft}
+                </p>
               </div>
               <Edit className="w-6 h-6 text-gray-500" />
             </div>
@@ -308,26 +317,26 @@ export default function EnhancedLeaseManagementDashboard() {
             {/* Status Filter */}
             <div className="flex gap-2 overflow-x-auto">
               {[
-                "ALL",
-                "DRAFT",
-                "PENDING_APPROVAL",
-                "APPROVED",
-                "SIGNED",
-                "ACTIVE",
-                "EXPIRING_SOON",
-                "EXPIRED",
-                "TERMINATED",
+                'ALL',
+                'DRAFT',
+                'PENDING_APPROVAL',
+                'APPROVED',
+                'SIGNED',
+                'ACTIVE',
+                'EXPIRING_SOON',
+                'EXPIRED',
+                'TERMINATED',
               ].map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilter(status)}
                   className={`px-3 py-2 rounded-lg whitespace-nowrap transition-colors text-sm font-medium ${
                     filter === status
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {status.replace(/_/g, " ")}
+                  {status.replace(/_/g, ' ')}
                 </button>
               ))}
             </div>
@@ -342,8 +351,8 @@ export default function EnhancedLeaseManagementDashboard() {
               No Leases Found
             </h3>
             <p className="text-gray-500">
-              {filter === "ALL"
-                ? "No leases match your search criteria."
+              {filter === 'ALL'
+                ? 'No leases match your search criteria.'
                 : `No leases with status "${filter}".`}
             </p>
           </div>
@@ -379,15 +388,16 @@ export default function EnhancedLeaseManagementDashboard() {
                 <tbody className="divide-y divide-gray-200">
                   {filteredLeases.map((lease) => {
                     const daysToExpiry = Math.ceil(
-                      (new Date(lease.endDate).getTime() - new Date().getTime()) /
-                        (1000 * 60 * 60 * 24)
+                      (new Date(lease.endDate).getTime() -
+                        new Date().getTime()) /
+                        (1000 * 60 * 60 * 24),
                     );
 
                     const daysToEscalation = lease.nextEscalationDate
                       ? Math.ceil(
                           (new Date(lease.nextEscalationDate).getTime() -
                             new Date().getTime()) /
-                            (1000 * 60 * 60 * 24)
+                            (1000 * 60 * 60 * 24),
                         )
                       : null;
 
@@ -414,7 +424,8 @@ export default function EnhancedLeaseManagementDashboard() {
                         {/* Tenant */}
                         <td className="px-4 py-3">
                           <div className="font-medium text-sm text-gray-900">
-                            {lease.tenant?.fullName || lease.application?.fullName}
+                            {lease.tenant?.fullName ||
+                              lease.application?.fullName}
                           </div>
                           <div className="text-xs text-gray-500">
                             {lease.tenant?.email || lease.application?.email}
@@ -458,10 +469,10 @@ export default function EnhancedLeaseManagementDashboard() {
                         <td className="px-4 py-3">
                           <span
                             className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
-                              lease.leaseStatus
+                              lease.leaseStatus,
                             )}`}
                           >
-                            {lease.leaseStatus.replace(/_/g, " ")}
+                            {lease.leaseStatus.replace(/_/g, ' ')}
                           </span>
                           {lease.amendments?.length > 0 && (
                             <div className="text-xs text-gray-500 mt-1">
@@ -477,7 +488,7 @@ export default function EnhancedLeaseManagementDashboard() {
                             <button
                               onClick={() =>
                                 router.push(
-                                  `/property-manager/content/lease/${lease.id}`
+                                  `/property-manager/content/lease/${lease.id}`,
                                 )
                               }
                               className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
@@ -490,7 +501,7 @@ export default function EnhancedLeaseManagementDashboard() {
                             <button
                               onClick={() =>
                                 router.push(
-                                  `/property-manager/content/lease/${lease.id}/amendments`
+                                  `/property-manager/content/lease/${lease.id}/amendments`,
                                 )
                               }
                               className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors"
@@ -503,7 +514,7 @@ export default function EnhancedLeaseManagementDashboard() {
                             <button
                               onClick={() =>
                                 router.push(
-                                  `/property-manager/content/lease/${lease.id}/documents`
+                                  `/property-manager/content/lease/${lease.id}/documents`,
                                 )
                               }
                               className="p-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
@@ -517,7 +528,7 @@ export default function EnhancedLeaseManagementDashboard() {
                               <button
                                 onClick={() =>
                                   router.push(
-                                    `/property-manager/content/lease/${lease.id}/renew`
+                                    `/property-manager/content/lease/${lease.id}/renew`,
                                   )
                                 }
                                 className="p-1.5 text-navy-700 hover:bg-navy-50 rounded transition-colors"
@@ -532,7 +543,9 @@ export default function EnhancedLeaseManagementDashboard() {
                               <button
                                 onClick={() =>
                                   setSelectedLease(
-                                    selectedLease === lease.id ? null : lease.id
+                                    selectedLease === lease.id
+                                      ? null
+                                      : lease.id,
                                   )
                                 }
                                 className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
@@ -545,10 +558,13 @@ export default function EnhancedLeaseManagementDashboard() {
                               {selectedLease === lease.id && (
                                 <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                                   <div className="py-1">
-                                    {lease.leaseStatus === "DRAFT" && (
+                                    {lease.leaseStatus === 'DRAFT' && (
                                       <button
                                         onClick={() => {
-                                          handleLeaseAction(lease.id, "APPROVE");
+                                          handleLeaseAction(
+                                            lease.id,
+                                            'APPROVE',
+                                          );
                                           setSelectedLease(null);
                                         }}
                                         className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
@@ -559,10 +575,13 @@ export default function EnhancedLeaseManagementDashboard() {
                                       </button>
                                     )}
 
-                                    {lease.leaseStatus === "SIGNED" && (
+                                    {lease.leaseStatus === 'SIGNED' && (
                                       <button
                                         onClick={() => {
-                                          handleLeaseAction(lease.id, "ACTIVATE");
+                                          handleLeaseAction(
+                                            lease.id,
+                                            'ACTIVATE',
+                                          );
                                           setSelectedLease(null);
                                         }}
                                         className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
@@ -573,12 +592,12 @@ export default function EnhancedLeaseManagementDashboard() {
                                       </button>
                                     )}
 
-                                    {lease.leaseStatus === "ACTIVE" && (
+                                    {lease.leaseStatus === 'ACTIVE' && (
                                       <button
                                         onClick={() => {
                                           handleLeaseAction(
                                             lease.id,
-                                            "TERMINATE"
+                                            'TERMINATE',
                                           );
                                           setSelectedLease(null);
                                         }}
@@ -593,7 +612,7 @@ export default function EnhancedLeaseManagementDashboard() {
                                     <button
                                       onClick={() => {
                                         router.push(
-                                          `/property-manager/content/lease/${lease.id}/escalate`
+                                          `/property-manager/content/lease/${lease.id}/escalate`,
                                         );
                                         setSelectedLease(null);
                                       }}
@@ -623,7 +642,7 @@ export default function EnhancedLeaseManagementDashboard() {
                         {/* Alerts */}
                         <td className="px-4 py-3">
                           <div className="flex flex-col gap-1">
-                            {lease.complianceStatus === "NON_COMPLIANT" && (
+                            {lease.complianceStatus === 'NON_COMPLIANT' && (
                               <span className="flex items-center gap-1 text-xs text-red-600">
                                 <AlertCircle className="w-3 h-3" />
                                 Compliance issue
@@ -652,7 +671,7 @@ export default function EnhancedLeaseManagementDashboard() {
                             )}
 
                             {lease.amendments?.some(
-                              (a: any) => a.status === "PENDING"
+                              (a: any) => a.status === 'PENDING',
                             ) && (
                               <span className="flex items-center gap-1 text-xs text-blue-600">
                                 <FileEdit className="w-3 h-3" />

@@ -1,20 +1,27 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
-import { fetchUnitDetails } from "@/lib/units";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { fetchUnitDetails } from '@/lib/units';
+import { toast } from 'sonner';
 
-export default function ListUnitForm({ propertyId, unitNumber }: { propertyId: string; unitNumber: string }) {
+export default function ListUnitForm({
+  propertyId,
+  unitNumber,
+}: {
+  propertyId: string;
+  unitNumber: string;
+}) {
   const router = useRouter();
   const { user } = useAuth();
 
   const [unit, setUnit] = useState<any>(null);
   const [unitId, setUnitId] = useState<string | null>(null);
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState<number | "">("");
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState<number | ''>('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -27,9 +34,9 @@ export default function ListUnitForm({ propertyId, unitNumber }: { propertyId: s
       if (data) {
         setTitle(`Unit ${unitNumber} for Rent`);
         setDescription(
-          `${data.bedrooms ?? ""} Bedroom, ${data.bathrooms ?? ""} Bathroom unit.`
+          `${data.bedrooms ?? ''} Bedroom, ${data.bathrooms ?? ''} Bathroom unit.`,
         );
-        setPrice(data.rentAmount ?? "");
+        setPrice(data.rentAmount ?? '');
       }
     };
 
@@ -39,21 +46,22 @@ export default function ListUnitForm({ propertyId, unitNumber }: { propertyId: s
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!user) return alert("Not logged in");
-    if (!unitId) return alert("Unit ID is missing. Please refresh and try again.");
+    if (!user) return toast.error('Not logged in');
+    if (!unitId)
+      return toast.error('Unit ID is missing. Please refresh and try again.');
 
     setLoading(true);
 
-    const res = await fetch("/api/listings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch('/api/listings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         unitId,
-        action: "CREATE",
+        action: 'CREATE',
         listingData: {
           organizationId: user.organization?.id,
           createdBy: user.id,
-          categoryId: "housing",
+          categoryId: 'housing',
           propertyId,
           title,
           description,
@@ -65,7 +73,7 @@ export default function ListUnitForm({ propertyId, unitNumber }: { propertyId: s
     if (res.ok) {
       router.push(`/property-manager/view-own-property/${propertyId}/units`);
     } else {
-      alert("Failed to create listing");
+      toast.error('Failed to create listing');
     }
 
     setLoading(false);
@@ -75,17 +83,31 @@ export default function ListUnitForm({ propertyId, unitNumber }: { propertyId: s
     <div className="max-w-md mx-auto p-8 bg-white rounded-2xl shadow-lg border border-gray-100 mt-8">
       <div className="text-center mb-8">
         <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 8v-4m0 4h4" />
+          <svg
+            className="w-6 h-6 text-blue-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 8v-4m0 4h4"
+            />
           </svg>
         </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">List Unit {unitNumber}</h2>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          List Unit {unitNumber}
+        </h2>
         <p className="text-gray-600">Create a new listing for this unit</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Title</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Title
+          </label>
           <input
             className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
             value={title}
@@ -96,7 +118,9 @@ export default function ListUnitForm({ propertyId, unitNumber }: { propertyId: s
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Description
+          </label>
           <textarea
             className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none resize-none min-h-[120px]"
             value={description}
@@ -107,7 +131,9 @@ export default function ListUnitForm({ propertyId, unitNumber }: { propertyId: s
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Monthly Rent</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Monthly Rent
+          </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <span className="text-gray-500">$</span>
@@ -116,7 +142,7 @@ export default function ListUnitForm({ propertyId, unitNumber }: { propertyId: s
               type="number"
               className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none"
               value={price}
-              onChange={(e) => setPrice(e.target.valueAsNumber || "")}
+              onChange={(e) => setPrice(e.target.valueAsNumber || '')}
               required
               placeholder="0.00"
               min="0"
@@ -130,14 +156,30 @@ export default function ListUnitForm({ propertyId, unitNumber }: { propertyId: s
         >
           {loading ? (
             <div className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               Creating Listing...
             </div>
           ) : (
-            "List Unit"
+            'List Unit'
           )}
         </button>
       </form>

@@ -1,14 +1,21 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Mail, Phone, Building2, Shield } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { User, Mail, Phone, Building2, Shield } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
@@ -16,21 +23,21 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    company: ""
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    company: '',
   });
 
   useEffect(() => {
     if (user) {
       setFormData({
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        company: user.organization?.name || ""
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        company: user.organization?.name || '',
       });
     }
   }, [user]);
@@ -38,14 +45,14 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           firstName: formData.firstName,
           lastName: formData.lastName,
-          phone: formData.phone
-        })
+          phone: formData.phone,
+        }),
       });
 
       if (response.ok) {
@@ -53,18 +60,22 @@ export default function ProfilePage() {
         setIsEditing(false);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(errorData.error || "Failed to update profile. Please try again.");
+        toast.error(
+          errorData.error || 'Failed to update profile. Please try again.',
+        );
       }
     } catch (error) {
-      console.error("Error updating profile:", error);
-      alert("An error occurred while updating your profile. Please try again.");
+      console.error('Error updating profile:', error);
+      toast.error(
+        'An error occurred while updating your profile. Please try again.',
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase();
+    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
 
   return (
@@ -79,7 +90,9 @@ export default function ProfilePage() {
           <CardHeader className="flex flex-row items-center gap-6">
             <Avatar className="h-24 w-24">
               <AvatarFallback className="text-2xl bg-blue-100 text-blue-600">
-                {user ? getInitials(user.firstName || "", user.lastName || "") : "U"}
+                {user
+                  ? getInitials(user.firstName || '', user.lastName || '')
+                  : 'U'}
               </AvatarFallback>
             </Avatar>
             <div>
@@ -87,7 +100,9 @@ export default function ProfilePage() {
                 {user?.firstName} {user?.lastName}
               </CardTitle>
               <CardDescription className="text-base">
-                {user?.role === "PROPERTY_MANAGER" ? "Property Manager" : user?.role}
+                {user?.role === 'PROPERTY_MANAGER'
+                  ? 'Property Manager'
+                  : user?.role}
               </CardDescription>
             </div>
           </CardHeader>
@@ -111,7 +126,9 @@ export default function ProfilePage() {
                 <Input
                   id="firstName"
                   value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, firstName: e.target.value })
+                  }
                   disabled={!isEditing}
                 />
               </div>
@@ -120,7 +137,9 @@ export default function ProfilePage() {
                 <Input
                   id="lastName"
                   value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastName: e.target.value })
+                  }
                   disabled={!isEditing}
                 />
               </div>
@@ -138,7 +157,9 @@ export default function ProfilePage() {
                 disabled
                 className="bg-gray-50"
               />
-              <p className="text-xs text-gray-500">Contact support to change your email address.</p>
+              <p className="text-xs text-gray-500">
+                Contact support to change your email address.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -150,7 +171,9 @@ export default function ProfilePage() {
                 id="phone"
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
                 disabled={!isEditing}
                 placeholder="+254712345678"
               />
@@ -176,13 +199,11 @@ export default function ProfilePage() {
                     Cancel
                   </Button>
                   <Button onClick={handleSave} disabled={isLoading}>
-                    {isLoading ? "Saving..." : "Save Changes"}
+                    {isLoading ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </>
               ) : (
-                <Button onClick={() => setIsEditing(true)}>
-                  Edit Profile
-                </Button>
+                <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
               )}
             </div>
           </CardContent>
@@ -203,9 +224,14 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between p-4 border rounded-lg">
               <div>
                 <h4 className="font-medium">Password</h4>
-                <p className="text-sm text-gray-500">Last changed 30 days ago</p>
+                <p className="text-sm text-gray-500">
+                  Last changed 30 days ago
+                </p>
               </div>
-              <Button variant="outline" onClick={() => router.push("/property-manager/settings")}>
+              <Button
+                variant="outline"
+                onClick={() => router.push('/property-manager/settings')}
+              >
                 Change Password
               </Button>
             </div>
@@ -213,9 +239,14 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between p-4 border rounded-lg">
               <div>
                 <h4 className="font-medium">Two-Factor Authentication</h4>
-                <p className="text-sm text-gray-500">Add an extra layer of security</p>
+                <p className="text-sm text-gray-500">
+                  Add an extra layer of security
+                </p>
               </div>
-              <Button variant="outline" onClick={() => router.push("/property-manager/settings")}>
+              <Button
+                variant="outline"
+                onClick={() => router.push('/property-manager/settings')}
+              >
                 Manage 2FA
               </Button>
             </div>

@@ -1,9 +1,10 @@
 // app/property-manager/content/lease/[id]/renew/page.tsx
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Calendar, DollarSign, FileText, RefreshCw, Send } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { Calendar, DollarSign, FileText, RefreshCw, Send } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Lease {
   id: string;
@@ -34,13 +35,13 @@ export default function LeaseRenewalPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [renewalForm, setRenewalForm] = useState({
-    renewalType: "MANUAL",
+    renewalType: 'MANUAL',
     newTermMonths: 12,
-    newEndDate: "",
+    newEndDate: '',
     rentIncrease: 0,
-    rentIncreaseType: "PERCENTAGE", // PERCENTAGE or FIXED
+    rentIncreaseType: 'PERCENTAGE', // PERCENTAGE or FIXED
     newRentAmount: 0,
-    negotiationNotes: "",
+    negotiationNotes: '',
   });
 
   useEffect(() => {
@@ -53,20 +54,20 @@ export default function LeaseRenewalPage() {
       const data = await res.json();
       if (res.ok) {
         setLease(data);
-        
+
         // Calculate default new end date
         const currentEnd = new Date(data.endDate);
         const newEnd = new Date(currentEnd);
         newEnd.setMonth(newEnd.getMonth() + 12);
-        
+
         setRenewalForm({
           ...renewalForm,
-          newEndDate: newEnd.toISOString().split("T")[0],
+          newEndDate: newEnd.toISOString().split('T')[0],
           newRentAmount: data.rentAmount,
         });
       }
     } catch (error) {
-      console.error("Failed to fetch lease:", error);
+      console.error('Failed to fetch lease:', error);
     } finally {
       setLoading(false);
     }
@@ -75,13 +76,13 @@ export default function LeaseRenewalPage() {
   useEffect(() => {
     if (lease) {
       let newRent = lease.rentAmount;
-      
-      if (renewalForm.rentIncreaseType === "PERCENTAGE") {
+
+      if (renewalForm.rentIncreaseType === 'PERCENTAGE') {
         newRent = lease.rentAmount * (1 + renewalForm.rentIncrease / 100);
       } else {
         newRent = lease.rentAmount + renewalForm.rentIncrease;
       }
-      
+
       setRenewalForm((prev) => ({ ...prev, newRentAmount: newRent }));
     }
   }, [renewalForm.rentIncrease, renewalForm.rentIncreaseType]);
@@ -92,22 +93,22 @@ export default function LeaseRenewalPage() {
     setSubmitting(true);
     try {
       const res = await fetch(`/api/lease/${lease.id}/renew`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(renewalForm),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        alert("Renewal offer sent to tenant!");
+        toast.success('Renewal offer sent to tenant!');
         router.push(`/property-manager/content/lease/${lease.id}`);
       } else {
-        alert(data.error || "Failed to initiate renewal");
+        toast.error(data.error || 'Failed to initiate renewal');
       }
     } catch (error) {
-      console.error("Renewal error:", error);
-      alert("An error occurred");
+      console.error('Renewal error:', error);
+      toast.error('An error occurred');
     } finally {
       setSubmitting(false);
     }
@@ -143,7 +144,8 @@ export default function LeaseRenewalPage() {
           Lease Renewal
         </h1>
         <p className="text-gray-600 mt-2">
-          Create a renewal offer for {lease.tenant?.fullName || lease.application?.fullName}
+          Create a renewal offer for{' '}
+          {lease.tenant?.fullName || lease.application?.fullName}
         </p>
       </div>
 
@@ -169,7 +171,7 @@ export default function LeaseRenewalPage() {
             <div>
               <p className="text-sm text-gray-500">Current Term</p>
               <p className="font-semibold">
-                {new Date(lease.startDate).toLocaleDateString()} -{" "}
+                {new Date(lease.startDate).toLocaleDateString()} -{' '}
                 {new Date(lease.endDate).toLocaleDateString()}
               </p>
             </div>
@@ -210,7 +212,10 @@ export default function LeaseRenewalPage() {
                 className="w-full border border-gray-300 rounded-lg px-4 py-2"
                 value={renewalForm.renewalType}
                 onChange={(e) =>
-                  setRenewalForm({ ...renewalForm, renewalType: e.target.value })
+                  setRenewalForm({
+                    ...renewalForm,
+                    renewalType: e.target.value,
+                  })
                 }
               >
                 <option value="MANUAL">Manual</option>
@@ -235,11 +240,11 @@ export default function LeaseRenewalPage() {
                   const currentEnd = new Date(lease.endDate);
                   const newEnd = new Date(currentEnd);
                   newEnd.setMonth(newEnd.getMonth() + months);
-                  
+
                   setRenewalForm({
                     ...renewalForm,
                     newTermMonths: months,
-                    newEndDate: newEnd.toISOString().split("T")[0],
+                    newEndDate: newEnd.toISOString().split('T')[0],
                   });
                 }}
               />
@@ -283,8 +288,8 @@ export default function LeaseRenewalPage() {
             {/* Rent Increase Amount */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Rent Increase{" "}
-                {renewalForm.rentIncreaseType === "PERCENTAGE" ? "(%)" : "($)"}
+                Rent Increase{' '}
+                {renewalForm.rentIncreaseType === 'PERCENTAGE' ? '(%)' : '($)'}
               </label>
               <input
                 type="number"
@@ -309,7 +314,9 @@ export default function LeaseRenewalPage() {
               </p>
               <p className="text-sm text-gray-500 mt-1">
                 Increase of $
-                {(renewalForm.newRentAmount - lease.rentAmount).toLocaleString()}
+                {(
+                  renewalForm.newRentAmount - lease.rentAmount
+                ).toLocaleString()}
               </p>
             </div>
 
@@ -338,12 +345,12 @@ export default function LeaseRenewalPage() {
               disabled={submitting}
               className={`w-full py-3 rounded-lg font-semibold flex items-center justify-center gap-2 ${
                 submitting
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
               }`}
             >
               <Send className="w-5 h-5" />
-              {submitting ? "Sending..." : "Send Renewal Offer"}
+              {submitting ? 'Sending...' : 'Send Renewal Offer'}
             </button>
           </div>
         </div>
@@ -362,7 +369,7 @@ export default function LeaseRenewalPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-semibold text-gray-900">
-                      {new Date(renewal.oldEndDate).toLocaleDateString()} →{" "}
+                      {new Date(renewal.oldEndDate).toLocaleDateString()} →{' '}
                       {new Date(renewal.newEndDate).toLocaleDateString()}
                     </p>
                     <p className="text-sm text-gray-600 mt-1">
@@ -371,11 +378,11 @@ export default function LeaseRenewalPage() {
                   </div>
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      renewal.status === "EXECUTED"
-                        ? "bg-navy-100 text-green-800"
-                        : renewal.status === "PENDING"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-gray-100 text-gray-800"
+                      renewal.status === 'EXECUTED'
+                        ? 'bg-navy-100 text-green-800'
+                        : renewal.status === 'PENDING'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
                     }`}
                   >
                     {renewal.status}
