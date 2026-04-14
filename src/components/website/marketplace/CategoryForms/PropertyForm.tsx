@@ -1,15 +1,16 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { PropertyType } from "@/app/data/PropertTypeData";
-import { Appliance } from "@/app/data/ApplianceData";
-import { fetchPropertyTypes } from "./";
-import { fetchAppliances } from "./";
-import { postProperty } from "./";
-import Navbar from "@/components/website/Navbar";
-import Footer from "@/components/website/Footer";
-import { HomeIcon } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { PropertyType } from '@/app/data/PropertTypeData';
+import { Appliance } from '@/app/data/ApplianceData';
+import { fetchPropertyTypes } from './';
+import { fetchAppliances } from './';
+import { postProperty } from './';
+import Navbar from '@/components/website/Navbar';
+import Footer from '@/components/website/Footer';
+import { HomeIcon } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function PropertyForm() {
   const { register, handleSubmit, reset } = useForm();
@@ -35,8 +36,8 @@ export default function PropertyForm() {
     try {
       const payload = {
         ...data,
-        organizationId: "org-123",
-        listingId: "listing-123",
+        organizationId: 'org-123',
+        listingId: 'listing-123',
         applianceIds: Array.isArray(data.applianceIds)
           ? data.applianceIds
           : [data.applianceIds],
@@ -44,9 +45,9 @@ export default function PropertyForm() {
 
       const newProperty = await postProperty(payload);
       reset();
-      alert("Property created successfully!");
+      toast.success('Property created successfully!');
     } catch (error) {
-      alert("Failed to create property.");
+      toast.error('Failed to create property.');
     } finally {
       setLoading(false);
     }
@@ -81,22 +82,25 @@ export default function PropertyForm() {
             </h2>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-8">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="grid grid-cols-1 gap-8"
+          >
             {/* Basic Inputs */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <input
-                {...register("city")}
+                {...register('city')}
                 placeholder="City"
                 className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all rounded-xl p-3 w-full placeholder-gray-400"
               />
               <input
-                {...register("address")}
+                {...register('address')}
                 placeholder="Address"
                 className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all rounded-xl p-3 w-full placeholder-gray-400"
               />
 
               <select
-                {...register("propertyTypeId")}
+                {...register('propertyTypeId')}
                 className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all rounded-xl p-3 w-full text-gray-700"
               >
                 <option value="">Select Property Type</option>
@@ -108,25 +112,25 @@ export default function PropertyForm() {
               </select>
 
               <input
-                {...register("bedrooms")}
+                {...register('bedrooms')}
                 type="number"
                 placeholder="Bedrooms"
                 className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all rounded-xl p-3 w-full placeholder-gray-400"
               />
               <input
-                {...register("bathrooms")}
+                {...register('bathrooms')}
                 type="number"
                 placeholder="Bathrooms"
                 className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all rounded-xl p-3 w-full placeholder-gray-400"
               />
               <input
-                {...register("size")}
+                {...register('size')}
                 type="number"
                 placeholder="Size (sqft)"
                 className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all rounded-xl p-3 w-full placeholder-gray-400"
               />
               <input
-                {...register("price")}
+                {...register('price')}
                 type="number"
                 placeholder="Price"
                 className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all rounded-xl p-3 w-full placeholder-gray-400"
@@ -136,7 +140,7 @@ export default function PropertyForm() {
             {/* Amenities */}
             <div>
               <textarea
-                {...register("amenities")}
+                {...register('amenities')}
                 placeholder="Amenities (comma-separated)"
                 className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all rounded-xl p-3 w-full placeholder-gray-400 h-32"
               />
@@ -160,7 +164,7 @@ export default function PropertyForm() {
                       <input
                         type="checkbox"
                         value={appliance.id}
-                        {...register("applianceIds")}
+                        {...register('applianceIds')}
                         className="h-5 w-5 accent-blue-600"
                       />
                       <span className="text-gray-700 font-medium">
@@ -176,7 +180,7 @@ export default function PropertyForm() {
             <label className="flex items-center gap-3 mt-4 text-gray-700">
               <input
                 type="checkbox"
-                {...register("isFurnished")}
+                {...register('isFurnished')}
                 className="h-5 w-5 accent-blue-600"
               />
               <span className="text-lg">Is Furnished?</span>
@@ -187,10 +191,10 @@ export default function PropertyForm() {
               type="submit"
               disabled={loading}
               className={`mt-8 w-full bg-linear-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.01] transition-all ${
-                loading ? "opacity-70 cursor-not-allowed" : ""
+                loading ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
-              {loading ? "Submitting..." : "Submit Property"}
+              {loading ? 'Submitting...' : 'Submit Property'}
             </button>
           </form>
         </div>
