@@ -91,8 +91,8 @@ export default function TenantInvoices({ tenantId }: TenantInvoicesProps) {
       const receipt: Receipt = await res.json();
 
       // Open PDF or show receipt details
-      // Here we simply alert the receipt number, you can integrate PDF download later
-      alert(
+      // Here we simply show the receipt info via toast, you can integrate PDF download later
+      toast.success(
         `Receipt No: ${receipt.receiptNo}\nIssued On: ${new Date(receipt.issuedOn).toLocaleDateString()}`,
       );
     } catch (error) {
