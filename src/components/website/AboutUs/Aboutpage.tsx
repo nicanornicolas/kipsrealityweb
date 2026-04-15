@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { AboutUs as AboutUsType } from '@/app/data/AboutUsData';
 import { HeroData } from '@/lib/aboutUs';
 import { motion } from 'framer-motion';
+import heroStoryImage from '@/assets/hero-cityscape.jpg';
 
 interface AboutProps {
   aboutData: AboutUsType[];
@@ -90,7 +91,7 @@ export default function AboutUsPage({ aboutData, heroData }: AboutProps) {
                 className="relative w-full aspect-4/3 rounded-3xl overflow-hidden shadow-xl"
               >
                 <Image
-                  src="https://images.unsplash.com/photo-1570129477492-45c003edd2be?ixlib=rb-4.0.3&auto=format&fit=crop&q=80&w=1200"
+                  src={heroStoryImage}
                   alt="Our Story House"
                   fill
                   className="object-cover"

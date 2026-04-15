@@ -12,11 +12,18 @@ class SentryExampleFrontendError extends Error {
 }
 
 export default function Page() {
+  if (process.env.NEXT_PUBLIC_ENABLE_SENTRY_EXAMPLE !== "true") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white text-slate-700">
+        <p>This page is not available.</p>
+      </div>
+    );
+  }
+
   const [hasSentError, setHasSentError] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
-    Sentry.logger.info("Sentry example page loaded");
     async function checkConnectivity() {
       const result = await Sentry.diagnoseSdkConnectivity();
       setIsConnected(result !== "sentry-unreachable");
@@ -71,7 +78,6 @@ export default function Page() {
         <button
           type="button"
           onClick={async () => {
-            Sentry.logger.info("User clicked the button, throwing a sample error");
             await Sentry.startSpan(
               {
                 name: "Example Frontend/Backend Span",
