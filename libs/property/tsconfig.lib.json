@@ -1,6 +1,8 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "rootDir": "..",
     "outDir": "../../dist/out-tsc",
     "types": [
       "node",
