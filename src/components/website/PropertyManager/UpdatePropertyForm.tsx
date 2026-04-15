@@ -4,9 +4,12 @@ import { useForm } from 'react-hook-form';
 import { Property } from '@/app/data/PropertyData';
 import { PropertyType } from '@/app/data/PropertTypeData';
 import { Appliance } from '@/app/data/ApplianceData';
-import { fetchPropertyTypes } from './';
-import { fetchAppliances } from './';
-import { updateProperty, PropertyPayload } from './';
+import {
+  fetchPropertyTypes,
+  fetchAppliances,
+  updateProperty,
+  type PropertyPayload,
+} from '@rentflow/property/client';
 import { HomeIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';

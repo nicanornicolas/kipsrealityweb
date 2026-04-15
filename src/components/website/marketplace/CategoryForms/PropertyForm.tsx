@@ -11,16 +11,6 @@ import {
 } from '@rentflow/property/client';
 import Footer from '@/components/website/Footer';
 import { HomeIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { PropertyType } from '@/app/data/PropertTypeData';
-import { Appliance } from '@/app/data/ApplianceData';
-import { fetchPropertyTypes } from './';
-import { fetchAppliances } from './';
-import { postProperty } from './';
-import Navbar from '@/components/website/Navbar';
-import Footer from '@/components/website/Footer';
-import { HomeIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PropertyForm() {
