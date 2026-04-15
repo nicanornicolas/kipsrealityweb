@@ -194,6 +194,19 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
+    const sanitizedMediaUrls = Array.isArray(mediaUrls)
+      ? mediaUrls
+          .filter((url) => typeof url === "string" && url.startsWith("http"))
+          .slice(0, 3)
+      : [];
+
+    const descriptionWithMedia =
+      sanitizedMediaUrls.length > 0
+        ? `${description}\n\nMedia Attachments:\n${sanitizedMediaUrls
+            .map((url) => `- ${url}`)
+            .join("\n")}`
+        : description;
+
     // Create the maintenance request
     const newRequest = await prisma.maintenanceRequest.create({
       data: {
@@ -233,13 +246,3 @@ export async function POST(req: NextRequest) {
     }, { status: 500 });
   }
 }
-
-
-    const sanitizedMediaUrls = Array.isArray(mediaUrls)
-      ? mediaUrls.filter((url) => typeof url === "string" && url.startsWith("http")).slice(0, 3)
-      : [];
-
-    const descriptionWithMedia =
-      sanitizedMediaUrls.length > 0
-        ? `${description}\n\nMedia Attachments:\n${sanitizedMediaUrls.map((url) => `- ${url}`).join("\n")}`
-        : description;
