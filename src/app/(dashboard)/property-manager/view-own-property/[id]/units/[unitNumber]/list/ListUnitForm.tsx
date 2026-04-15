@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { fetchUnitDetails } from '@/lib/units';
+import { fetchUnitDetails } from '@rentflow/property/client';
 import { toast } from 'sonner';
 
 export default function ListUnitForm({
