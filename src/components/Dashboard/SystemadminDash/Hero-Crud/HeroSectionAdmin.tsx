@@ -75,7 +75,6 @@ export default function HeroSectionAdmin() {
       console.error(err)
       toast.error('Failed to delete hero section')
     }
-  }
   };
 
   const handleSave = () => {
