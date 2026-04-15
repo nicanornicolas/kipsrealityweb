@@ -336,12 +336,12 @@ export default function Dashboard() {
 				</div>
 
 				{/* Collections Trend */}
-				<div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col h-64">
+				<div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col min-h-[420px] overflow-hidden">
 					<div className="flex justify-between mb-4">
 						<h4 className="text-sm font-semibold text-slate-800">Collections Trend</h4>
 						<span className="text-[10px] text-slate-400 uppercase tracking-wider">MTD</span>
 					</div>
-					<div className="flex-1 bg-slate-50/50 rounded-lg flex items-center justify-center border-2 border-dashed border-slate-100">
+					<div className="flex-1 min-h-[300px] bg-slate-50/50 rounded-lg flex items-center justify-center border-2 border-dashed border-slate-100 overflow-hidden">
 						{isZeroDataState ? (
 							<p className="text-xs text-slate-400">Generate invoices to see trends</p>
 						) : (
