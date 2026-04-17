@@ -33,6 +33,7 @@ describe('Property 15: Time-Based Listing Management', () => {
   let testOrganizationId: string;
   let testUserId: string;
   let testPropertyId: string;
+  let testCategoryId: string;
   let testUnitIds: string[] = [];
 
   beforeEach(async () => {
@@ -76,6 +77,16 @@ describe('Property 15: Time-Based Listing Management', () => {
       }
     });
     testPropertyId = property.id;
+
+    const category = await prisma.categoryMarketplace.upsert({
+      where: { name: 'Property' },
+      update: {},
+      create: {
+        name: 'Property',
+        description: 'Property listings'
+      }
+    });
+    testCategoryId = category.id;
   });
 
   afterEach(async () => {
@@ -256,6 +267,7 @@ describe('Property 15: Time-Based Listing Management', () => {
         data: {
           organizationId: testOrganizationId,
           createdBy: testUserId,
+          categoryId: testCategoryId,
           title: `Test Listing ${scenario.name}`,
           description: 'Test description',
           price: 1500,
@@ -379,6 +391,7 @@ describe('Property 15: Time-Based Listing Management', () => {
         data: {
           organizationId: testOrganizationId,
           createdBy: testUserId,
+          categoryId: testCategoryId,
           title: `Expiring Listing ${scenario.days}d`,
           description: 'Test description',
           price: 1300,

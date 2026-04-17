@@ -18,6 +18,7 @@ describe('Property 5: Error Handling Preservation', () => {
     let testOrganizationId: string;
     let testUserId: string;
     let testPropertyId: string;
+    let testCategoryId: string;
     let testStatusIds: Record<ListingStatus, string>;
 
     beforeEach(async () => {
@@ -58,6 +59,16 @@ describe('Property 5: Error Handling Preservation', () => {
             }
         });
         testPropertyId = property.id;
+
+        const category = await prisma.categoryMarketplace.upsert({
+            where: { name: 'Property' },
+            update: {},
+            create: {
+                name: 'Property',
+                description: 'Property listings'
+            }
+        });
+        testCategoryId = category.id;
 
         // Create listing statuses
         testStatusIds = {} as Record<ListingStatus, string>;
@@ -155,6 +166,7 @@ describe('Property 5: Error Handling Preservation', () => {
                                 unitId: unit.id,
                                 organizationId: testOrganizationId,
                                 createdBy: testUserId,
+                                categoryId: testCategoryId,
                                 statusId: testStatusIds[ListingStatus.ACTIVE]
                             }
                         });
@@ -307,6 +319,7 @@ describe('Property 5: Error Handling Preservation', () => {
                             unitId: unit.id,
                             organizationId: testOrganizationId,
                             createdBy: testUserId,
+                            categoryId: testCategoryId,
                             statusId: testStatusIds[config.initialStatus],
                             ...(config.isExpired && {
                                 expirationDate: new Date(Date.now() - 24 * 60 * 60 * 1000) // Yesterday
@@ -479,6 +492,7 @@ describe('Property 5: Error Handling Preservation', () => {
                                     unitId: unit.id,
                                     organizationId: testOrganizationId,
                                     createdBy: testUserId,
+                                    categoryId: testCategoryId,
                                     statusId: testStatusIds[ListingStatus.ACTIVE]
                                 }
                             });
@@ -711,6 +725,7 @@ describe('Property 5: Error Handling Preservation', () => {
                                     unitId: unit.id,
                                     organizationId: testOrganizationId,
                                     createdBy: testUserId,
+                                    categoryId: testCategoryId,
                                     statusId: testStatusIds[ListingStatus.ACTIVE]
                                 }
                             });
@@ -747,6 +762,7 @@ describe('Property 5: Error Handling Preservation', () => {
                                     unitId: unit.id,
                                     organizationId: testOrganizationId,
                                     createdBy: testUserId,
+                                    categoryId: testCategoryId,
                                     statusId: testStatusIds[ListingStatus.EXPIRED]
                                 }
                             });

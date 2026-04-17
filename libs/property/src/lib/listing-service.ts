@@ -139,6 +139,16 @@ export class ListingService {
     }
 
     /**
+     * Resolve a marketplace category id by name.
+     */
+    private async getMarketplaceCategoryIdByName(categoryName: string): Promise<string | undefined> {
+        const category = await prisma.categoryMarketplace.findUnique({
+            where: { name: categoryName }
+        });
+        return category?.id;
+    }
+
+    /**
      * Creates a new marketplace listing for a unit
      * Validates unit eligibility and creates listing with proper status
      * Includes intelligent default value population and comprehensive validation
@@ -223,6 +233,15 @@ export class ListingService {
             // Determine initial status based on availability date
             const initialStatus = this.determineInitialStatus(availabilityDate);
             const initialStatusId = await this.getStatusIdByName(initialStatus);
+            const propertyCategoryId = await this.getMarketplaceCategoryIdByName("Property");
+
+            if (!propertyCategoryId) {
+                return {
+                    success: false,
+                    error: CreateListingError.VALIDATION_FAILED,
+                    message: "Marketplace category 'Property' not configured"
+                };
+            }
 
             // Create the listing in a transaction
             const result = await prisma.$transaction(async (tx) => {
@@ -231,6 +250,7 @@ export class ListingService {
                     data: {
                         organizationId,
                         createdBy: userId,
+                        categoryId: propertyCategoryId,
                         statusId: initialStatusId,
                         title,
                         description,

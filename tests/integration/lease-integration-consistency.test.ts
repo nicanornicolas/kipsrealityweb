@@ -70,6 +70,7 @@ describe.skip('Lease Integration Consistency Property Tests', () => {
   let testUser: any;
   let testOrganization: any;
   let testManager: any;
+  let testCategoryId: string;
   let listingService: ListingService;
   let createdEntities: {
     users: string[];
@@ -117,6 +118,16 @@ describe.skip('Lease Integration Consistency Property Tests', () => {
       }
     });
     createdEntities.organizationUsers.push(testManager.id);
+
+    const category = await prisma.categoryMarketplace.upsert({
+      where: { name: 'Property' },
+      update: {},
+      create: {
+        name: 'Property',
+        description: 'Property listings'
+      }
+    });
+    testCategoryId = category.id;
   });
 
   afterEach(async () => {
@@ -199,6 +210,7 @@ describe.skip('Lease Integration Consistency Property Tests', () => {
             id: `listing-${Math.random().toString(36).substr(2, 9)}`,
             organizationId: testOrganization.id,
             createdBy: testUser.id,
+            categoryId: testCategoryId,
             title: 'Test Listing',
             description: 'Test listing description',
             price: 1500,
@@ -329,6 +341,7 @@ describe.skip('Lease Integration Consistency Property Tests', () => {
           id: `listing-${Math.random().toString(36).substr(2, 9)}`,
           organizationId: testOrganization.id,
           createdBy: testUser.id,
+          categoryId: testCategoryId,
           title: 'Test Listing',
           description: 'Test listing description',
           price: 1500,

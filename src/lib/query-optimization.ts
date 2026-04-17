@@ -321,6 +321,24 @@ export class BatchOperations {
       failed: [] as Array<{ unitId: string; error: string }>
     };
 
+    const propertyCategory = await prisma.categoryMarketplace.findUnique({
+      where: { name: "Property" }
+    });
+
+    if (!propertyCategory) {
+      throw new Error("Marketplace category 'Property' not configured");
+    }
+
+    let activeStatus = await prisma.listingStatus.findUnique({
+      where: { name: "ACTIVE" }
+    });
+
+    if (!activeStatus) {
+      activeStatus = await prisma.listingStatus.create({
+        data: { name: "ACTIVE" }
+      });
+    }
+
     // Get all units in a single query
     const unitIds = operations.map(op => op.unitId);
     const units = await prisma.unit.findMany({
@@ -363,7 +381,8 @@ export class BatchOperations {
             data: {
               unitId: operation.unitId,
               ...operation.listingData,
-              status: "ACTIVE"
+              categoryId: propertyCategory.id,
+              statusId: activeStatus.id
             }
           });
 
