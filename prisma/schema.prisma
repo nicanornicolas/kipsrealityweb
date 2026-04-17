@@ -1017,6 +1017,7 @@ model Listing {
   id                 String              @id @default(uuid())
   organizationId     String
   createdBy          String
+  categoryId         String
   statusId           String?
   locationId         String?
   title              String
@@ -1030,6 +1031,7 @@ model Listing {
   expirationDate     DateTime?           @map("expiration_date")
   adminActions       AdminAction[]
   createdByUser      User                @relation(fields: [createdBy], references: [id])
+  category           CategoryMarketplace @relation(fields: [categoryId], references: [id])
   location           Location?           @relation(fields: [locationId], references: [id])
   organization       Organization        @relation(fields: [organizationId], references: [id])
   status             ListingStatus?      @relation(fields: [statusId], references: [id])
@@ -1039,6 +1041,7 @@ model Listing {
   unit               Unit?               @relation("UnitListing")
   auditEntries       ListingAuditEntry[]
 
+  @@index([categoryId])
   @@index([createdBy])
   @@index([locationId])
   @@index([organizationId])
@@ -1133,6 +1136,7 @@ model CategoryMarketplace {
   name        String   @unique
   description String?
   createdAt   DateTime @default(now())
+  listings    Listing[]
 }
 
 model Location {

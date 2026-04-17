@@ -139,6 +139,22 @@ async function seedTestimonialsIfMissing() {
     console.log('✅ Default testimonials seeded.');
 }
 
+async function seedMarketplaceCategories() {
+  console.log('🌱 Seeding marketplace categories...');
+
+  const categories = ['Property', 'Vehicle', 'Service'];
+
+  for (const name of categories) {
+    await prisma.categoryMarketplace.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+
+  console.log('✅ Marketplace categories seeded.');
+}
+
 // Feature Keys for Usage Tracking
 const FEATURE_KEYS = {
   PROPERTY_CREATE: 'property.create',
@@ -275,6 +291,8 @@ async function seedStripePriceIds() {
 async function main() {
     // Run this seed when setting up a new database or environment.
     // Uses upsert to prevent duplicates - safe to run multiple times.
+  await seedMarketplaceCategories();
+
     const propertyTypes = [
         { id: "1", name: "House", description: "Single family home" },
         { id: "2", name: "Apartment", description: "Apartment unit" },
