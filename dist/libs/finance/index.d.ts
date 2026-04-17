@@ -19,6 +19,8 @@ export interface JournalLineInput {
     credit: Decimal;
     propertyId?: string;
     tenantId?: string;
+    unitId?: string;
+    leaseId?: string;
 }
 export interface PostJournalInput {
     organizationId: string;
@@ -38,7 +40,7 @@ export interface IFinanceModule {
     getTenantBalance(tenantId: string): Promise<{
         totalOutstanding: Decimal;
     }>;
-    postJournalEntry(input: PostJournalInput): Promise<{
+    postJournalEntry(input: PostJournalInput, tx?: any): Promise<{
         journalEntryId: string;
     }>;
     recordPayment(invoiceId: string, amount: Decimal, paymentMethodId: string): Promise<void>;
