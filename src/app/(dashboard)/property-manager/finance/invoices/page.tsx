@@ -57,7 +57,7 @@ export default function InvoicesPage() {
     invoiceGroups.forEach((group) => {
       tableRows.push([
         group.leaseId,
-        group.invoices.length,
+        group.invoices?.length ?? 0,
         group.totalAmount.toLocaleString(),
       ]);
     });
@@ -140,16 +140,16 @@ export default function InvoicesPage() {
                   </td>
                 </tr>
               ) : (
-                invoiceGroups.map((group) => (
+                invoiceGroups.map((group, index) => (
                   <tr
-                    key={group.leaseId}
+                    key={`${group.leaseId || "group"}-${group.date || "date"}-${index}`}
                     onClick={() =>
                       router.push(`/property-manager/finance/invoices/group/${group.leaseId}`)
                     }
                     className="cursor-pointer hover:bg-blue-50 transition"
                   >
                     <td className="px-6 py-4 font-mono text-blue-600">{group.leaseId}</td>
-                    <td className="px-6 py-4">{group.invoices.length}</td>
+                    <td className="px-6 py-4">{group.invoices?.length ?? 0}</td>
                     <td className="px-6 py-4 font-semibold">
                       {group.totalAmount.toLocaleString()}
                     </td>

@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import UpgradeRequiredModal from "@/components/monetization/UpgradeRequiredModal";
+import DocumentPreviewModal from "@/components/dss/DocumentPreviewModal";
 import { 
   FolderOpen, 
   FileText, 
@@ -60,6 +62,14 @@ interface ApiDocumentListResponse {
   documents?: ApiDocument[];
 }
 
+interface UpgradeErrorData {
+  message?: string;
+  featureKey?: string;
+  limit?: number;
+  used?: number;
+  remaining?: number;
+}
+
 export default function DocumentsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -70,6 +80,10 @@ export default function DocumentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradeErrorData, setUpgradeErrorData] = useState<UpgradeErrorData | undefined>(undefined);
+  const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -147,7 +161,8 @@ export default function DocumentsPage() {
       const data = await response.json();
 
       if (response.status === 402) {
-        alert(`Upgrade Required: ${data.message || "Plan limit reached."}`);
+        setUpgradeErrorData(data as UpgradeErrorData);
+        setIsUpgradeModalOpen(true);
         return;
       }
 
@@ -196,6 +211,11 @@ export default function DocumentsPage() {
       case "Insurance": return "bg-red-100 text-red-700";
       default: return "bg-gray-100 text-gray-700";
     }
+  };
+
+  const openPreview = (documentId: string) => {
+    setPreviewDocumentId(documentId);
+    setIsPreviewOpen(true);
   };
 
   if (isLoading) {
@@ -312,6 +332,12 @@ export default function DocumentsPage() {
                   {doc.property}
                   {doc.unit && ` / ${doc.unit}`}
                 </div>
+                <div className="mt-3 flex justify-end">
+                  <Button variant="secondary" size="sm" onClick={() => openPreview(doc.id)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -355,7 +381,7 @@ export default function DocumentsPage() {
                     <td className="px-4 py-3 text-sm text-gray-500">{doc.uploadedAt}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" onClick={() => openPreview(doc.id)}>
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon">
@@ -390,6 +416,17 @@ export default function DocumentsPage() {
           </CardContent>
         </Card>
       )}
+
+      <UpgradeRequiredModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        error={upgradeErrorData}
+      />
+      <DocumentPreviewModal
+        documentId={previewDocumentId}
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+      />
     </div>
   );
 }
