@@ -19,6 +19,10 @@ export declare class ListingService {
      */
     private getStatusIdByName;
     /**
+     * Resolve a marketplace category id by name.
+     */
+    private getMarketplaceCategoryIdByName;
+    /**
      * Creates a new marketplace listing for a unit
      * Validates unit eligibility and creates listing with proper status
      * Includes intelligent default value population and comprehensive validation
