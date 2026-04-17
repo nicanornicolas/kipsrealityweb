@@ -14,7 +14,7 @@ export declare class JournalService implements IFinanceModule {
      * Post a Journal Entry to the General Ledger.
      * THROWS GL_IMBALANCE error if Debits != Credits.
      */
-    postJournalEntry(input: PostJournalInput): Promise<{
+    postJournalEntry(input: PostJournalInput, tx?: any): Promise<{
         journalEntryId: string;
     }>;
     generateInvoice(input: any): Promise<{
