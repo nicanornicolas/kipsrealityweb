@@ -24,8 +24,8 @@ type CreateLeaseInput = {
   lateFeeFlat?: number;
   lateFeeDaily?: number;
   gracePeriodDays?: number;
-  landlordResponsibilities?: unknown;
-  tenantResponsibilities?: unknown;
+  landlordResponsibilities?: string | null;
+  tenantResponsibilities?: string | null;
   tenantPaysElectric?: boolean;
   tenantPaysWater?: boolean;
   tenantPaysTrash?: boolean;
