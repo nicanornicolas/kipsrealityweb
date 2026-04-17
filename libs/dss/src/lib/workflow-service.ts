@@ -75,9 +75,8 @@ export class WorkflowService {
 
     if (
       !document ||
-      ![DssDocumentStatus.SENT, DssDocumentStatus.IN_SIGNING].includes(
-        document.status,
-      )
+      (document.status !== DssDocumentStatus.SENT &&
+        document.status !== DssDocumentStatus.IN_SIGNING)
     ) {
       return false;
     }
