@@ -94,9 +94,9 @@ class AfricasTalkingProvider implements ISmsProvider {
       const res = await this.client.SMS.send({
         to: [to],
         message,
-        from: process.env.AT_SENDER_ID, // Optional: e.g., 'RENTFLOW'
+        from: process.env['AT_SENDER_ID'] ?? 'RENTFLOW', // Optional: e.g., 'RENTFLOW'
       });
-      const recipient = res?.SMSMessageData?.Recipients?.[0];
+      const recipient = (res as any)?.SMSMessageData?.Recipients?.[0];
       if (!recipient) {
         return {
           success: false,

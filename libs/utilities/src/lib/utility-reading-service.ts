@@ -32,7 +32,7 @@ export async function createReading(
         return {
             success: false,
             error: ReadingError.INVALID_INPUT,
-            message: parsed.errors.issues[0]?.message,
+            message: (parsed as any).errors.issues[0]?.message,
         };
     }
 
@@ -73,7 +73,7 @@ export async function createReading(
         previousReading?.readingValue ?? null
     );
     if (!readingCheck.valid) {
-        return { success: false, error: readingCheck.error };
+        return { success: false, error: (readingCheck as any).error };
     }
 
     // 7. Insert reading in transaction (append-only)

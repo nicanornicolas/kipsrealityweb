@@ -115,7 +115,7 @@ export async function createBill(
     return {
       success: false,
       error: CreateBillError.INVALID_AMOUNT,
-      message: parsed.errors.issues[0]?.message,
+      message: (parsed as any).errors.issues[0]?.message,
     };
   }
 
@@ -259,7 +259,7 @@ export async function approveBill(billId: string): Promise<ApproveBillResult> {
 
   const canApprove = canApproveBill(toBillForGuard(bill), allocations);
   if (!canApprove.allowed) {
-    return { success: false, error: canApprove.error };
+    return { success: false, error: (canApprove as any).error };
   }
 
   await prisma.$transaction(async (tx) => {

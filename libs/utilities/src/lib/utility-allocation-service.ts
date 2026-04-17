@@ -344,7 +344,7 @@ export async function allocateUtilityBill(billId: string): Promise<AllocateBillR
     // 3. Check allocation is allowed (must be DRAFT)
     const canAllocate = canAllocateBill(normalizedBill);
     if (!canAllocate.allowed) {
-        return { success: false, error: canAllocate.error };
+        return { success: false, error: (canAllocate as any).error };
     }
 
     // 4. Ensure no existing allocations

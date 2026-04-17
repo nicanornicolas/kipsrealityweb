@@ -33,7 +33,17 @@ export default defineConfig(() => ({
       formats: ['es' as const],
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime'],
+      external: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        '@rentflow/iam',
+        '@rentflow/dss',
+        '@rentflow/finance',
+        '@rentflow/property',
+        '@rentflow/lease',
+        '@rentflow/payments',
+      ],
     },
   },
   test: {
