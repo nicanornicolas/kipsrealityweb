@@ -26,9 +26,12 @@ export class SubscriptionService {
     email: string,
     planName: string
   ): Promise<string> {
-    if (!['BUSINESS', 'ENTERPRISE'].includes(planName)) {
+    const normalizedPlanName = planName?.trim().toUpperCase();
+
+    if (!['BUSINESS', 'ENTERPRISE'].includes(normalizedPlanName)) {
       throw new Error('Invalid plan. Must be BUSINESS or ENTERPRISE.');
     }
+    const checkoutPlan = normalizedPlanName as 'BUSINESS' | 'ENTERPRISE';
 
     // 1. Get the Organization
     const org = await prisma.organization.findFirst({
@@ -46,15 +49,22 @@ export class SubscriptionService {
 
     // 2. Get the target Plan with Stripe price IDs
     const targetPlan = await prisma.plan.findFirst({
-      where: { name: planName }
+      where: { name: checkoutPlan }
     });
 
     if (!targetPlan) {
-      throw new Error(`Plan ${planName} not found`);
+      throw new Error(`Plan ${checkoutPlan} not found`);
     }
 
-    if (!targetPlan.stripePriceIdMonthly) {
-      throw new Error(`Plan ${planName} is not configured for Stripe billing`);
+    const stripePriceIdMonthly =
+      targetPlan.stripePriceIdMonthly ||
+      this.getStripePriceIdFromEnv(checkoutPlan);
+
+    if (!stripePriceIdMonthly) {
+      throw new Error(
+        `Plan ${checkoutPlan} is not configured for Stripe billing. ` +
+        `Set plan.stripePriceIdMonthly in DB or env (${this.getExpectedPriceEnvKeys(checkoutPlan).join(', ')}).`
+      );
     }
 
     // 3. Get or Create Stripe Customer
@@ -85,7 +95,7 @@ export class SubscriptionService {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: targetPlan.stripePriceIdMonthly,
+          price: stripePriceIdMonthly,
           quantity: 1,
         },
       ],
@@ -94,7 +104,7 @@ export class SubscriptionService {
       metadata: {
         organizationId: org.id,
         planId: targetPlan.id.toString(),
-        planName,
+        planName: checkoutPlan,
         userId,
       },
       allow_promotion_codes: true,
@@ -165,6 +175,22 @@ export class SubscriptionService {
       });
       throw error; // Re-throw so the route can return appropriate status
     }
+  }
+
+  private getStripePriceIdFromEnv(planName: 'BUSINESS' | 'ENTERPRISE'): string | undefined {
+    const keys = this.getExpectedPriceEnvKeys(planName);
+    for (const key of keys) {
+      const value = process.env[key];
+      if (value?.trim()) return value.trim();
+    }
+    return undefined;
+  }
+
+  private getExpectedPriceEnvKeys(planName: 'BUSINESS' | 'ENTERPRISE'): string[] {
+    return [
+      `STRIPE_PRICE_ID_${planName}_MONTHLY`,
+      `STRIPE_PRICE_ID_${planName}`,
+    ];
   }
 
   /**

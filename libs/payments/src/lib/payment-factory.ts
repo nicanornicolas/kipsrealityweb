@@ -1,5 +1,5 @@
 import { UsaPaymentStrategy } from './strategies/usa';
-import { IPaymentStrategy } from '../types';
+import { IPaymentStrategy } from './types';
 
 export class PaymentFactory {
   /**

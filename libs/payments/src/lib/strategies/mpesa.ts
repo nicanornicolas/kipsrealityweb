@@ -50,7 +50,7 @@ export class MpesaPaymentStrategy implements IPaymentStrategy {
     return {
       transactionId: reference,
       status: TransactionStatus.PENDING,
-      gateway: PaymentGateway.MPESA,
+      gateway: PaymentGateway.MPESA_DIRECT,
       rawResponse: { message: 'Verification not implemented in compatibility strategy' }
     };
   }
