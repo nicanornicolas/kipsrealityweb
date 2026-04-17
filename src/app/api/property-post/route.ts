@@ -36,6 +36,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "organizationId is required" }, { status: 400 });
     }
 
+    if (propertyTypeId) {
+      const propertyType = await prisma.propertyType.findUnique({
+        where: { id: propertyTypeId },
+      });
+
+      if (!propertyType) {
+        return NextResponse.json({ error: "Invalid propertyTypeId" }, { status: 400 });
+      }
+    }
+
     // === THE MONETIZATION GATE ===
     // Stops the request immediately if they've hit their tier limit
     const limitError = await enforceFeatureLimit(organizationId, 'property.create');
@@ -46,7 +56,12 @@ export async function POST(req: Request) {
       where: { name: "Property" },
     });
 
-    if (!propertyCategory) throw new Error("Property category not found");
+    if (!propertyCategory) {
+      return NextResponse.json(
+        { error: "Marketplace category 'Property' not configured" },
+        { status: 500 }
+      );
+    }
 
     // ✅ 2. Create property with nested listing
     const newProperty = await prisma.property.create({
@@ -64,6 +79,7 @@ export async function POST(req: Request) {
           create: {
             organizationId,
             createdBy: user.id,
+            categoryId: propertyCategory.id,
             title: generateListingTitle(city, bedrooms, bathrooms, propertyTypeId),
             description: generateListingDescription(city, address, bedrooms, bathrooms, amenities),
             price: calculatePrice(bedrooms, bathrooms, size),
@@ -97,7 +113,7 @@ export async function POST(req: Request) {
 }
 
 // Helper functions
-function generateListingTitle(city: string, bedrooms: number, bathrooms: number, propertyTypeId: string): string {
+function generateListingTitle(city: string, bedrooms: number, bathrooms: number, propertyTypeId?: string): string {
   const propertyType = propertyTypeId ? `Property` : "Property";
   return `${bedrooms || "Studio"} Bed, ${bathrooms || 1} Bath ${propertyType} in ${city}`;
 }
