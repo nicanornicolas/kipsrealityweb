@@ -9,9 +9,6 @@ const nextConfig: NextConfig = {
    */
   output: 'standalone',
 
-  // Use webpack instead of Turbopack (required for custom webpack config like fflate alias)
-  turbopack: {},
-
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -64,16 +61,8 @@ const nextConfig: NextConfig = {
   // If you need to ignore ESLint errors during build, configure it in package.json
   // scripts or use ESLint's own ignore mechanisms.
 
-  // Fix fflate/Worker issue - force browser version instead of Node.js Worker API
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        'fflate/lib/node.cjs': 'fflate/browser',
-      };
-    }
-    return config;
-  },
+  // Turbopack is default in Next.js 16. If fflate alias is needed, use --webpack flag
+  // or migrate alias to Turbopack config when needed.
 };
 
 // TEMPORARY: Bypass Sentry Webpack wrapper to unblock Next.js 15 build
