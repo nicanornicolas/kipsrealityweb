@@ -219,12 +219,12 @@ export const utilityService = {
             {
               accountCode: CHART_OF_ACCOUNTS.UTILITY_EXPENSE,
               debit: utilityBill.totalAmount,
-              credit: 0,
+              credit: new Decimal(0),
               propertyId: utilityBill.propertyId,
             },
             {
               accountCode: CHART_OF_ACCOUNTS.ACCOUNTS_PAYABLE,
-              debit: 0,
+              debit: new Decimal(0),
               credit: utilityBill.totalAmount,
               propertyId: utilityBill.propertyId,
             },
@@ -244,7 +244,7 @@ export const utilityService = {
                 {
                   accountCode: CHART_OF_ACCOUNTS.ACCOUNTS_RECEIVABLE,
                   debit: alloc.amount,
-                  credit: 0,
+                  credit: new Decimal(0),
                   propertyId: utilityBill.propertyId,
                   leaseId: alloc.leaseId,
                   unitId: alloc.unitId,
@@ -252,7 +252,7 @@ export const utilityService = {
                 },
                 {
                   accountCode: CHART_OF_ACCOUNTS.UTILITY_RECOVERY_INCOME,
-                  debit: 0,
+                  debit: new Decimal(0),
                   credit: alloc.amount,
                   propertyId: utilityBill.propertyId,
                   leaseId: alloc.leaseId,
@@ -264,7 +264,7 @@ export const utilityService = {
             // Link invoice to its specific recovery GL entry
             const updatedInvoice = await tx.invoice.update({
               where: { id: res.invoice.id },
-              data: { journalEntryId: recoveryGLEntry.id },
+              data: { journalEntryId: recoveryGLEntry.journalEntryId },
             });
 
             return {
@@ -280,7 +280,7 @@ export const utilityService = {
           where: { id: utilityBill.id },
           data: {
             status: UtilityBillStatus.POSTED,
-            journalEntryId: masterGLEntry.id,
+            journalEntryId: masterGLEntry.journalEntryId,
           },
         });
 

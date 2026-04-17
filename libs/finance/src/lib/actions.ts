@@ -39,8 +39,11 @@ export class FinanceActions {
     // They come through Lease -> Property -> organizationId and Lease -> tenantId
     const organizationId =
       invoice.organizationId ?? invoice.Lease?.property?.organizationId;
-    const propertyId = invoice.propertyId ?? invoice.Lease?.propertyId;
-    const tenantId = invoice.tenantId ?? invoice.Lease?.tenantId;
+    const propertyId =
+      (invoice as any).propertyId ??
+      (invoice.Lease as any)?.propertyId ??
+      (invoice.Lease as any)?.property?.id;
+    const tenantId = (invoice as any).tenantId ?? (invoice.Lease as any)?.tenantId;
 
     if (!organizationId) {
       throw new Error(`Invoice ${invoiceId} has no organization assigned`);
@@ -83,7 +86,7 @@ export class FinanceActions {
       // Credit Sales Tax Payable if tax applies (USA tax compliance)
       if (taxAmount.greaterThan(0)) {
         lines.push({
-          accountCode: CHART_OF_ACCOUNTS.SALES_TAX_PAYABLE,
+          accountCode: CHART_OF_ACCOUNTS.SALES_TAX_PAYABLE as any,
           debit: new Decimal(0),
           credit: taxAmount,
           propertyId,
@@ -94,7 +97,7 @@ export class FinanceActions {
       // Post to the General Ledger
       const { journalEntryId } = await this.journalService.postJournalEntry({
         organizationId,
-        date: invoice.createdAt,
+        date: invoice.createdAt || new Date(),
         reference: `INV-${invoiceId.substring(0, 8)}`,
         description: `Automated posting for Invoice ${invoiceId}`,
         lines,

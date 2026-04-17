@@ -55,13 +55,13 @@ export const maintenanceService = {
               {
                 accountCode: CHART_OF_ACCOUNTS.MAINTENANCE_EXPENSE,
                 debit: cost,
-                credit: 0,
+                credit: new Decimal(0),
                 propertyId: request.propertyId,
                 unitId: request.unitId || undefined,
               },
               {
                 accountCode: CHART_OF_ACCOUNTS.ACCOUNTS_PAYABLE,
-                debit: 0,
+                debit: new Decimal(0),
                 credit: cost,
                 propertyId: request.propertyId,
                 unitId: request.unitId || undefined,
@@ -117,7 +117,7 @@ export const maintenanceService = {
                 {
                   accountCode: CHART_OF_ACCOUNTS.ACCOUNTS_RECEIVABLE,
                   debit: cost,
-                  credit: 0,
+                  credit: new Decimal(0),
                   propertyId: request.propertyId,
                   unitId: request.unitId || undefined,
                   leaseId: activeLease.id,
@@ -125,7 +125,7 @@ export const maintenanceService = {
                 },
                 {
                   accountCode: CHART_OF_ACCOUNTS.MAINTENANCE_INCOME,
-                  debit: 0,
+                  debit: new Decimal(0),
                   credit: cost,
                   propertyId: request.propertyId,
                   unitId: request.unitId || undefined,
@@ -139,7 +139,7 @@ export const maintenanceService = {
           // Link invoice to its GL entry
           await tx.invoice.update({
             where: { id: invoice.id },
-            data: { journalEntryId: recoveryGLEntry.id },
+            data: { journalEntryId: recoveryGLEntry.journalEntryId },
           });
         }
 
@@ -147,7 +147,7 @@ export const maintenanceService = {
         const updatedRequest = await tx.maintenanceRequest.update({
           where: { id: request.id },
           data: {
-            journalEntryId: expenseGLEntry.id,
+            journalEntryId: expenseGLEntry.journalEntryId,
             invoiceId: invoiceId,
           },
         });

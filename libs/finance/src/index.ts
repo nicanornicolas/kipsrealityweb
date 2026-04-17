@@ -49,6 +49,8 @@ export interface JournalLineInput {
   credit: Decimal;
   propertyId?: string; // Dimension tracking
   tenantId?: string; // Dimension tracking
+  unitId?: string; // Dimension tracking
+  leaseId?: string; // Dimension tracking
 }
 
 export interface PostJournalInput {
@@ -71,6 +73,7 @@ export interface IFinanceModule {
   // Double-Entry Ledger
   postJournalEntry(
     input: PostJournalInput,
+    tx?: any,
   ): Promise<{ journalEntryId: string }>;
 
   // Payment Allocation

@@ -22,8 +22,10 @@ export class JournalService implements IFinanceModule {
    */
   async postJournalEntry(
     input: PostJournalInput,
+    tx?: any,
   ): Promise<{ journalEntryId: string }> {
     const { organizationId, date, reference, description, lines } = input;
+    const db = tx ?? this.prisma;
 
     // 1. Validate Double-Entry Math with Decimal precision
     let totalDebit = new Decimal(0);
@@ -42,7 +44,7 @@ export class JournalService implements IFinanceModule {
     }
 
     // 2. Get Financial Entity for this Organization
-    const entity = await this.prisma.financialEntity.findFirst({
+    const entity = await db.financialEntity.findFirst({
       where: { organizationId },
       include: { accounts: true },
     });
@@ -53,7 +55,7 @@ export class JournalService implements IFinanceModule {
 
     // 3. Resolve Account IDs from Codes with validation
     const lineData = lines.map((line) => {
-      const account = entity.accounts.find((a) => a.code === line.accountCode);
+      const account = entity.accounts.find((a: { code: string }) => a.code === line.accountCode);
       if (!account) {
         throw new Error(
           `Account Code ${line.accountCode} not configured for this entity.`,
@@ -71,22 +73,36 @@ export class JournalService implements IFinanceModule {
     });
 
     // 4. Write to Database with absolute immutability (isLocked: true)
-    const result = await this.prisma.$transaction(async (tx) => {
-      const entry = await tx.journalEntry.create({
-        data: {
-          entityId: entity.id,
-          transactionDate: date,
-          postedAt: new Date(), // Now
-          description,
-          reference,
-          isLocked: true, // Auto-lock for immutability invariant
-          lines: {
-            create: lineData,
+    const result = tx
+      ? await tx.journalEntry.create({
+          data: {
+            entityId: entity.id,
+            transactionDate: date,
+            postedAt: new Date(), // Now
+            description,
+            reference,
+            isLocked: true, // Auto-lock for immutability invariant
+            lines: {
+              create: lineData,
+            },
           },
-        },
-      });
-      return entry;
-    });
+        })
+      : await this.prisma.$transaction(async (txClient) => {
+          const entry = await txClient.journalEntry.create({
+            data: {
+              entityId: entity.id,
+              transactionDate: date,
+              postedAt: new Date(), // Now
+              description,
+              reference,
+              isLocked: true, // Auto-lock for immutability invariant
+              lines: {
+                create: lineData,
+              },
+            },
+          });
+          return entry;
+        });
 
     return { journalEntryId: result.id };
   }
