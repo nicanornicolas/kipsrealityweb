@@ -12,7 +12,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { plan: planName } = body;
+    const rawPlan = typeof body?.plan === 'string' ? body.plan : '';
+    const planName = rawPlan.trim().toUpperCase();
 
     if (!planName || !['BUSINESS', 'ENTERPRISE'].includes(planName)) {
       return NextResponse.json(
