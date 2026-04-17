@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createDocument, DocumentService } from "@rentflow/dss";
-import { DssParticipantRole } from "@prisma/client";
+import { DssDocumentStatus, DssParticipantRole } from "@prisma/client";
 import { enforceFeatureLimit } from "../../../../lib/guards/requireFeature";
 import { UsageService } from '@rentflow/payments';
 import { getCurrentUser, requireRole } from "@rentflow/iam";
@@ -22,9 +22,24 @@ export async function GET(req: Request) {
             );
         }
 
-        const documents = await documentService.listDocuments(currentUser.organizationId);
+        const url = new URL(req.url);
+        const requestedStatus = url.searchParams.get("status")?.toUpperCase();
 
-        return NextResponse.json({ success: true, documents });
+        if (
+            requestedStatus &&
+            !Object.values(DssDocumentStatus).includes(requestedStatus as DssDocumentStatus)
+        ) {
+            return NextResponse.json({ error: "Invalid document status filter" }, { status: 400 });
+        }
+
+        const documents = await documentService.listDocuments(currentUser.organizationId);
+        const filteredDocuments = requestedStatus
+            ? documents.filter(
+                (doc: any) => String(doc?.status || "").toUpperCase() === requestedStatus
+            )
+            : documents;
+
+        return NextResponse.json({ success: true, documents: filteredDocuments });
     } catch (error: any) {
         console.error("[DSS Documents GET Error]", error);
         return NextResponse.json({ error: "Failed to fetch documents" }, { status: 500 });
