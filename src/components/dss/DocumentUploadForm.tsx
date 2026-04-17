@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Upload, Plus, Trash } from "lucide-react";
+import { Eye, FolderOpen, Loader2, Plus, Trash, Upload, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import DocumentPreviewModal from "@/components/dss/DocumentPreviewModal";
 
 interface Participant {
     email: string;
@@ -11,11 +13,28 @@ interface Participant {
     role: string;
 }
 
+interface VaultDocument {
+    id: string;
+    title?: string;
+    name?: string;
+    fileName?: string;
+    status?: string;
+}
+
+interface VaultListResponse {
+    documents?: VaultDocument[];
+}
+
 export default function DocumentUploadForm() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [file, setFile] = useState<File | null>(null);
     const [title, setTitle] = useState("");
+    const [uploadMode, setUploadMode] = useState<"NEW" | "VAULT">("NEW");
+    const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>([]);
+    const [isVaultLoading, setIsVaultLoading] = useState(false);
+    const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
     // Default Participants: 1 Tenant, 1 Landlord
     const [participants, setParticipants] = useState<Participant[]>([
@@ -23,9 +42,33 @@ export default function DocumentUploadForm() {
         { email: "", fullName: "", role: "LANDLORD" }
     ]);
 
+    useEffect(() => {
+        const loadVaultDocuments = async () => {
+            if (uploadMode !== "VAULT" || vaultDocuments.length > 0) return;
+
+            setIsVaultLoading(true);
+            try {
+                const res = await fetch("/api/dss/documents?status=DRAFT");
+                const data = (await res.json()) as VaultListResponse;
+                if (!res.ok) throw new Error("Failed to fetch vault documents");
+                setVaultDocuments(data.documents || []);
+            } catch (error) {
+                console.error(error);
+                toast.error("Unable to load vault documents.");
+            } finally {
+                setIsVaultLoading(false);
+            }
+        };
+
+        loadVaultDocuments();
+    }, [uploadMode, vaultDocuments.length]);
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setFile(e.target.files[0]);
+            if (!title) {
+                setTitle(e.target.files[0].name.replace(/\.pdf$/i, ""));
+            }
         }
     };
 
@@ -43,77 +86,184 @@ export default function DocumentUploadForm() {
         setParticipants([...participants, { email: "", fullName: "", role: "WITNESS" }]);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleUploadNewDocument = async () => {
         if (!file || !title) {
-            toast.error("Please provide a title and a file.");
-            return;
+            throw new Error("Please provide a title and a file.");
         }
 
-        setLoading(true);
         const formData = new FormData();
         formData.append("file", file);
         formData.append("title", title);
         formData.append("participants", JSON.stringify(participants));
 
-        try {
-            const res = await fetch("/api/dss/documents", {
+        const res = await fetch("/api/dss/documents", {
+            method: "POST",
+            body: formData,
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data?.error || data?.message || "Failed to create document");
+        }
+
+        const createdDocumentId = data?.data?.id as string | undefined;
+        if (!createdDocumentId) {
+            throw new Error("Document created but ID was missing");
+        }
+
+        setSelectedDocumentId(createdDocumentId);
+        toast.success("Document created & hashed successfully!");
+    };
+
+    const handlePrepareVaultDocument = async () => {
+        if (!selectedDocumentId) {
+            throw new Error("Please select a document from the vault.");
+        }
+
+        const nonEmptyParticipants = participants.filter(
+            (participant) => participant.email.trim() && participant.fullName.trim()
+        );
+
+        if (nonEmptyParticipants.length === 0) {
+            throw new Error("Add at least one signer before continuing.");
+        }
+
+        for (let index = 0; index < nonEmptyParticipants.length; index++) {
+            const participant = nonEmptyParticipants[index];
+            const participantRes = await fetch(`/api/dss/documents/${selectedDocumentId}/participants`, {
                 method: "POST",
-                body: formData,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: participant.email,
+                    fullName: participant.fullName,
+                    role: participant.role,
+                    stepOrder: index + 1,
+                }),
             });
 
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data?.error || data?.message || "Failed to create document");
+            if (!participantRes.ok) {
+                const payload = await participantRes.json();
+                throw new Error(payload?.error || "Failed to add participant to selected document");
             }
+        }
 
-            toast.success("Document created & hashed successfully!");
-            // Redirect to the "Signing Room" or List (We will build this next)
-            // router.push(`/property-manager/dss/${data.data.id}`);
+        toast.success("Vault document is ready for field placement.");
+        router.push(`/property-manager/dss/prepare/${selectedDocumentId}`);
+    };
 
-        } catch (error: any) {
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            if (uploadMode === "NEW") {
+                await handleUploadNewDocument();
+            } else {
+                await handlePrepareVaultDocument();
+            }
+        } catch (error: unknown) {
             console.error(error);
-            toast.error(error.message || "Upload failed");
+            const message = error instanceof Error ? error.message : "Action failed";
+            toast.error(message);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-md border border-gray-200">
+        <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-md border border-gray-200">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                 <Upload className="w-5 h-5 text-blue-600" />
-                Upload New Contract
+                Prepare Contract
             </h2>
 
+            <div className="flex gap-3 mb-6 border-b pb-4">
+                <Button
+                    type="button"
+                    variant={uploadMode === "NEW" ? "default" : "outline"}
+                    onClick={() => {
+                        setUploadMode("NEW");
+                        setSelectedDocumentId(null);
+                    }}
+                >
+                    <UploadCloud className="w-4 h-4 mr-2" />
+                    Upload from Computer
+                </Button>
+                <Button
+                    type="button"
+                    variant={uploadMode === "VAULT" ? "default" : "outline"}
+                    onClick={() => {
+                        setUploadMode("VAULT");
+                        setFile(null);
+                    }}
+                >
+                    <FolderOpen className="w-4 h-4 mr-2" />
+                    Select from Vault
+                </Button>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Title */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Document Title</label>
-                    <input
-                        type="text"
-                        className="w-full p-2 border rounded-md"
-                        placeholder="e.g. Lease Agreement - Unit 101"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        required
-                    />
+                <div className="rounded-lg border bg-gray-50 p-4">
+                    {uploadMode === "NEW" ? (
+                        <>
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Document Title</label>
+                                <input
+                                    type="text"
+                                    className="w-full p-2 border rounded-md bg-white"
+                                    placeholder="e.g. Lease Agreement - Unit 101"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Upload PDF</label>
+                                <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    onChange={handleFileChange}
+                                    className="w-full p-2 border border-dashed border-gray-300 rounded-md bg-white"
+                                    required
+                                />
+                            </div>
+                        </>
+                    ) : (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Select Existing Document</label>
+                            <select
+                                className="w-full p-2 border rounded-md bg-white"
+                                onChange={(e) => setSelectedDocumentId(e.target.value || null)}
+                                value={selectedDocumentId || ""}
+                                required
+                            >
+                                <option value="">-- Choose a DRAFT document --</option>
+                                {vaultDocuments.map((doc) => (
+                                    <option key={doc.id} value={doc.id}>
+                                        {doc.title || doc.name || doc.fileName || "Untitled document"}
+                                    </option>
+                                ))}
+                            </select>
+                            {isVaultLoading && (
+                                <p className="mt-2 text-sm text-gray-500 flex items-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Loading vault documents...
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {selectedDocumentId && (
+                        <div className="mt-4 flex justify-end">
+                            <Button type="button" variant="secondary" onClick={() => setIsPreviewOpen(true)}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                Preview Document
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
-                {/* File Drop Area (Simple) */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Upload PDF</label>
-                    <input
-                        type="file"
-                        accept="application/pdf"
-                        onChange={handleFileChange}
-                        className="w-full p-2 border border-dashed border-gray-300 rounded-md bg-gray-50"
-                        required
-                    />
-                </div>
-
-                {/* Participants List */}
                 <div>
                     <div className="flex justify-between items-center mb-2">
                         <label className="block text-sm font-medium text-gray-700">Signers (Ordered)</label>
@@ -166,15 +316,26 @@ export default function DocumentUploadForm() {
                     </div>
                 </div>
 
-                {/* Submit */}
                 <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || (uploadMode === "VAULT" && isVaultLoading)}
                     className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 flex justify-center items-center gap-2"
                 >
-                    {loading ? <Loader2 className="animate-spin" /> : "Create & Hash Document"}
+                    {loading ? (
+                        <Loader2 className="animate-spin" />
+                    ) : uploadMode === "NEW" ? (
+                        "Create & Hash Document"
+                    ) : (
+                        "Prepare Selected Vault Document"
+                    )}
                 </button>
             </form>
+
+            <DocumentPreviewModal
+                documentId={selectedDocumentId}
+                isOpen={isPreviewOpen}
+                onClose={() => setIsPreviewOpen(false)}
+            />
         </div>
     );
 }
