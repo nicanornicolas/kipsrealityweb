@@ -11,6 +11,7 @@ import {
   type PropertyPayload,
 } from '@rentflow/property/client';
 import { HomeIcon } from 'lucide-react';
+import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 
