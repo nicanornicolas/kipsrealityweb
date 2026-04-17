@@ -43,7 +43,17 @@ export default defineConfig(() => ({
     },
     rollupOptions: {
       // External packages that should not be bundled into your library.
-      external: ['react', 'react-dom', 'react/jsx-runtime'],
+      external: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        '@rentflow/iam',
+        '@rentflow/finance',
+        '@rentflow/utilities',
+        '@rentflow/property',
+        '@rentflow/lease',
+        '@rentflow/payments',
+      ],
     },
   },
   test: {
