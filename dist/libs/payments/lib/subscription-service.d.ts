@@ -12,6 +12,8 @@ export declare class SubscriptionService {
      * Handles checkout.session.completed, invoice.payment_succeeded, and customer.subscription.deleted.
      */
     processWebhook(payload: string, signature: string): Promise<void>;
+    private getStripePriceIdFromEnv;
+    private getExpectedPriceEnvKeys;
     /**
      * Processes a verified Stripe event (used by background worker).
      */
