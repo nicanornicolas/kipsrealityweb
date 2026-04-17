@@ -1,4 +1,4 @@
-import { n as e, t } from "./toUtf8.browser-Dfm-xkvi.mjs";
+import { n as e, t } from "./toUtf8.browser-Bbt4XGYl.mjs";
 //#region ../../node_modules/@smithy/core/dist-es/submodules/event-streams/EventStreamSerde.js
 var n = class {
 	marshaller;
