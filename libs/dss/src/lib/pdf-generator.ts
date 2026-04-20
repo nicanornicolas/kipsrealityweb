@@ -13,7 +13,7 @@ async function appendAuditCertificate(
   const newPage = pdfDoc.addPage();
   const { width, height } = newPage.getSize();
   const margin = 50;
-  let y = height - margin;
+  let y: number;
 
   newPage.drawRectangle({
     x: 0,
