@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 import { plaidClient } from "@rentflow/payments";
 import { CountryCode, Products } from "plaid";
 
