@@ -1,4 +1,3 @@
-import 'server-only';
 import { verifyAccessToken } from './auth';
 import { cookies } from 'next/headers';
 
