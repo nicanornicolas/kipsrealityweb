@@ -1,5 +1,5 @@
 {
-  "name": "background-worker-app",
+  "name": "background-worker",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/background-worker/src",
   "projectType": "application",
@@ -70,15 +70,15 @@
       "defaultConfiguration": "development",
       "dependsOn": ["build"],
       "options": {
-        "buildTarget": "background-worker-app:build",
+        "buildTarget": "background-worker:build",
         "runBuildTargetDependencies": false
       },
       "configurations": {
         "development": {
-          "buildTarget": "background-worker-app:build:development"
+          "buildTarget": "background-worker:build:development"
         },
         "production": {
-          "buildTarget": "background-worker-app:build:production"
+          "buildTarget": "background-worker:build:production"
         }
       }
     }
