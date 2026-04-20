@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast, Toaster } from 'sonner';
 import {
   Container,
   Box,
@@ -217,7 +217,7 @@ export default function ServiceCrud({ initialCategories }: Props) {
   // ✅ Render UI
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      <ToastContainer position="top-right" autoClose={3000} />
+      <Toaster position="top-right" />
 
       <Box
         sx={{

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { Toaster } from 'sonner';
 import CTAForm from './CTAForm';
 import CTAItem from './CTAItem';
 
