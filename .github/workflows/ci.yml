@@ -7,7 +7,7 @@ on:
     branches: [main, master]
 
 env:
-  DATABASE_URL: 'mysql://root:password@localhost:3306/testdb'
+  DATABASE_URL: 'mysql://root:rootpass@localhost:3307/rentflow360_test'
   JWT_SECRET: 'test-secret'
   NX_CLOUD: 'false'
   NX_NO_CLOUD: 'true'
@@ -57,7 +57,7 @@ jobs:
           MYSQL_DATABASE: rentflow360_test
         ports:
           - 3307:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+        options: --health-cmd="mysqladmin ping -h localhost -uroot -p$MYSQL_ROOT_PASSWORD" --health-interval=10s --health-timeout=5s --health-retries=5
     steps:
       - uses: actions/checkout@v4
         with:
