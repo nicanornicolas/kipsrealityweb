@@ -26956,7 +26956,7 @@ var kD = function() {
 //#endregion
 //#region src/lib/pdf-generator.ts
 async function jD(e, t) {
-	let n = await e.embedFont(gD.Helvetica), r = await e.embedFont(gD.HelveticaBold), i = e.addPage(), { width: a, height: o } = i.getSize(), s = o - 50;
+	let n = await e.embedFont(gD.Helvetica), r = await e.embedFont(gD.HelveticaBold), i = e.addPage(), { width: a, height: o } = i.getSize(), s;
 	i.drawRectangle({
 		x: 0,
 		y: o - 100,
