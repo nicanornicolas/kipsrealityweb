@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listingReportingService } from "@rentflow/property";
-import { getCurrentUser } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 
 export async function GET(request: NextRequest) {
     try {
