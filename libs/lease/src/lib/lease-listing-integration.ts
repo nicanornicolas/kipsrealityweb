@@ -365,15 +365,36 @@ export class LeaseListingIntegration {
             });
 
             // Batch process notifications
-            const notifications = unitsNeedingDecision
-                .filter(unit => unit.property.manager?.user?.email)
-                .map(unit => ({
-                    type: unit.leases[0]?.leaseStatus === 'EXPIRED' ? 'expiration' as const : 'termination' as const,
-                    managerEmail: unit.property.manager!.user!.email,
+            interface LeaseDecisionNotification {
+                type: 'expiration' | 'termination';
+                managerEmail: string;
+                unitNumber: string;
+                propertyName: string;
+                unitId: string;
+                leaseId: string;
+            }
+
+            type UnitWithManagerEmail = (typeof unitsNeedingDecision)[number] & {
+                property: {
+                    manager: {
+                        user: {
+                            email: string;
+                        };
+                    };
+                };
+            };
+
+            const notifications: LeaseDecisionNotification[] = unitsNeedingDecision
+                .filter((unit): unit is UnitWithManagerEmail =>
+                    Boolean(unit.property.manager?.user?.email)
+                )
+                .map((unit) => ({
+                    type: unit.leases[0]!.leaseStatus === 'EXPIRED' ? 'expiration' : 'termination',
+                    managerEmail: unit.property.manager.user.email,
                     unitNumber: unit.unitNumber,
                     propertyName: unit.property.name || 'Property',
                     unitId: unit.id,
-                    leaseId: unit.leases[0].id
+                    leaseId: unit.leases[0]!.id
                 }));
 
             if (notifications.length > 0) {

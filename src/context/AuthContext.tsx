@@ -67,16 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const getStoredTokens = (): AuthTokens | null => {
-        if (typeof window === 'undefined') return null;
-        try {
-            const tokens = localStorage.getItem(STORAGE_KEYS.TOKENS);
-            return tokens ? JSON.parse(tokens) : null;
-        } catch {
-            return null;
-        }
-    };
-
     const setStoredUser = (userData: User | null) => {
         if (userData) {
             localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
@@ -93,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const initializeAuth = async () => {
+    useEffect(() => {
         const storedUser = getStoredUser();
         if (storedUser) {
             setUser(storedUser);
@@ -101,10 +91,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('AuthContext - No user found in storage');
         }
         setIsLoading(false);
-    };
-
-    useEffect(() => {
-        initializeAuth();
     }, []);
 
     const login = (userData: User, tokens: AuthTokens) => {

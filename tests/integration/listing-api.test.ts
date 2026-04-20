@@ -10,7 +10,7 @@ vi.mock("next-auth", () => ({
   getServerSession: vi.fn(() => Promise.resolve({
     user: { id: "test-user-id", role: "PROPERTY_MANAGER" }
   }))
-}));
+}), { virtual: true });
 
 // TODO(TECH-DEBT): Fix pre-existing Prisma validation errors in integration tests
 describe.skip("Listing API Integration Tests", () => {

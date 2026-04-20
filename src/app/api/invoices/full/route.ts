@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@rentflow/iam";
 import { FullInvoiceInput } from '@/app/data/FinanceData';
-import { InvoiceStatus } from "@prisma/client";
+// removed InvoiceStatus import because Prisma client does not export it
 
 export async function POST(req: NextRequest) {
   const { leaseId, type }: FullInvoiceInput = await req.json();
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       where: { leaseId },
       include: { utility: true },
     });
-    amount = leaseUtilities.reduce((sum, lu) => sum + (lu.utility.fixedAmount || 0), 0);
+    amount = leaseUtilities.reduce((sum, lu) => sum + Number(lu.utility.fixedAmount ?? 0), 0);
   }
 
   const dueDate = calculateNextDueDate({
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       type,
       totalAmount: amount,
       dueDate,
-      status: InvoiceStatus.PENDING,
+      status: 'PENDING',
     },
   });
 

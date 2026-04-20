@@ -91,6 +91,7 @@ export function DashboardNavbar({ toggleSidebar }: { toggleSidebar: () => void }
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              aria-label="Account"
               className="flex items-center gap-3 hover:bg-gray-50 p-1.5 rounded-lg transition-colors"
             >
               <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
@@ -143,7 +144,7 @@ export function DashboardNavbar({ toggleSidebar }: { toggleSidebar: () => void }
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
                 >
                   <LogOut size={16} />
-                  Sign Out
+                  Log out
                 </button>
               </div>
             )}

@@ -7,10 +7,10 @@ import { ListingAction, ListingStatus, CreateListingData } from "@rentflow/prope
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await Promise.resolve(params);
+    const resolvedParams = await params;
     if (!resolvedParams?.id) {
       return NextResponse.json({ error: "Listing ID is required" }, { status: 400 });
     }
@@ -132,10 +132,10 @@ export async function PATCH(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await Promise.resolve(params);
+    const resolvedParams = await params;
     if (!resolvedParams?.id) {
       return NextResponse.json({ error: "Listing ID is required" }, { status: 400 });
     }

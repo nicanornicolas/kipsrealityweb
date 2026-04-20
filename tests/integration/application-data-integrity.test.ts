@@ -46,13 +46,13 @@ function generateUnitData(propertyId: string) {
   };
 }
 
-function generatePropertyData(managerId: string) {
+function generatePropertyData(managerId: string, organizationId: string) {
   return {
     id: `prop-${Math.random().toString(36).substr(2, 9)}`,
     name: `Test Property ${Math.floor(Math.random() * 1000)}`,
     city: 'Test City',
     managerId,
-    organizationId: 'test-org'
+    organizationId
   };
 }
 
@@ -199,7 +199,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
     
     for (let i = 0; i < iterations; i++) {
       // Generate test data
-      const propertyData = generatePropertyData(testManager.id);
+      const propertyData = generatePropertyData(testManager.id, testOrganization.id);
       const unitData = generateUnitData(propertyData.id);
 
       // Create property
@@ -212,7 +212,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
 
       // Create application
       const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
-      const application = await prisma.tenantapplication.create({ data: applicationData });
+      const application = await prisma.tenantApplication.create({ data: applicationData });
       createdEntities.applications.push(application.id);
 
       // Validate data integrity
@@ -243,7 +243,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
     
     for (let i = 0; i < iterations; i++) {
       // Generate test data
-      const propertyData = generatePropertyData(testManager.id);
+      const propertyData = generatePropertyData(testManager.id, testOrganization.id);
       const unitData = generateUnitData(propertyData.id);
 
       // Create property and unit
@@ -265,7 +265,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
 
       // Create application
       const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
-      const application = await prisma.tenantapplication.create({ data: applicationData });
+      const application = await prisma.tenantApplication.create({ data: applicationData });
       createdEntities.applications.push(application.id);
 
       // Simulate listing status changes
@@ -312,7 +312,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
     
     for (let i = 0; i < iterations; i++) {
       // Generate test data
-      const propertyData = generatePropertyData(testManager.id);
+      const propertyData = generatePropertyData(testManager.id, testOrganization.id);
       const unitData = generateUnitData(propertyData.id);
 
       // Create property and unit
@@ -324,7 +324,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
 
       // Create application WITHOUT listing (orphaned)
       const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
-      const application = await prisma.tenantapplication.create({ data: applicationData });
+      const application = await prisma.tenantApplication.create({ data: applicationData });
       createdEntities.applications.push(application.id);
 
       // Check if application is identified as orphaned
@@ -357,7 +357,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
     
     for (let i = 0; i < iterations; i++) {
       // Generate test data
-      const propertyData = generatePropertyData(testManager.id);
+      const propertyData = generatePropertyData(testManager.id, testOrganization.id);
       const unitData = generateUnitData(propertyData.id);
 
       // Create property and unit
@@ -369,11 +369,11 @@ describe.skip('Property 14: Application Data Integrity', () => {
 
       // Create application with correct associations
       const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
-      const application = await prisma.tenantapplication.create({ data: applicationData });
+      const application = await prisma.tenantApplication.create({ data: applicationData });
       createdEntities.applications.push(application.id);
 
       // Simulate inconsistency by creating another property and updating unit
-      const anotherPropertyData = generatePropertyData(testManager.id);
+      const anotherPropertyData = generatePropertyData(testManager.id, testOrganization.id);
       const anotherProperty = await prisma.property.create({ data: anotherPropertyData });
       createdEntities.properties.push(anotherProperty.id);
 
@@ -421,7 +421,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
 
     // Create multiple applications with varying integrity states
     for (let i = 0; i < numApplications; i++) {
-      const propertyData = generatePropertyData(testManager.id);
+      const propertyData = generatePropertyData(testManager.id, testOrganization.id);
       const unitData = generateUnitData(propertyData.id);
 
       // Create property and unit
@@ -454,7 +454,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
       );
 
       try {
-        const application = await prisma.tenantapplication.create({ data: applicationData });
+        const application = await prisma.tenantApplication.create({ data: applicationData });
         createdEntities.applications.push(application.id);
         applicationIds.push(application.id);
 
@@ -501,7 +501,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
     
     for (let i = 0; i < iterations; i++) {
       // Generate test data
-      const propertyData = generatePropertyData(testManager.id);
+      const propertyData = generatePropertyData(testManager.id, testOrganization.id);
       const unitData = generateUnitData(propertyData.id);
 
       // Create property and unit
@@ -523,7 +523,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
 
       // Create application
       const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
-      const application = await prisma.tenantapplication.create({ data: applicationData });
+      const application = await prisma.tenantApplication.create({ data: applicationData });
       createdEntities.applications.push(application.id);
 
       // Simulate application lifecycle with multiple state transitions

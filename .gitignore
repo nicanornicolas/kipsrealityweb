@@ -74,6 +74,9 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+/.playwright-browsers/
+last-run-output.txt
+test-run-output.txt
 
 .kiro
 financial_testing_guide.md
@@ -96,3 +99,4 @@ vitest.config.*.timestamp*
 .nx/polygraph
 .claude/worktrees
 .claude/settings.local.json
+.env*.local
