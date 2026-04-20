@@ -1,59 +1,48 @@
-// app/api/lease-utilities/[id]/route.ts
+//app/api/lease/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
+import { LeaseManagementError, leaseManagementService } from "@rentflow/lease";
 
-// GET /api/lease-utilities/:id -> Get lease utility assignment
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest) {
   try {
-    const { id } = await params;
-    const assignment = await prisma.leaseUtility.findUnique({
-      where: { id },
-      include: { utility: true, lease: true },
-    });
+    const data = await req.json();
+    const lease = await leaseManagementService.createLease(data);
 
-    if (!assignment) {
-      return NextResponse.json({ success: false, error: "Lease utility not found" }, { status: 404 });
+    return NextResponse.json(lease, { status: 201 });
+  } catch (error: any) {
+    if (error instanceof LeaseManagementError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    console.error("Lease creation error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    return NextResponse.json({ success: true, data: assignment });
+    const url = new URL(req.url);
+    const propertyId = url.searchParams.get("propertyId");
+
+    const leasesWithFinancials = await leaseManagementService.listLeases({
+      userId: user.id,
+      propertyId,
+    });
+
+    return NextResponse.json(leasesWithFinancials);
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ success: false, error: "Failed to fetch lease utility" }, { status: 500 });
-  }
-}
-
-// PUT /api/lease-utilities/:id -> Update assignment (e.g., isTenantResponsible)
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-    const body = await req.json();
-    const { isTenantResponsible } = body;
-
-    if (isTenantResponsible === undefined) {
-      return NextResponse.json({ success: false, error: "isTenantResponsible is required" }, { status: 400 });
+    if (error instanceof LeaseManagementError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
-
-    const updated = await prisma.leaseUtility.update({
-      where: { id },
-      data: { isTenantResponsible },
-    });
-
-    return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
-    console.error(error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
-}
-
-// DELETE /api/lease-utilities/:id -> Remove assignment
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-    await prisma.leaseUtility.delete({ where: { id } });
-    return NextResponse.json({ success: true, message: "Lease utility removed successfully" });
-  } catch (error: any) {
-    console.error(error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error("Error fetching leases:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch leases" },
+      { status: 500 }
+    );
   }
 }
 

@@ -1,63 +1,42 @@
-//app/api/lease/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@rentflow/iam";
-import { LeaseDetailsError, leaseDetailsService } from "@rentflow/lease";
+import { getCurrentUser } from '@rentflow/iam';
+import {
+  LeaseWorkflowAction,
+  LeaseWorkflowActionError,
+  leaseWorkflowService,
+} from "@rentflow/lease";
 
-export async function PATCH(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+// POST: Approve lease and transition to APPROVED/ACTIVE/TERMINATED
+export async function POST(req: NextRequest) {
   try {
-    const { id } = await context.params;
-    const data = await req.json();
-
-    const lease = await leaseDetailsService.updateLease(id, data);
-
-    return NextResponse.json(lease);
-  } catch (error: unknown) {
-    console.error("Lease update error:", error);
-    const err = error as { code?: string; message?: string };
-
-    if (err.code === "P2025") {
-      return NextResponse.json({ error: "Lease not found" }, { status: 404 });
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    return NextResponse.json(
-      { error: err.message ?? "Failed to update lease" },
-      { status: 500 }
-    );
-  }
-}
+    const { leaseId, action } = await req.json();
 
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await context.params;
-    const { searchParams } = new URL(req.url);
-    const token = searchParams.get("token");
-
-    let user = null;
-
-    try {
-      user = await getCurrentUser(req);
-    } catch (error) {
-      console.log("User not authenticated, checking for invite token");
+    if (!leaseId || !action) {
+      return NextResponse.json(
+        { error: "Missing leaseId or action" },
+        { status: 400 }
+      );
     }
 
-    const result = await leaseDetailsService.getLeaseDetails({
-      leaseId: id,
-      token,
-      user,
+    const updatedLease = await leaseWorkflowService.executeAction({
+      leaseId,
+      action: action as LeaseWorkflowAction,
+      organizationUserId: user.organizationUserId,
+      userId: user.id,
     });
 
-    return NextResponse.json(result);
-  } catch (error) {
-    if (error instanceof LeaseDetailsError) {
+    return NextResponse.json(updatedLease);
+  } catch (error: any) {
+    if (error instanceof LeaseWorkflowActionError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    console.error("Error fetching lease:", error);
-    return NextResponse.json({ error: "Failed to fetch lease" }, { status: 500 });
+    console.error("Workflow error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
