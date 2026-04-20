@@ -27,7 +27,7 @@ var import_payments = require("@rentflow/payments");
 var import_dss = require("@rentflow/dss");
 var import_utilities = require("@rentflow/utilities");
 var import_finance = require("@rentflow/finance");
-var import_iam = require("@rentflow/iam");
+var import_db = require("../../../libs/iam/src/lib/db");
 const app = (0, import_express.default)();
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
@@ -57,12 +57,12 @@ const pdfWorker = new import_bullmq.Worker(
   async (job) => {
     const { documentId, orgId } = job.data;
     const pdfResult = await (0, import_dss.generateFinalSignedPdf)(documentId, orgId);
-    const organization = await import_iam.prisma.organization.findUnique({
+    const organization = await import_db.prisma.organization.findUnique({
       where: { id: orgId },
       include: { plan: true }
     });
     if (organization?.plan?.signingFee && organization.plan.signingFee > 0) {
-      const document = await import_iam.prisma.dssDocument.findUnique({
+      const document = await import_db.prisma.dssDocument.findUnique({
         where: { id: documentId },
         select: { title: true }
       });

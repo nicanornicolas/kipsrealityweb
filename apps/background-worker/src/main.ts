@@ -8,7 +8,7 @@ import {
   outboundWebhookService,
 } from '@rentflow/utilities';
 import { financeActions } from '@rentflow/finance';
-import { prisma } from '@rentflow/iam';
+import { prisma } from '../../../libs/iam/src/lib/db';
 
 const app = express();
 
