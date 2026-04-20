@@ -103,7 +103,7 @@ class AfricasTalkingProvider {
       const res = await this.client.SMS.send({
         to: [to],
         message,
-        from: process.env.AT_SENDER_ID
+        from: process.env["AT_SENDER_ID"] ?? "RENTFLOW"
         // Optional: e.g., 'RENTFLOW'
       });
       const recipient = res?.SMSMessageData?.Recipients?.[0];
