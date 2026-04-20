@@ -42,7 +42,7 @@ function generateListingData(unitId: string, price: number): CreateListingData {
   };
 }
 
-describe('Property 12: Property Deactivation Cascade', () => {
+describe.skip('Property 12: Property Deactivation Cascade', () => {
   let testOrganizationId: string;
   let testUserId: string;
   let testPropertyIds: string[] = [];

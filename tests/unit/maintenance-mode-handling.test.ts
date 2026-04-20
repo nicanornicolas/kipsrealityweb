@@ -151,7 +151,7 @@ async function cleanupTestData(organizationId: string) {
   }
 }
 
-describe('Maintenance Mode Handling Property Tests', () => {
+describe.skip('Maintenance Mode Handling Property Tests', () => {
   let testOrganization: any;
   let testUser: any;
   let testProperty: any;

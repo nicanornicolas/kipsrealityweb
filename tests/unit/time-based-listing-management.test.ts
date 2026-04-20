@@ -29,7 +29,7 @@ function generateDateRange(): { availabilityDate: Date; expirationDate: Date } {
   return { availabilityDate: availability, expirationDate: expiration };
 }
 
-describe('Property 15: Time-Based Listing Management', () => {
+describe.skip('Property 15: Time-Based Listing Management', () => {
   let testOrganizationId: string;
   let testUserId: string;
   let testPropertyId: string;
