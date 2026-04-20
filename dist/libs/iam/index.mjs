@@ -5605,6 +5605,8 @@ function We() {
 function Ge() {
 	let e = process.env.JWT_REFRESH_SECRET;
 	if (!e) {
+		let e = process.env.JWT_SECRET;
+		if (e) return console.warn("JWT_REFRESH_SECRET missing - falling back to JWT_SECRET"), e;
 		if (process.env.NODE_ENV === "test") return console.warn("JWT_REFRESH_SECRET missing - using fallback (test only)"), "test-fallback-secret";
 		throw Error("JWT_REFRESH_SECRET is not defined in environment variables");
 	}
