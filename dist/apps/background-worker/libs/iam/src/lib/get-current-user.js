@@ -20,7 +20,6 @@ __export(get_current_user_exports, {
   getCurrentUser: () => getCurrentUser
 });
 module.exports = __toCommonJS(get_current_user_exports);
-var import_server_only = require("server-only");
 var import_auth = require("./auth");
 var import_headers = require("next/headers");
 async function getCurrentUser(req) {
