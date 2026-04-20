@@ -1,7 +1,5 @@
-import { setupFinancials } from "@/lib/finance/setup";
-import { journalService } from "@/lib/finance/journal-service";
-import { prisma } from "@/lib/db";
-import { CHART_OF_ACCOUNTS } from "@/lib/finance/types";
+import { setupFinancials, journalService, CHART_OF_ACCOUNTS } from "@rentflow/finance";
+import { prisma } from "@rentflow/iam";
 
 async function main() {
     try {
@@ -27,7 +25,7 @@ async function main() {
 
         // 3. Try Posting a BALANCED Entry (Should Success)
         console.log("📝 Attempting BALANCED entry...");
-        const successEntry = await journalService.post({
+        const successEntry = await journalService.postJournalEntry({
             organizationId: org.id,
             date: new Date(),
             description: "Test Rent Payment (Script)",
@@ -37,12 +35,12 @@ async function main() {
                 { accountCode: CHART_OF_ACCOUNTS.ACCOUNTS_RECEIVABLE, debit: 0, credit: 100 }
             ]
         });
-        console.log(`✅ Success! Entry ID: ${successEntry.id}`);
+        console.log(`✅ Success! Entry ID: ${successEntry.journalEntryId}`);
 
         // 4. Try Posting an UNBALANCED Entry (Should Fail)
         console.log("🛑 Attempting UNBALANCED entry (Expect Failure)...");
         try {
-            await journalService.post({
+            await journalService.postJournalEntry({
                 organizationId: org.id,
                 date: new Date(),
                 description: "Fraud Attempt (Script)",

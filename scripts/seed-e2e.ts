@@ -178,7 +178,7 @@ async function main() {
     });
 
     // 8. Create Tenant Application (Required by Lease)
-    const application = await prisma.tenantapplication.create({
+    const application = await prisma.tenantApplication.create({
         data: {
             fullName: 'John Doe',
             email: tenantEmail,
@@ -196,8 +196,19 @@ async function main() {
     });
 
     // 9. Create Lease (deterministic for CI)
-    const lease = await prisma.lease.create({
-        data: {
+    const lease = await prisma.lease.upsert({
+        where: { id: 'e2e-test-lease-1' },
+        update: {
+            applicationId: application.id,
+            propertyId: property.id,
+            unitId: unit.id,
+            tenantId: tenantUser.id,
+            startDate: new Date(),
+            endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+            rentAmount: 1500,
+            leaseStatus: 'ACTIVE',
+        },
+        create: {
             id: 'e2e-test-lease-1',
             applicationId: application.id,
             propertyId: property.id,

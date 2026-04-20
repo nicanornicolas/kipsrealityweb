@@ -1,6 +1,6 @@
-import { prisma } from '../src/lib/db';
-import { maintenanceService } from '../src/lib/finance/maintenance-service';
-import { MaintenanceRequest_status, RequestCategory, Priority } from '@prisma/client';
+import { prisma } from '@rentflow/iam';
+import { maintenanceService, setupFinancials } from '@rentflow/finance';
+import { MaintenanceRequestStatus, RequestCategory, Priority } from '@prisma/client';
 
 async function verifyMaintenanceBilling() {
     console.log('\n🚀 Starting Maintenance Billing Verification...\n');
@@ -17,7 +17,6 @@ async function verifyMaintenanceBilling() {
 
         // 1b. Seed financials
         console.log("Setting up financials for test org...");
-        const { setupFinancials } = await import('../src/lib/finance/setup');
         await setupFinancials(targetOrg.id, targetOrg.name);
 
         // 2. Create property & unit
@@ -50,7 +49,7 @@ async function verifyMaintenanceBilling() {
             }
         });
 
-        const application = await prisma.tenantapplication.create({
+        const application = await prisma.tenantApplication.create({
             data: {
                 fullName: 'Repair Tenant',
                 email: tenant.email,
@@ -102,7 +101,7 @@ async function verifyMaintenanceBilling() {
                 description: 'Tenant threw a ball through the window.',
                 priority: Priority.NORMAL,
                 category: RequestCategory.ROUTINE,
-                status: MaintenanceRequest_status.COMPLETED,
+                status: MaintenanceRequestStatus.COMPLETED,
                 cost: 250, // $250 repair
                 isTenantChargeable: true
             }
@@ -174,7 +173,7 @@ async function verifyMaintenanceBilling() {
         }
 
         await prisma.lease.delete({ where: { id: lease.id } });
-        await prisma.tenantapplication.delete({ where: { id: application.id } });
+        await prisma.tenantApplication.delete({ where: { id: application.id } });
         await prisma.organizationUser.delete({ where: { id: orgUser.id } });
         await prisma.user.delete({ where: { id: tenant.id } });
         await prisma.unit.delete({ where: { id: unit.id } });
