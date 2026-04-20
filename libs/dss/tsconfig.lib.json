@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "ignoreDeprecations": "6.0",
-    "rootDir": "./src",
+    "rootDir": "../..",
     "outDir": "../../dist/libs/dss",
     "types": [
       "node",
@@ -13,7 +13,9 @@
   },
   "exclude": [
     "**/*.spec.ts",
+    "**/*.spec.tsx",
     "**/*.test.ts",
+    "**/*.test.tsx",
     "vite.config.ts",
     "vite.config.mts",
     "vitest.config.ts",
