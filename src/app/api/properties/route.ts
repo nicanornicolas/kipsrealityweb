@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma, getCurrentUser } from '@rentflow/iam';
+import { prisma } from '@rentflow/iam';
+import { getCurrentUser } from '@rentflow/iam';
 
 export async function GET(req: NextRequest) {
   try {
