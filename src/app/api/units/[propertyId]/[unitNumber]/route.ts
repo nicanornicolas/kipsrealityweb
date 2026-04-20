@@ -1,121 +1,479 @@
-// src/app/api/units/[propertyId]/[unitNumber]/route.ts
-import { prisma } from "@rentflow/iam";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUser } from '@rentflow/iam';
+import { prisma } from '@rentflow/iam';
+import type { Prisma } from '@prisma/client';
 
-export async function GET(req: Request, context: { params: Promise<{ propertyId: string; unitNumber: string }> }) {
-  const { propertyId, unitNumber } = await context.params;
-
-  const unit = await prisma.unit.findFirst({
-    where: { propertyId, unitNumber },
-  });
-
-  if (!unit) {
-    return NextResponse.json({
-      id: null,
-      unitNumber,
-      unitName: null,
-      bedrooms: null,
-      appliances: [],
-      bathrooms: null,
-      floorNumber: null,
-      rentAmount: null,
-      isOccupied: false,
-    }, { status: 200 }); // return placeholder instead of 404
-  }
-
-  return NextResponse.json(unit);
+interface UnitExportFilters {
+    propertyId?: string;
+    organizationId?: string;
+    listingStatus?: string[];
+    includeListingMetrics?: boolean;
+    includeApplicationData?: boolean;
+    includeLeaseData?: boolean;
+    startDate?: Date;
+    endDate?: Date;
 }
 
-export async function PUT(
-  req: Request,
-  context: { params: Promise<{ propertyId: string; unitNumber: string }> }
-) {
-  const { propertyId, unitNumber } = await context.params;
-  const data = await req.json();
-
-  type ApplianceInput = { name: string };
-  const applianceArray: ApplianceInput[] =
-    typeof data.appliances === "string"
-      ? data.appliances
-          .split(",")
-          .map((name: string) => ({ name: name.trim() }))
-      : Array.isArray(data.appliances)
-      ? data.appliances.map((a: any) => ({ name: a.name }))
-      : [];
-
-  // Find or create the unit
-  let unit = await prisma.unit.findFirst({
-    where: { propertyId, unitNumber },
-  });
-
-  if (!unit) {
-    // --- CREATE ---
-    // Create appliance records for this new unit
-    const createdAppliances = await Promise.all(
-      applianceArray.map((a) =>
-        prisma.appliance.create({
-          data: { name: a.name },
-        })
-      )
-    );
-
-    unit = await prisma.unit.create({
-      data: {
-        propertyId,
-        unitNumber,
-        unitName: data.unitName ?? null,
-        bedrooms: data.bedrooms ?? null,
-        bathrooms: data.bathrooms ?? null,
-        floorNumber: data.floorNumber ?? null,
-        rentAmount: data.rentAmount ?? null,
-        isOccupied: data.isOccupied ?? false,
-        appliances: {
-          connect: createdAppliances.map((a) => ({ id: a.id })),
-        },
-      },
-      include: { appliances: true },
-    });
-
-    return NextResponse.json({ 
-      success: true, 
-      message: "Unit created successfully", 
-      unit,
-      isNewUnit: true 
-    });
-  } else {
-    // --- UPDATE ---
-    // Create new appliance entries for this unit (duplicates allowed)
-    const createdAppliances = await Promise.all(
-      applianceArray.map((a) =>
-        prisma.appliance.create({
-          data: { name: a.name },
-        })
-      )
-    );
-
-    // Update the unit and connect the new appliances
-    unit = await prisma.unit.update({
-      where: { id: unit.id },
-      data: {
-        unitName: data.unitName ?? undefined,
-        bedrooms: data.bedrooms ?? undefined,
-        bathrooms: data.bathrooms ?? undefined,
-        floorNumber: data.floorNumber ?? undefined,
-        rentAmount: data.rentAmount ?? undefined,
-        isOccupied: data.isOccupied ?? undefined,
-        appliances: {
-          set: [], // Clear old relationships
-          connect: createdAppliances.map((a) => ({ id: a.id })), // Connect new ones
-        },
-      },
-      include: { appliances: true },
-    });
-  }
-
-  return NextResponse.json({ 
-    success: true, 
-    message: "Unit updated successfully", 
-    unit,
-    isNewUnit: false 
-  });
+interface UnitExportOptions {
+    format: 'CSV' | 'JSON' | 'PDF';
+    groupByProperty?: boolean;
+    customFields?: string[];
 }
+
+type EnhancedUnit = {
+    id: string;
+    unitNumber: string | null;
+    rent: number | null;
+    bedrooms: number | null;
+    bathrooms: number | null;
+    squareFootage: number | null;
+    propertyId: string | null;
+    propertyName?: string | null;
+    propertyAddress?: string | null;
+    organizationName?: string | null;
+    createdAt: Date;
+    listingStatus: string;
+    listingTitle?: string | null;
+    listingPrice?: number | null;
+    listingCreatedAt?: Date | null;
+    availabilityDate?: Date | null;
+    expirationDate?: Date | null;
+    daysListed?: number;
+    statusChanges?: number;
+    lastStatusChange?: Date | null;
+    totalApplications?: number;
+    approvedApplications?: number;
+    pendingApplications?: number;
+    rejectedApplications?: number;
+    conversionRate?: number;
+    recentApplications?: Array<{
+        applicantName: string;
+        email: string;
+        status: string;
+        appliedAt: Date;
+    }>;
+    hasActiveLease?: boolean;
+    activeLeaseTenant?: string | null;
+    activeLeaseStart?: Date | null;
+    activeLeaseEnd?: Date | null;
+    activeLeaseRent?: number | null;
+    totalLeases?: number;
+    expiredLeases?: number;
+    averageLeaseLength?: number;
+    [key: string]: unknown;
+};
+
+type GroupedUnits = Record<string, {
+    propertyId?: string | null;
+    propertyName?: string | null;
+    propertyAddress?: string | null;
+    units: EnhancedUnit[];
+}>;
+
+type UnitSummary = {
+    totalUnits: number;
+    listedUnits: number;
+    privateUnits: number;
+    suspendedUnits: number;
+    totalApplications: number;
+    unitsWithApplications: number;
+    unitsWithActiveLeases: number;
+    occupancyRate: number;
+    averageRent: number;
+};
+
+export async function POST(request: NextRequest) {
+    try {
+        const user = await getCurrentUser(request);
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const body = await request.json();
+        const { filters, options }: { filters?: UnitExportFilters; options?: UnitExportOptions } = body;
+
+        // Validate export format
+        const validFormats = ['CSV', 'JSON', 'PDF'];
+        if (options?.format && !validFormats.includes(options.format)) {
+            return NextResponse.json(
+                { error: 'Invalid export format. Supported formats: CSV, JSON, PDF' },
+                { status: 400 }
+            );
+        }
+
+        // Build where clause for units
+        const whereClause: Prisma.UnitWhereInput = {};
+        
+        if (filters?.propertyId) {
+            whereClause.propertyId = filters.propertyId;
+        }
+        
+        if (filters?.organizationId) {
+            whereClause.property = {
+                organizationId: filters.organizationId
+            };
+        }
+
+        if (filters?.startDate || filters?.endDate) {
+            whereClause.createdAt = {};
+            if (filters.startDate) whereClause.createdAt.gte = filters.startDate;
+            if (filters.endDate) whereClause.createdAt.lte = filters.endDate;
+        }
+
+        // Filter by listing status if specified
+        if (filters?.listingStatus && filters.listingStatus.length > 0) {
+            whereClause.listing = {
+                status: {
+                    name: { in: filters.listingStatus }
+                }
+            };
+        }
+
+        // Get units with comprehensive data
+        const units = await prisma.unit.findMany({
+            where: whereClause,
+            include: {
+                property: {
+                    include: {
+                        organization: true
+                    }
+                },
+                listing: {
+                    include: {
+                        status: true,
+                        auditEntries: {
+                            orderBy: { timestamp: 'desc' },
+                            take: 5 // Get recent audit entries
+                        }
+                    }
+                },
+                tenantApplications: {
+                    include: {
+                        user: true
+                    }
+                },
+                leases: {
+                    include: {
+                        tenant: true
+                    }
+                }
+            },
+            orderBy: [
+                { property: { name: 'asc' } },
+                { unitNumber: 'asc' }
+            ]
+        });
+
+        // Enhance units with calculated metrics
+        const enhancedUnits: EnhancedUnit[] = units.map(unit => {
+            const baseUnit = {
+                id: unit.id,
+                unitNumber: unit.unitNumber,
+                rent: unit.rentAmount,
+                bedrooms: unit.bedrooms,
+                bathrooms: unit.bathrooms,
+                squareFootage: unit.squareFootage,
+                propertyId: unit.propertyId,
+                propertyName: unit.property?.name,
+                propertyAddress: unit.property?.address,
+                organizationName: unit.property?.organization?.name,
+                createdAt: unit.createdAt
+            };
+
+            // Add listing information
+            const listingInfo = {
+                listingStatus: unit.listing?.status?.name || 'PRIVATE',
+                listingTitle: unit.listing?.title,
+                listingPrice: unit.listing?.price,
+                listingCreatedAt: unit.listing?.createdAt,
+                availabilityDate: unit.listing?.availabilityDate,
+                expirationDate: unit.listing?.expirationDate
+            };
+
+            // Calculate listing metrics if requested
+            if (filters?.includeListingMetrics && unit.listing) {
+                const now = new Date();
+                const daysListed = unit.listing.createdAt ? 
+                    Math.ceil((now.getTime() - unit.listing.createdAt.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+                
+                const statusChanges = unit.listing.auditEntries?.length || 0;
+                const lastStatusChange = unit.listing.auditEntries?.[0]?.timestamp;
+
+                Object.assign(listingInfo, {
+                    daysListed,
+                    statusChanges,
+                    lastStatusChange
+                });
+            }
+
+            // Add application data if requested
+            let applicationInfo = {};
+            if (filters?.includeApplicationData) {
+                const applications = unit.tenantApplications || [];
+                const approvedApplications = applications.filter(app => app.status === 'APPROVED');
+                const pendingApplications = applications.filter(app => app.status === 'PENDING');
+                const rejectedApplications = applications.filter(app => app.status === 'REJECTED');
+
+                applicationInfo = {
+                    totalApplications: applications.length,
+                    approvedApplications: approvedApplications.length,
+                    pendingApplications: pendingApplications.length,
+                    rejectedApplications: rejectedApplications.length,
+                    conversionRate: applications.length > 0 ? 
+                        (approvedApplications.length / applications.length) * 100 : 0,
+                    recentApplications: applications
+                        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                        .slice(0, 3)
+                        .map(app => ({
+                            applicantName: `${app.user?.firstName || ''} ${app.user?.lastName || ''}`.trim(),
+                            email: app.user?.email || '',
+                            status: app.status,
+                            appliedAt: app.createdAt
+                        }))
+                };
+            }
+
+            // Add lease data if requested
+            let leaseInfo = {};
+            if (filters?.includeLeaseData) {
+                const leases = unit.leases || [];
+                const activeLease = leases.find(lease => lease.leaseStatus === 'ACTIVE');
+                const expiredLeases = leases.filter(lease => lease.leaseStatus === 'EXPIRED');
+
+                leaseInfo = {
+                    hasActiveLease: !!activeLease,
+                    activeLeaseTenant: activeLease ? 
+                        `${activeLease.tenant?.firstName} ${activeLease.tenant?.lastName}` : null,
+                    activeLeaseStart: activeLease?.startDate,
+                    activeLeaseEnd: activeLease?.endDate,
+                    activeLeaseRent: activeLease?.rentAmount,
+                    totalLeases: leases.length,
+                    expiredLeases: expiredLeases.length,
+                    averageLeaseLength: leases.length > 0 ? 
+                        leases.reduce((sum, lease) => {
+                            if (lease.startDate && lease.endDate) {
+                                const days = (lease.endDate.getTime() - lease.startDate.getTime()) / (1000 * 60 * 60 * 24);
+                                return sum + days;
+                            }
+                            return sum;
+                        }, 0) / leases.length : 0
+                };
+            }
+
+            return {
+                ...baseUnit,
+                ...listingInfo,
+                ...applicationInfo,
+                ...leaseInfo
+            };
+        });
+
+        // Generate export based on format
+        const exportData = await generateUnitExport(enhancedUnits, options);
+
+        // Set appropriate headers
+        const format = options?.format || 'JSON';
+        let contentType = 'application/json';
+        let filename = `unit-report-${new Date().toISOString().split('T')[0]}`;
+
+        switch (format) {
+            case 'CSV':
+                contentType = 'text/csv';
+                filename += '.csv';
+                break;
+            case 'PDF':
+                contentType = 'application/pdf';
+                filename += '.pdf';
+                break;
+            case 'JSON':
+            default:
+                contentType = 'application/json';
+                filename += '.json';
+                break;
+        }
+
+        const response = new NextResponse(
+            typeof exportData === 'string' ? exportData : new Uint8Array(exportData)
+        );
+        response.headers.set('Content-Type', contentType);
+        response.headers.set('Content-Disposition', `attachment; filename="${filename}"`);
+
+        return response;
+
+    } catch (error) {
+        console.error('Error exporting unit data:', error);
+        return NextResponse.json(
+            { error: 'Failed to export unit data' },
+            { status: 500 }
+        );
+    }
+}
+
+async function generateUnitExport(
+    units: EnhancedUnit[],
+    options?: UnitExportOptions
+): Promise<string | Buffer> {
+    const format = options?.format || 'JSON';
+
+    switch (format) {
+        case 'JSON':
+            const exportData = {
+                exportedAt: new Date().toISOString(),
+                totalUnits: units.length,
+                units: options?.groupByProperty ? groupUnitsByProperty(units) : units,
+                summary: generateUnitSummary(units)
+            };
+            return JSON.stringify(exportData, null, 2);
+
+        case 'CSV':
+            return generateUnitCSV(units, options);
+
+        case 'PDF':
+            return generateUnitPDF(units, options);
+
+        default:
+            throw new Error(`Unsupported export format: ${format}`);
+    }
+}
+
+function groupUnitsByProperty(units: EnhancedUnit[]): GroupedUnits {
+    const grouped: GroupedUnits = {};
+    
+    units.forEach(unit => {
+        const propertyKey = unit.propertyName || 'Unknown Property';
+        if (!grouped[propertyKey]) {
+            grouped[propertyKey] = {
+                propertyId: unit.propertyId,
+                propertyName: unit.propertyName,
+                propertyAddress: unit.propertyAddress,
+                units: []
+            };
+        }
+        grouped[propertyKey].units.push(unit);
+    });
+
+    return grouped;
+}
+
+function generateUnitSummary(units: EnhancedUnit[]): UnitSummary {
+    const totalUnits = units.length;
+    const listedUnits = units.filter(unit => unit.listingStatus === 'ACTIVE').length;
+    const privateUnits = units.filter(unit => unit.listingStatus === 'PRIVATE').length;
+    const suspendedUnits = units.filter(unit => unit.listingStatus === 'SUSPENDED').length;
+    
+    const unitsWithApplications = units.filter(unit => (unit.totalApplications ?? 0) > 0);
+    const totalApplications = units.reduce((sum, unit) => sum + (unit.totalApplications ?? 0), 0);
+    
+    const unitsWithLeases = units.filter(unit => unit.hasActiveLease);
+    const occupancyRate = totalUnits > 0 ? (unitsWithLeases.length / totalUnits) * 100 : 0;
+
+    return {
+        totalUnits,
+        listedUnits,
+        privateUnits,
+        suspendedUnits,
+        totalApplications,
+        unitsWithApplications: unitsWithApplications.length,
+        unitsWithActiveLeases: unitsWithLeases.length,
+        occupancyRate: parseFloat(occupancyRate.toFixed(2)),
+        averageRent: totalUnits > 0 ? 
+            units.reduce((sum, unit) => sum + (unit.rent || 0), 0) / totalUnits : 0
+    };
+}
+
+function generateUnitCSV(units: EnhancedUnit[], options?: UnitExportOptions): string {
+    if (units.length === 0) {
+        return 'No units found';
+    }
+
+    // Determine columns based on available data
+    const baseColumns = [
+        'Unit ID',
+        'Unit Number',
+        'Property Name',
+        'Property Address',
+        'Rent',
+        'Bedrooms',
+        'Bathrooms',
+        'Square Footage',
+        'Listing Status',
+        'Listing Price',
+        'Days Listed',
+        'Total Applications',
+        'Conversion Rate (%)',
+        'Has Active Lease',
+        'Organization'
+    ];
+
+    const columns = [...baseColumns];
+    
+    // Add custom fields if specified
+    if (options?.customFields) {
+        columns.push(...options.customFields);
+    }
+
+    const rows = units.map(unit => {
+        const row = [
+            unit.id,
+            unit.unitNumber || '',
+            unit.propertyName || '',
+            unit.propertyAddress || '',
+            unit.rent?.toString() || '0',
+            unit.bedrooms?.toString() || '0',
+            unit.bathrooms?.toString() || '0',
+            unit.squareFootage?.toString() || '',
+            unit.listingStatus || 'PRIVATE',
+            unit.listingPrice?.toString() || '',
+            unit.daysListed?.toString() || '0',
+            unit.totalApplications?.toString() || '0',
+            unit.conversionRate?.toFixed(2) || '0',
+            unit.hasActiveLease ? 'Yes' : 'No',
+            unit.organizationName || ''
+        ];
+
+        // Add custom field values if specified
+        if (options?.customFields) {
+            options.customFields.forEach(field => {
+                const customValue = unit[field];
+                row.push(customValue != null ? String(customValue) : '');
+            });
+        }
+
+        return row;
+    });
+
+    return [columns, ...rows].map(row => 
+        row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+}
+
+function generateUnitPDF(units: EnhancedUnit[], options?: UnitExportOptions): Buffer {
+    const summary = generateUnitSummary(units);
+    
+    const content = `
+Unit Export Report
+Generated: ${new Date().toISOString()}
+
+Summary:
+- Total Units: ${summary.totalUnits}
+- Listed Units: ${summary.listedUnits}
+- Private Units: ${summary.privateUnits}
+- Suspended Units: ${summary.suspendedUnits}
+- Occupancy Rate: ${summary.occupancyRate}%
+- Average Rent: $${summary.averageRent.toFixed(2)}
+
+Unit Details:
+${units.map(unit => `
+Unit: ${unit.unitNumber} (${unit.propertyName})
+Rent: $${unit.rent} | Bedrooms: ${unit.bedrooms} | Bathrooms: ${unit.bathrooms}
+Listing Status: ${unit.listingStatus}
+${unit.daysListed ? `Days Listed: ${unit.daysListed}` : ''}
+${unit.totalApplications ? `Applications: ${unit.totalApplications}` : ''}
+${unit.hasActiveLease ? 'Has Active Lease' : 'No Active Lease'}
+---
+`).join('')}
+    `;
+    
+    return Buffer.from(content, 'utf-8');
+}
+
