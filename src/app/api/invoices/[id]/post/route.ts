@@ -4,7 +4,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@rentflow/iam";
 import { financeActions } from "@rentflow/finance";
-import { getCurrentUser } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 
 export async function POST(
   req: Request,

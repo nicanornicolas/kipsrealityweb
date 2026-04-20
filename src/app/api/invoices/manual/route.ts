@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@rentflow/iam";
 import { ManualInvoiceInput } from '@/app/data/FinanceData';
-import { getCurrentUser } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 import { InvoiceStatus, PostingStatus } from "@prisma/client";
 
 // Valid invoice types
