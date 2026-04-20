@@ -1,59 +1,42 @@
-// src/app/api/lease/[id]/ammendment/[ammendmentId]/route.ts
-import { getCurrentUser } from "@rentflow/iam";
-import { LeaseAmendmentAction, LeaseAmendmentError, leaseAmendmentService } from "@rentflow/lease";
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from '@rentflow/iam';
+import {
+  LeaseWorkflowAction,
+  LeaseWorkflowActionError,
+  leaseWorkflowService,
+} from "@rentflow/lease";
 
-// PATCH: Update amendment (approve/reject/execute)
-export async function PATCH(
-  req: NextRequest,
-  context: { params: Promise<{ id: string; amendmentId: string }> }
-) {
+// POST: Approve lease and transition to APPROVED/ACTIVE/TERMINATED
+export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const { id: leaseId, amendmentId } = await context.params;
-    const body = await req.json();
-    const { action, notes } = body;
-    const updated = await leaseAmendmentService.processAmendmentAction({
+    const { leaseId, action } = await req.json();
+
+    if (!leaseId || !action) {
+      return NextResponse.json(
+        { error: "Missing leaseId or action" },
+        { status: 400 }
+      );
+    }
+
+    const updatedLease = await leaseWorkflowService.executeAction({
       leaseId,
-      amendmentId,
-      action: action as LeaseAmendmentAction,
-      notes,
+      action: action as LeaseWorkflowAction,
+      organizationUserId: user.organizationUserId,
       userId: user.id,
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json(updatedLease);
   } catch (error: any) {
-    if (error instanceof LeaseAmendmentError) {
+    if (error instanceof LeaseWorkflowActionError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    console.error("Amendment update error:", error);
+    console.error("Workflow error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  req: NextRequest,
-  context: { params: Promise<{ id: string; amendmentId: string }> }
-) {
-  try {
-    const user = await getCurrentUser(req);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const { id: leaseId, amendmentId } = await context.params;
-    await leaseAmendmentService.deleteAmendment({
-      leaseId,
-      amendmentId,
-      userId: user.id,
-    });
-
-    return NextResponse.json({ message: "Amendment deleted" });
-  } catch (error: any) {
-    if (error instanceof LeaseAmendmentError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-    console.error("Amendment deletion error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}

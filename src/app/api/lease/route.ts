@@ -1,6 +1,6 @@
 //app/api/lease/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 import { LeaseManagementError, leaseManagementService } from "@rentflow/lease";
 
 export async function POST(req: NextRequest) {

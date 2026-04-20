@@ -1,4 +1,4 @@
-import { prisma } from '../src/lib/db';
+import { prisma } from '@rentflow/iam';
 
 async function verifyDashboards() {
   console.log('\n🚀 Dashboard Data Verification...\n');

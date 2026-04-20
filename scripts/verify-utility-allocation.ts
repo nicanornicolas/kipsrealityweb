@@ -1,5 +1,5 @@
-import { prisma } from '../src/lib/db';
-import { utilityService } from '../src/lib/finance/utility-service';
+import { prisma } from '@rentflow/iam';
+import { utilityService, setupFinancials } from '@rentflow/finance';
 import { UtilitySplitMethod, UtilityBillStatus, Lease_leaseStatus } from '@prisma/client';
 
 async function verifyUtilityAllocation() {
@@ -17,7 +17,6 @@ async function verifyUtilityAllocation() {
 
         // 1b. Seed financials for this new org
         console.log("Setting up financials for test org...");
-        const { setupFinancials } = await import('../src/lib/finance/setup');
         await setupFinancials(targetOrg.id, targetOrg.name);
 
         console.log(`✅ Created Org: ${targetOrg.id}`);
@@ -78,7 +77,7 @@ async function verifyUtilityAllocation() {
                 });
 
                 // Need an application first
-                const app = await prisma.tenantapplication.create({
+                const app = await prisma.tenantApplication.create({
                     data: {
                         fullName: `${tenant.firstName} ${tenant.lastName}`,
                         email: tenant.email,
@@ -220,7 +219,7 @@ async function verifyUtilityAllocation() {
         }
 
         await prisma.lease.deleteMany({ where: { propertyId: property.id } });
-        await prisma.tenantapplication.deleteMany({ where: { propertyId: property.id } });
+        await prisma.tenantApplication.deleteMany({ where: { propertyId: property.id } });
         await prisma.unit.deleteMany({ where: { propertyId: property.id } });
 
         const tenantEmails = units.map((_, i) => `utility-tenant-${i}`);

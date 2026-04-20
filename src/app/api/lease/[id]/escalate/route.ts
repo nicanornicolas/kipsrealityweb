@@ -1,40 +1,42 @@
-// src/app/api/lease/[id]/escalate/route.ts
-import { getCurrentUser } from "@rentflow/iam";
-import { LeaseWorkflowError, leaseRenewalEscalationService } from "@rentflow/lease";
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from '@rentflow/iam';
+import {
+  LeaseWorkflowAction,
+  LeaseWorkflowActionError,
+  leaseWorkflowService,
+} from "@rentflow/lease";
 
-async function internalApplyRentEscalation(req: NextRequest, leaseId: string) {
+// POST: Approve lease and transition to APPROVED/ACTIVE/TERMINATED
+export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const body = await req.json();
-    const { escalationRate, effectiveDate, escalationType } = body;
-    const { escalation, updatedLease } =
-      await leaseRenewalEscalationService.applyEscalation({
-        leaseId,
-        managerOrganizationUserId: user.organizationUserId,
-        userId: user.id,
-        escalationRate,
-        effectiveDate,
-        escalationType,
-      });
+    const { leaseId, action } = await req.json();
 
-    return NextResponse.json({ escalation, updatedLease, message: "Rent escalation applied" });
-  } catch (error: unknown) {
-    if (error instanceof LeaseWorkflowError) {
+    if (!leaseId || !action) {
+      return NextResponse.json(
+        { error: "Missing leaseId or action" },
+        { status: 400 }
+      );
+    }
+
+    const updatedLease = await leaseWorkflowService.executeAction({
+      leaseId,
+      action: action as LeaseWorkflowAction,
+      organizationUserId: user.organizationUserId,
+      userId: user.id,
+    });
+
+    return NextResponse.json(updatedLease);
+  } catch (error: any) {
+    if (error instanceof LeaseWorkflowActionError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    console.error("Escalation error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    console.error("Workflow error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id } = await context.params;
-  return internalApplyRentEscalation(req, id);
-}

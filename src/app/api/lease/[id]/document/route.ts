@@ -1,53 +1,42 @@
-import { getCurrentUser } from "@rentflow/iam";
-import { LeaseDocumentError, leaseDocumentService } from "@rentflow/lease";
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from '@rentflow/iam';
+import {
+  LeaseWorkflowAction,
+  LeaseWorkflowActionError,
+  leaseWorkflowService,
+} from "@rentflow/lease";
 
-// POST: Upload a lease document
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// POST: Approve lease and transition to APPROVED/ACTIVE/TERMINATED
+export async function POST(req: NextRequest) {
   try {
-    const { id: leaseId } = await params;
-
     const user = await getCurrentUser(req);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
-    const documentTypeStr = formData.get("documentType") as string;
-    const description = formData.get("description") as string;
-    const document = await leaseDocumentService.uploadDocument({
+    const { leaseId, action } = await req.json();
+
+    if (!leaseId || !action) {
+      return NextResponse.json(
+        { error: "Missing leaseId or action" },
+        { status: 400 }
+      );
+    }
+
+    const updatedLease = await leaseWorkflowService.executeAction({
       leaseId,
-      file,
-      documentType: documentTypeStr,
-      description,
+      action: action as LeaseWorkflowAction,
+      organizationUserId: user.organizationUserId,
       userId: user.id,
     });
 
-    return NextResponse.json(document, { status: 201 });
+    return NextResponse.json(updatedLease);
   } catch (error: any) {
-    if (error instanceof LeaseDocumentError) {
+    if (error instanceof LeaseWorkflowActionError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    console.error("Document upload error:", error);
+    console.error("Workflow error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// GET: Fetch all documents for a lease
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id: leaseId } = await params;
-
-    const user = await getCurrentUser(req);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const documents = await leaseDocumentService.listDocuments(leaseId);
-
-    return NextResponse.json(documents);
-  } catch (error: any) {
-    if (error instanceof LeaseDocumentError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-    console.error("Fetch lease documents error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}

@@ -1,6 +1,6 @@
 // API endpoint for fetching lease status changes and their listing integration impact
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 import {
     LeaseStatusChangesError,
     leaseStatusChangesService,

@@ -1,7 +1,5 @@
-import { prisma } from "@/lib/db";
-import { setupFinancials } from "@/lib/finance/setup";
-import { journalService } from "@/lib/finance/journal-service";
-import { CHART_OF_ACCOUNTS } from "@/lib/finance/types";
+import { prisma } from "@rentflow/iam";
+import { setupFinancials, journalService, CHART_OF_ACCOUNTS } from "@rentflow/finance";
 import { PostingStatus } from "@prisma/client";
 
 async function main() {
@@ -59,7 +57,7 @@ async function main() {
             }
         });
 
-        const application = await prisma.tenantapplication.create({
+        const application = await prisma.tenantApplication.create({
             data: {
                 fullName: "John Doe",
                 email: tenant.email,
@@ -70,6 +68,7 @@ async function main() {
                 moveInDate: new Date(),
                 leaseDuration: "12 Months",
                 propertyId: property.id,
+                unitId: unit.id,
                 userId: tenant.id
             }
         });
@@ -131,7 +130,7 @@ async function main() {
                 linesCount: 2
             });
 
-            const glEntry = await journalService.post({
+            const glEntry = await journalService.postJournalEntry({
                 organizationId: property.organizationId!,
                 date: new Date(),
                 description: `Lease Activation Test: ${unit.unitNumber}`,
@@ -158,11 +157,11 @@ async function main() {
                 ]
             }, tx); // <--- PASSING TX HERE
 
-            console.log(`   -> GL Entry Created (in tx): ${glEntry.id}`);
+            console.log(`   -> GL Entry Created (in tx): ${glEntry.journalEntryId}`);
 
             await tx.invoice.update({
                 where: { id: invoice.id },
-                data: { journalEntryId: glEntry.id, postingStatus: PostingStatus.POSTED }
+                data: { journalEntryId: glEntry.journalEntryId, postingStatus: PostingStatus.POSTED }
             });
 
             return { invoice, glEntry };
@@ -178,7 +177,7 @@ async function main() {
         const checkUnit = await prisma.unit.findUnique({ where: { id: unit.id } });
         const checkInvoice = await prisma.invoice.findUnique({ where: { id: result.invoice.id } });
         const checkGL = await prisma.journalEntry.findUnique({
-            where: { id: result.glEntry.id },
+            where: { id: result.glEntry.journalEntryId },
             include: { lines: true }
         });
 

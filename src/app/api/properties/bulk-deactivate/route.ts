@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { propertyDeactivationService } from "@rentflow/property";
-import { getCurrentUser } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 
 interface BulkDeactivateRequest {
   propertyIds: string[];

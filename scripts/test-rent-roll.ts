@@ -1,5 +1,12 @@
-import { prisma } from "../src/lib/db";
-import { financeActions } from "../src/lib/finance/actions";
+/// <reference types="node" />
+
+import { prisma } from "../libs/iam/src/lib/db";
+import { financeActions } from "../libs/finance/src/lib/actions";
+
+declare const process: {
+    exit(code?: number): never;
+    exitCode?: number;
+};
 
 async function main() {
     console.log("⏰ Starting Rent Roll Simulation...");

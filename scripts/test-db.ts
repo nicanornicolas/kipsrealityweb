@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 async function main() {
     console.log("Starting minimal DB test...");

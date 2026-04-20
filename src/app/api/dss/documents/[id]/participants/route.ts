@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { DssParticipantRole } from "@prisma/client";
 import { DocumentService } from "@rentflow/dss";
-import { getCurrentUser, requireRole } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
+import { requireRole } from '@rentflow/iam';
 
 const documentService = new DocumentService();
 

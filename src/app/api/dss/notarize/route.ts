@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { notarizeDocument } from "@rentflow/dss";
-import { requireRole } from "@rentflow/iam";
+import { requireRole } from '@rentflow/iam';
 
 export async function POST(req: Request) {
     try {

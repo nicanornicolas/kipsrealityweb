@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@rentflow/iam';
-import { getCurrentUser, requireRole } from '@rentflow/iam';
+import { getCurrentUser } from '@rentflow/iam';
+import { requireRole } from '@rentflow/iam';
 
 interface FieldPayload {
   id?: string;

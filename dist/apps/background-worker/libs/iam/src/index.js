@@ -18,15 +18,15 @@ __reExport(src_exports, require("./lib/iam"), module.exports);
 __reExport(src_exports, require("./lib/db"), module.exports);
 __reExport(src_exports, require("./lib/auth"), module.exports);
 __reExport(src_exports, require("./lib/auth/otp"), module.exports);
-__reExport(src_exports, require("./lib/require-role"), module.exports);
 __reExport(src_exports, require("./lib/get-current-user"), module.exports);
+__reExport(src_exports, require("./lib/require-role"), module.exports);
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   ...require("./lib/iam"),
   ...require("./lib/db"),
   ...require("./lib/auth"),
   ...require("./lib/auth/otp"),
-  ...require("./lib/require-role"),
-  ...require("./lib/get-current-user")
+  ...require("./lib/get-current-user"),
+  ...require("./lib/require-role")
 });
 //# sourceMappingURL=index.js.map

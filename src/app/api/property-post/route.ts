@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { getCurrentUser } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 import { enforceFeatureLimit } from "../../../lib/guards/requireFeature";
 import { UsageService } from '@rentflow/payments';
 
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     const limitError = await enforceFeatureLimit(organizationId, 'property.create');
     if (limitError) return limitError;
 
-    // ✅ 1. Fetch category for "Property"
+    // âœ… 1. Fetch category for "Property"
     const propertyCategory = await prisma.categoryMarketplace.findUnique({
       where: { name: "Property" },
     });
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ 2. Create property with nested listing
+    // âœ… 2. Create property with nested listing
     const newProperty = await prisma.property.create({
       data: {
         organization: { connect: { id: organizationId } },

@@ -1,7 +1,7 @@
 // src/app/api/invoices/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@rentflow/iam";
-import { getCurrentUser } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 import { toNumber } from "../../../lib/decimal-utils"; 
 export async function GET(req: Request) {
   try {

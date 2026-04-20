@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@rentflow/iam";
 import { maintenanceListingIntegration } from "@rentflow/property";
-import { getCurrentUser } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 
 /**
  * GET /api/maintenance/listing-integration

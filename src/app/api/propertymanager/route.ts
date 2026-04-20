@@ -1,7 +1,77 @@
 // src/app/api/propertymanager/route.ts
 import { prisma } from "@rentflow/iam";
-import { getCurrentUser } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 import { NextResponse } from "next/server";
+
+type UnitListingRef = {
+  id: string;
+  listingId: string | null;
+};
+
+async function clearListingReferences(
+  tx: any,
+  listingIds: string[],
+  options: { unitIds?: string[]; propertyId?: string } = {}
+) {
+  const uniqueListingIds = Array.from(new Set(listingIds.filter(Boolean)));
+
+  if (uniqueListingIds.length === 0) {
+    return;
+  }
+
+  await tx.adminAction.updateMany({
+    where: { listingId: { in: uniqueListingIds } },
+    data: { listingId: null },
+  });
+
+  await tx.listingAuditEntry.updateMany({
+    where: { listingId: { in: uniqueListingIds } },
+    data: { listingId: null },
+  });
+
+  await tx.serviceMarketplace.deleteMany({
+    where: { listingId: { in: uniqueListingIds } },
+  });
+
+  await tx.listingImage.deleteMany({
+    where: { listingId: { in: uniqueListingIds } },
+  });
+
+  if (options.unitIds && options.unitIds.length > 0) {
+    await tx.unit.updateMany({
+      where: { id: { in: options.unitIds } },
+      data: { listingId: null },
+    });
+  }
+
+  if (options.propertyId) {
+    await tx.property.update({
+      where: { id: options.propertyId },
+      data: { listingId: null },
+    });
+  }
+
+  await tx.listing.deleteMany({
+    where: { id: { in: uniqueListingIds } },
+  });
+}
+
+async function deleteUnitsSafely(tx: any, units: UnitListingRef[]) {
+  if (units.length === 0) {
+    return;
+  }
+
+  const unitIds = units.map((unit) => unit.id);
+  const listingIds = units
+    .map((unit) => unit.listingId)
+    .filter((listingId): listingId is string => Boolean(listingId));
+
+  await clearListingReferences(tx, listingIds, { unitIds });
+
+  await tx.unit.deleteMany({
+    where: { id: { in: unitIds } },
+  });
+}
 
 export async function POST(req: Request) {
   try {
@@ -371,9 +441,13 @@ export async function PUT(req: Request) {
               .sort((a, b) => parseInt(b.unitNumber) - parseInt(a.unitNumber))
               .slice(0, unitsToRemove);
 
-            for (const unit of unitsToDelete) {
-              await tx.unit.delete({ where: { id: unit.id } });
-            }
+              await deleteUnitsSafely(
+                tx,
+                unitsToDelete.map((unit) => ({
+                  id: unit.id,
+                  listingId: unit.listingId,
+                }))
+              );
           }
         }
       }
@@ -406,6 +480,33 @@ export async function DELETE(req: Request) {
     }
 
     await prisma.$transaction(async (tx) => {
+      const property = await tx.property.findUnique({
+        where: { id },
+        include: {
+          listing: true,
+          units: {
+            select: {
+              id: true,
+              listingId: true,
+            },
+          },
+        },
+      });
+
+      if (!property) {
+        throw new Error("Property not found");
+      }
+
+      const listingIds = [
+        property.listingId,
+        ...property.units.map((unit) => unit.listingId),
+      ].filter((listingId): listingId is string => Boolean(listingId));
+
+      await clearListingReferences(tx, listingIds, {
+        unitIds: property.units.map((unit) => unit.id),
+        propertyId: id,
+      });
+
       await tx.unit.deleteMany({ where: { propertyId: id } });
       await tx.apartmentComplexDetail.deleteMany({ where: { propertyId: id } });
       await tx.houseDetail.deleteMany({ where: { propertyId: id } });

@@ -1,54 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@rentflow/iam";
-import { LeaseAmendmentError, leaseAmendmentService } from "@rentflow/lease";
+import { getCurrentUser } from '@rentflow/iam';
+import {
+  LeaseWorkflowAction,
+  LeaseWorkflowActionError,
+  leaseWorkflowService,
+} from "@rentflow/lease";
 
-// POST: Create a new amendment
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// POST: Approve lease and transition to APPROVED/ACTIVE/TERMINATED
+export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const { id: leaseId } = await params;
-    const body = await req.json();
-    const { amendmentType, effectiveDate, description, changes, requiresSignature = true } = body;
+    const { leaseId, action } = await req.json();
 
-    const amendment = await leaseAmendmentService.createAmendment({
+    if (!leaseId || !action) {
+      return NextResponse.json(
+        { error: "Missing leaseId or action" },
+        { status: 400 }
+      );
+    }
+
+    const updatedLease = await leaseWorkflowService.executeAction({
       leaseId,
-      amendmentType,
-      effectiveDate,
-      description,
-      changes,
-      requiresSignature,
-      userId: user.id,
+      action: action as LeaseWorkflowAction,
       organizationUserId: user.organizationUserId,
+      userId: user.id,
     });
 
-    return NextResponse.json(amendment, { status: 201 });
+    return NextResponse.json(updatedLease);
   } catch (error: any) {
-    if (error instanceof LeaseAmendmentError) {
+    if (error instanceof LeaseWorkflowActionError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    console.error("Amendment creation error:", error);
+    console.error("Workflow error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// GET: Fetch all amendments for a lease
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id: leaseId } = await params;
-
-    const user = await getCurrentUser(req);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const amendments = await leaseAmendmentService.listAmendments(leaseId);
-
-    return NextResponse.json(amendments);
-  } catch (error: any) {
-    if (error instanceof LeaseAmendmentError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-    console.error("Fetch amendments error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
