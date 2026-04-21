@@ -37,8 +37,7 @@ export class FinanceActions {
     // Get dimensions from invoice or relationships
     // Note: Invoice model doesn't have organizationId, propertyId, or tenantId directly
     // They come through Lease -> Property -> organizationId and Lease -> tenantId
-    const organizationId =
-      invoice.organizationId ?? invoice.Lease?.property?.organizationId;
+    const organizationId = invoice.Lease?.property?.organizationId;
     const propertyId =
       (invoice as any).propertyId ??
       (invoice.Lease as any)?.propertyId ??
@@ -57,9 +56,7 @@ export class FinanceActions {
 
     // Convert to Decimal for precise calculations (totalAmount is the invoice total)
     const rentAmount = new Decimal(invoice.totalAmount);
-    const taxAmount = invoice.taxAmount
-      ? new Decimal(invoice.taxAmount)
-      : new Decimal(0);
+    const taxAmount = new Decimal(0);
     const totalReceivable = rentAmount.plus(taxAmount);
 
     try {
@@ -224,26 +221,40 @@ export class FinanceActions {
    */
   async billOrganizationForService(params: {
     organizationId: string;
+    leaseId?: string;
     amount: number;
     description: string;
     referenceType: string;
     referenceId: string;
     serviceType: 'DSS_SIGNING' | 'BACKGROUND_CHECK';
   }): Promise<{ invoiceId: string; journalEntryId: string }> {
+    const leaseId =
+      params.leaseId ??
+      (
+        await this.db.lease.findFirst({
+          where: { property: { organizationId: params.organizationId } },
+          select: { id: true },
+        })
+      )?.id;
+
+    if (!leaseId) {
+      throw new Error(
+        `Cannot create service invoice: no lease found for organization ${params.organizationId}`,
+      );
+    }
+
     const invoice = await this.db.invoice.create({
       data: {
-        organizationId: params.organizationId,
-        type: 'FEE',
+        leaseId,
+        type: 'MAINTENANCE',
         totalAmount: params.amount,
         balance: params.amount,
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        status: 'ISSUED',
-        referenceType: params.referenceType,
-        referenceId: params.referenceId,
+        status: 'PENDING',
         InvoiceItem: {
           create: [
             {
-              description: params.description,
+              description: `${params.referenceType}:${params.referenceId} - ${params.description}`,
               amount: params.amount,
             },
           ],
@@ -291,6 +302,101 @@ export class FinanceActions {
     } catch (error) {
       await this.db.invoice.update({
         where: { id: invoice.id },
+        data: { postingStatus: 'FAILED' },
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Recognizes a Vendor Expense (Liability) to GL.
+   * Dr. 5100 Maintenance Expense (or 5200 for Utility)
+   * Cr. 2200 Accounts Payable
+   *
+   * USA Compliance: This posts the expense amount, tracking YTD spend for 1099-MISC eligibility.
+   */
+  async postExpenseToGL(vendorInvoiceId: string): Promise<void> {
+    const invoice = await this.db.vendorInvoice.findUnique({
+      where: { id: vendorInvoiceId },
+      include: { vendor: true },
+    });
+
+    if (!invoice) throw new Error('Vendor invoice not found');
+
+    // Idempotency check - skip if already posted
+    if (invoice.postingStatus === 'POSTED') {
+      console.log(
+        `[Finance] Vendor invoice ${vendorInvoiceId} is already posted. Skipping.`,
+      );
+      return;
+    }
+
+    const { organizationId, propertyId, amount, category, vendor } = invoice;
+
+    if (!organizationId) {
+      throw new Error(
+        `Vendor invoice ${vendorInvoiceId} has no organization assigned`,
+      );
+    }
+
+    if (!propertyId) {
+      throw new Error(
+        `Vendor invoice ${vendorInvoiceId} has no property assigned`,
+      );
+    }
+
+    const expenseAmount = new Decimal(amount);
+
+    // Determine which expense account based on category
+    const expenseAccountCode =
+      category === 'UTILITY'
+        ? CHART_OF_ACCOUNTS.UTILITY_EXPENSE
+        : category === 'TAX'
+          ? '5300' // Tax expense (not in CHART_OF_ACCOUNTS, but defined)
+          : category === 'MANAGEMENT_FEE'
+            ? CHART_OF_ACCOUNTS.MANAGEMENT_FEES
+            : CHART_OF_ACCOUNTS.MAINTENANCE_EXPENSE;
+
+    try {
+      // Build GAAP-compliant journal lines
+      const lines = [
+        // Debit Expense Account
+        {
+          accountCode: expenseAccountCode as any,
+          debit: expenseAmount,
+          credit: new Decimal(0),
+          propertyId,
+        },
+        // Credit Accounts Payable (liability for vendor payment)
+        {
+          accountCode: CHART_OF_ACCOUNTS.ACCOUNTS_PAYABLE,
+          debit: new Decimal(0),
+          credit: expenseAmount,
+          propertyId,
+        },
+      ];
+
+      // Post to the General Ledger
+      const { journalEntryId } = await this.journalService.postJournalEntry({
+        organizationId,
+        date: invoice.createdAt || new Date(),
+        reference: `VEND-${vendorInvoiceId.substring(0, 8)}`,
+        description: `Vendor Bill: ${vendor.companyName} - ${invoice.description || 'Expense'}`,
+        lines,
+      });
+
+      // Mark invoice as posted with journal entry reference
+      await this.db.vendorInvoice.update({
+        where: { id: vendorInvoiceId },
+        data: {
+          postingStatus: 'POSTED',
+          journalEntryId,
+        },
+      });
+    } catch (error) {
+      // If GL posting fails, mark invoice as FAILED for manual review
+      await this.db.vendorInvoice.update({
+        where: { id: vendorInvoiceId },
         data: { postingStatus: 'FAILED' },
       });
       throw error;
