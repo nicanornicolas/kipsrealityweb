@@ -74,4 +74,3 @@ Subject: ${subject}`);
 0 && (module.exports = {
   sendEmail
 });
-//# sourceMappingURL=mail.js.map
