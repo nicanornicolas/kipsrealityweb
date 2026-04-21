@@ -35,8 +35,8 @@ var n = Object.create, r = Object.defineProperty, i = Object.getOwnPropertyDescr
 	s(d, {
 		Decimal: () => Nt,
 		Public: () => f,
-		getRuntime: () => ce,
-		makeStrictEnum: () => T,
+		getRuntime: () => le,
+		makeStrictEnum: () => w,
 		objectEnumValues: () => C
 	}), t.exports = l(d);
 	var f = {};
@@ -63,19 +63,19 @@ var n = Object.create, r = Object.defineProperty, i = Object.getOwnPropertyDescr
 			super(...arguments), u(this, v);
 		}
 	};
-	v = /* @__PURE__ */ new WeakMap(), w(y, "DbNull");
+	v = /* @__PURE__ */ new WeakMap(), te(y, "DbNull");
 	var b, ee = class extends _ {
 		constructor() {
 			super(...arguments), u(this, b);
 		}
 	};
-	b = /* @__PURE__ */ new WeakMap(), w(ee, "JsonNull");
+	b = /* @__PURE__ */ new WeakMap(), te(ee, "JsonNull");
 	var x, S = class extends _ {
 		constructor() {
 			super(...arguments), u(this, x);
 		}
 	};
-	x = /* @__PURE__ */ new WeakMap(), w(S, "AnyNull");
+	x = /* @__PURE__ */ new WeakMap(), te(S, "AnyNull");
 	var C = {
 		classes: {
 			DbNull: y,
@@ -88,13 +88,13 @@ var n = Object.create, r = Object.defineProperty, i = Object.getOwnPropertyDescr
 			AnyNull: new S(m)
 		}
 	};
-	function w(e, t) {
+	function te(e, t) {
 		Object.defineProperty(e, "name", {
 			value: t,
 			configurable: !0
 		});
 	}
-	var te = new Set([
+	var ne = new Set([
 		"toJSON",
 		"$$typeof",
 		"asymmetricMatch",
@@ -103,38 +103,38 @@ var n = Object.create, r = Object.defineProperty, i = Object.getOwnPropertyDescr
 		Symbol.isConcatSpreadable,
 		Symbol.toPrimitive
 	]);
-	function T(e) {
+	function w(e) {
 		return new Proxy(e, { get(e, t) {
 			if (t in e) return e[t];
-			if (!te.has(t)) throw TypeError(`Invalid enum value: ${String(t)}`);
+			if (!ne.has(t)) throw TypeError(`Invalid enum value: ${String(t)}`);
 		} });
 	}
-	var ne = () => globalThis.process?.release?.name === "node", re = () => {
+	var re = () => globalThis.process?.release?.name === "node", ie = () => {
 		var e;
 		return !!globalThis.Bun || !!((e = globalThis.process?.versions) != null && e.bun);
-	}, ie = () => !!globalThis.Deno, E = () => typeof globalThis.Netlify == "object", D = () => typeof globalThis.EdgeRuntime == "object", ae = () => globalThis.navigator?.userAgent === "Cloudflare-Workers";
-	function oe() {
+	}, ae = () => !!globalThis.Deno, T = () => typeof globalThis.Netlify == "object", E = () => typeof globalThis.EdgeRuntime == "object", oe = () => globalThis.navigator?.userAgent === "Cloudflare-Workers";
+	function se() {
 		return [
-			[E, "netlify"],
-			[D, "edge-light"],
-			[ae, "workerd"],
-			[ie, "deno"],
-			[re, "bun"],
-			[ne, "node"]
+			[T, "netlify"],
+			[E, "edge-light"],
+			[oe, "workerd"],
+			[ae, "deno"],
+			[ie, "bun"],
+			[re, "node"]
 		].flatMap((e) => e[0]() ? [e[1]] : []).at(0) ?? "";
 	}
-	var se = {
+	var ce = {
 		node: "Node.js",
 		workerd: "Cloudflare Workers",
 		deno: "Deno and Deno Deploy",
 		netlify: "Netlify Edge Functions",
 		"edge-light": "Edge Runtime (Vercel Edge Functions, Vercel Edge Middleware, Next.js (Pages Router) Edge API Routes, Next.js (App Router) Edge Route Handlers or Next.js Middleware)"
 	};
-	function ce() {
-		let e = oe();
+	function le() {
+		let e = se();
 		return {
 			id: e,
-			prettyName: se[e] || e,
+			prettyName: ce[e] || e,
 			isEdge: [
 				"workerd",
 				"deno",
@@ -143,14 +143,14 @@ var n = Object.create, r = Object.defineProperty, i = Object.getOwnPropertyDescr
 			].includes(e)
 		};
 	}
-	var le = 9e15, ue = 1e9, de = "0123456789abcdef", fe = "2.3025850929940456840179914546843642076011014886287729760333279009675726096773524802359972050895982983419677840422862486334095254650828067566662873690987816894829072083255546808437998948262331985283935053089653777326288461633662222876982198867465436674744042432743651550489343149393914796194044002221051017141748003688084012647080685567743216228355220114804663715659121373450747856947683463616792101806445070648000277502684916746550586856935673420670581136429224554405758925724208241314695689016758940256776311356919292033376587141660230105703089634572075440370847469940168269282808481184289314848524948644871927809676271275775397027668605952496716674183485704422507197965004714951050492214776567636938662976979522110718264549734772662425709429322582798502585509785265383207606726317164309505995087807523710333101197857547331541421808427543863591778117054309827482385045648019095610299291824318237525357709750539565187697510374970888692180205189339507238539205144634197265287286965110862571492198849978748873771345686209167058", pe = "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679821480865132823066470938446095505822317253594081284811174502841027019385211055596446229489549303819644288109756659334461284756482337867831652712019091456485669234603486104543266482133936072602491412737245870066063155881748815209209628292540917153643678925903600113305305488204665213841469519415116094330572703657595919530921861173819326117931051185480744623799627495673518857527248912279381830119491298336733624406566430860213949463952247371907021798609437027705392171762931767523846748184676694051320005681271452635608277857713427577896091736371787214684409012249534301465495853710507922796892589235420199561121290219608640344181598136297747713099605187072113499999983729780499510597317328160963185950244594553469083026425223082533446850352619311881710100031378387528865875332083814206171776691473035982534904287554687311595628638823537875937519577818577805321712268066130019278766111959092164201989380952572010654858632789", me = {
+	var ue = 9e15, D = 1e9, de = "0123456789abcdef", fe = "2.3025850929940456840179914546843642076011014886287729760333279009675726096773524802359972050895982983419677840422862486334095254650828067566662873690987816894829072083255546808437998948262331985283935053089653777326288461633662222876982198867465436674744042432743651550489343149393914796194044002221051017141748003688084012647080685567743216228355220114804663715659121373450747856947683463616792101806445070648000277502684916746550586856935673420670581136429224554405758925724208241314695689016758940256776311356919292033376587141660230105703089634572075440370847469940168269282808481184289314848524948644871927809676271275775397027668605952496716674183485704422507197965004714951050492214776567636938662976979522110718264549734772662425709429322582798502585509785265383207606726317164309505995087807523710333101197857547331541421808427543863591778117054309827482385045648019095610299291824318237525357709750539565187697510374970888692180205189339507238539205144634197265287286965110862571492198849978748873771345686209167058", pe = "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679821480865132823066470938446095505822317253594081284811174502841027019385211055596446229489549303819644288109756659334461284756482337867831652712019091456485669234603486104543266482133936072602491412737245870066063155881748815209209628292540917153643678925903600113305305488204665213841469519415116094330572703657595919530921861173819326117931051185480744623799627495673518857527248912279381830119491298336733624406566430860213949463952247371907021798609437027705392171762931767523846748184676694051320005681271452635608277857713427577896091736371787214684409012249534301465495853710507922796892589235420199561121290219608640344181598136297747713099605187072113499999983729780499510597317328160963185950244594553469083026425223082533446850352619311881710100031378387528865875332083814206171776691473035982534904287554687311595628638823537875937519577818577805321712268066130019278766111959092164201989380952572010654858632789", me = {
 		precision: 20,
 		rounding: 4,
 		modulo: 1,
 		toExpNeg: -7,
 		toExpPos: 21,
-		minE: -le,
-		maxE: le,
+		minE: -ue,
+		maxE: ue,
 		crypto: !1
 	}, he, ge, O = !0, _e = "[DecimalError] ", ve = _e + "Invalid argument: ", ye = _e + "Precision limit exceeded", be = _e + "crypto unavailable", xe = "[object Decimal]", k = Math.floor, A = Math.pow, Se = /^0b([01]+(\.[01]*)?|\.[01]+)(p[+-]?\d+)?$/i, Ce = /^0x([0-9a-f]+(\.[0-9a-f]*)?|\.[0-9a-f]+)(p[+-]?\d+)?$/i, we = /^0o([0-7]+(\.[0-7]*)?|\.[0-7]+)(p[+-]?\d+)?$/i, Te = /^(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?$/i, j = 1e7, M = 7, Ee = 9007199254740991, De = fe.length - 1, Oe = pe.length - 1, N = { toStringTag: xe };
 	N.absoluteValue = N.abs = function() {
@@ -385,13 +385,13 @@ var n = Object.create, r = Object.defineProperty, i = Object.getOwnPropertyDescr
 		return Ke(this, 2, e, t);
 	}, N.toDecimalPlaces = N.toDP = function(e, t) {
 		var n = this, r = n.constructor;
-		return n = new r(n), e === void 0 ? n : (F(e, 0, ue), t === void 0 ? t = r.rounding : F(t, 0, 8), L(n, e + n.e + 1, t));
+		return n = new r(n), e === void 0 ? n : (F(e, 0, D), t === void 0 ? t = r.rounding : F(t, 0, 8), L(n, e + n.e + 1, t));
 	}, N.toExponential = function(e, t) {
 		var n, r = this, i = r.constructor;
-		return e === void 0 ? n = R(r, !0) : (F(e, 0, ue), t === void 0 ? t = i.rounding : F(t, 0, 8), r = L(new i(r), e + 1, t), n = R(r, !0, e + 1)), r.isNeg() && !r.isZero() ? "-" + n : n;
+		return e === void 0 ? n = R(r, !0) : (F(e, 0, D), t === void 0 ? t = i.rounding : F(t, 0, 8), r = L(new i(r), e + 1, t), n = R(r, !0, e + 1)), r.isNeg() && !r.isZero() ? "-" + n : n;
 	}, N.toFixed = function(e, t) {
 		var n, r, i = this, a = i.constructor;
-		return e === void 0 ? n = R(i) : (F(e, 0, ue), t === void 0 ? t = a.rounding : F(t, 0, 8), r = L(new a(i), e + i.e + 1, t), n = R(r, !1, e + r.e + 1)), i.isNeg() && !i.isZero() ? "-" + n : n;
+		return e === void 0 ? n = R(i) : (F(e, 0, D), t === void 0 ? t = a.rounding : F(t, 0, 8), r = L(new a(i), e + i.e + 1, t), n = R(r, !1, e + r.e + 1)), i.isNeg() && !i.isZero() ? "-" + n : n;
 	}, N.toFraction = function(e) {
 		var t, n, r, i, a, o, s, c, l, u, d, f, p = this, m = p.d, h = p.constructor;
 		if (!m) return new h(p);
@@ -431,10 +431,10 @@ var n = Object.create, r = Object.defineProperty, i = Object.getOwnPropertyDescr
 		return n = A(+s, l), t = n == 0 || !isFinite(n) ? k(l * (Math.log("0." + P(s.d)) / Math.LN10 + s.e + 1)) : new c(n + "").e, t > c.maxE + 1 || t < c.minE - 1 ? new c(t > 0 ? o / 0 : 0) : (O = !1, c.rounding = s.s = 1, n = Math.min(12, (t + "").length), i = Re(e.times(ze(s, r + n)), r), i.d && (i = L(i, r + 5, 1), ke(i.d, r, a) && (t = r + 10, i = L(Re(e.times(ze(s, t + n)), t), t + 5, 1), +P(i.d).slice(r + 1, r + 15) + 1 == 0x5af3107a4000 && (i = L(i, r + 1, 0)))), i.s = o, O = !0, c.rounding = a, L(i, r, a));
 	}, N.toPrecision = function(e, t) {
 		var n, r = this, i = r.constructor;
-		return e === void 0 ? n = R(r, r.e <= i.toExpNeg || r.e >= i.toExpPos) : (F(e, 1, ue), t === void 0 ? t = i.rounding : F(t, 0, 8), r = L(new i(r), e, t), n = R(r, e <= r.e || r.e <= i.toExpNeg, e)), r.isNeg() && !r.isZero() ? "-" + n : n;
+		return e === void 0 ? n = R(r, r.e <= i.toExpNeg || r.e >= i.toExpPos) : (F(e, 1, D), t === void 0 ? t = i.rounding : F(t, 0, 8), r = L(new i(r), e, t), n = R(r, e <= r.e || r.e <= i.toExpNeg, e)), r.isNeg() && !r.isZero() ? "-" + n : n;
 	}, N.toSignificantDigits = N.toSD = function(e, t) {
 		var n = this, r = n.constructor;
-		return e === void 0 ? (e = r.precision, t = r.rounding) : (F(e, 1, ue), t === void 0 ? t = r.rounding : F(t, 0, 8)), L(new r(n), e, t);
+		return e === void 0 ? (e = r.precision, t = r.rounding) : (F(e, 1, D), t === void 0 ? t = r.rounding : F(t, 0, 8)), L(new r(n), e, t);
 	}, N.toString = function() {
 		var e = this, t = e.constructor, n = R(e, e.e <= t.toExpNeg || e.e >= t.toExpPos);
 		return e.isNeg() && !e.isZero() ? "-" + n : n;
@@ -498,20 +498,20 @@ var n = Object.create, r = Object.defineProperty, i = Object.getOwnPropertyDescr
 			for (; !e[0] && e.length > 1;) e.shift();
 		}
 		return function(r, i, a, o, s, c) {
-			var l, u, d, f, p, m, h, g, _, v, y, b, ee, x, S, C, w, te, T, ne, re = r.constructor, ie = r.s == i.s ? 1 : -1, E = r.d, D = i.d;
-			if (!E || !E[0] || !D || !D[0]) return new re(!r.s || !i.s || (E ? D && E[0] == D[0] : !D) ? NaN : E && E[0] == 0 || !D ? ie * 0 : ie / 0);
-			for (c ? (p = 1, u = r.e - i.e) : (c = j, p = M, u = k(r.e / p) - k(i.e / p)), T = D.length, w = E.length, _ = new re(ie), v = _.d = [], d = 0; D[d] == (E[d] || 0); d++);
-			if (D[d] > (E[d] || 0) && u--, a == null ? (x = a = re.precision, o = re.rounding) : x = s ? a + (r.e - i.e) + 1 : a, x < 0) v.push(1), m = !0;
+			var l, u, d, f, p, m, h, g, _, v, y, b, ee, x, S, C, te, ne, w, re, ie = r.constructor, ae = r.s == i.s ? 1 : -1, T = r.d, E = i.d;
+			if (!T || !T[0] || !E || !E[0]) return new ie(!r.s || !i.s || (T ? E && T[0] == E[0] : !E) ? NaN : T && T[0] == 0 || !E ? ae * 0 : ae / 0);
+			for (c ? (p = 1, u = r.e - i.e) : (c = j, p = M, u = k(r.e / p) - k(i.e / p)), w = E.length, te = T.length, _ = new ie(ae), v = _.d = [], d = 0; E[d] == (T[d] || 0); d++);
+			if (E[d] > (T[d] || 0) && u--, a == null ? (x = a = ie.precision, o = ie.rounding) : x = s ? a + (r.e - i.e) + 1 : a, x < 0) v.push(1), m = !0;
 			else {
-				if (x = x / p + 2 | 0, d = 0, T == 1) {
-					for (f = 0, D = D[0], x++; (d < w || f) && x--; d++) S = f * c + (E[d] || 0), v[d] = S / D | 0, f = S % D | 0;
-					m = f || d < w;
+				if (x = x / p + 2 | 0, d = 0, w == 1) {
+					for (f = 0, E = E[0], x++; (d < te || f) && x--; d++) S = f * c + (T[d] || 0), v[d] = S / E | 0, f = S % E | 0;
+					m = f || d < te;
 				} else {
-					for (f = c / (D[0] + 1) | 0, f > 1 && (D = e(D, f, c), E = e(E, f, c), T = D.length, w = E.length), C = T, y = E.slice(0, T), b = y.length; b < T;) y[b++] = 0;
-					ne = D.slice(), ne.unshift(0), te = D[0], D[1] >= c / 2 && ++te;
+					for (f = c / (E[0] + 1) | 0, f > 1 && (E = e(E, f, c), T = e(T, f, c), w = E.length, te = T.length), C = w, y = T.slice(0, w), b = y.length; b < w;) y[b++] = 0;
+					re = E.slice(), re.unshift(0), ne = E[0], E[1] >= c / 2 && ++ne;
 					do
-						f = 0, l = t(D, y, T, b), l < 0 ? (ee = y[0], T != b && (ee = ee * c + (y[1] || 0)), f = ee / te | 0, f > 1 ? (f >= c && (f = c - 1), h = e(D, f, c), g = h.length, b = y.length, l = t(h, y, g, b), l == 1 && (f--, n(h, T < g ? ne : D, g, c))) : (f == 0 && (l = f = 1), h = D.slice()), g = h.length, g < b && h.unshift(0), n(y, h, b, c), l == -1 && (b = y.length, l = t(D, y, T, b), l < 1 && (f++, n(y, T < b ? ne : D, b, c))), b = y.length) : l === 0 && (f++, y = [0]), v[d++] = f, l && y[0] ? y[b++] = E[C] || 0 : (y = [E[C]], b = 1);
-					while ((C++ < w || y[0] !== void 0) && x--);
+						f = 0, l = t(E, y, w, b), l < 0 ? (ee = y[0], w != b && (ee = ee * c + (y[1] || 0)), f = ee / ne | 0, f > 1 ? (f >= c && (f = c - 1), h = e(E, f, c), g = h.length, b = y.length, l = t(h, y, g, b), l == 1 && (f--, n(h, w < g ? re : E, g, c))) : (f == 0 && (l = f = 1), h = E.slice()), g = h.length, g < b && h.unshift(0), n(y, h, b, c), l == -1 && (b = y.length, l = t(E, y, w, b), l < 1 && (f++, n(y, w < b ? re : E, b, c))), b = y.length) : l === 0 && (f++, y = [0]), v[d++] = f, l && y[0] ? y[b++] = T[C] || 0 : (y = [T[C]], b = 1);
+					while ((C++ < te || y[0] !== void 0) && x--);
 					m = y[0] !== void 0;
 				}
 				v[0] || v.shift();
@@ -697,7 +697,7 @@ var n = Object.create, r = Object.defineProperty, i = Object.getOwnPropertyDescr
 	}
 	function Ke(e, t, n, r) {
 		var i, a, o, s, c, l, u, d, f, p = e.constructor, m = n !== void 0;
-		if (m ? (F(n, 1, ue), r === void 0 ? r = p.rounding : F(r, 0, 8)) : (n = p.precision, r = p.rounding), !e.isFinite()) u = Be(e);
+		if (m ? (F(n, 1, D), r === void 0 ? r = p.rounding : F(r, 0, 8)) : (n = p.precision, r = p.rounding), !e.isFinite()) u = Be(e);
 		else {
 			for (u = R(e), o = u.indexOf("."), m ? (i = 2, t == 16 ? n = n * 4 - 3 : t == 8 && (n = n * 3 - 2)) : i = t, o >= 0 && (u = u.replace(".", ""), f = new p(1), f.e = u.length - o, f.d = Ae(R(f), 10, i), f.e = f.d.length), d = Ae(u, 10, i), a = c = d.length; d[--c] == 0;) d.pop();
 			if (!d[0]) u = m ? "0p+0" : "0";
@@ -768,21 +768,21 @@ var n = Object.create, r = Object.defineProperty, i = Object.getOwnPropertyDescr
 		var t, n, r, i = e.defaults === !0, a = [
 			"precision",
 			1,
-			ue,
+			D,
 			"rounding",
 			0,
 			8,
 			"toExpNeg",
-			-le,
+			-ue,
 			0,
 			"toExpPos",
 			0,
-			le,
+			ue,
 			"maxE",
 			0,
-			le,
+			ue,
 			"minE",
-			-le,
+			-ue,
 			0,
 			"modulo",
 			0,
@@ -893,7 +893,7 @@ var n = Object.create, r = Object.defineProperty, i = Object.getOwnPropertyDescr
 	}
 	function xt(e) {
 		var t, n, r, i, a = 0, o = new this(1), s = [];
-		if (e === void 0 ? e = this.precision : F(e, 1, ue), r = Math.ceil(e / M), this.crypto) if (crypto.getRandomValues) for (t = crypto.getRandomValues(new Uint32Array(r)); a < r;) i = t[a], i >= 429e7 ? t[a] = crypto.getRandomValues(new Uint32Array(1))[0] : s[a++] = i % 1e7;
+		if (e === void 0 ? e = this.precision : F(e, 1, D), r = Math.ceil(e / M), this.crypto) if (crypto.getRandomValues) for (t = crypto.getRandomValues(new Uint32Array(r)); a < r;) i = t[a], i >= 429e7 ? t[a] = crypto.getRandomValues(new Uint32Array(1))[0] : s[a++] = i % 1e7;
 		else if (crypto.randomBytes) {
 			for (t = crypto.randomBytes(r *= 4); a < r;) i = t[a] + (t[a + 1] << 8) + (t[a + 2] << 16) + ((t[a + 3] & 127) << 24), i >= 214e7 ? crypto.randomBytes(4).copy(t, a) : (s.push(i % 1e7), a += 4);
 			a = r / 4;
@@ -1020,6 +1020,30 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		stripeConnectId: "stripeConnectId",
 		irsEinEncrypted: "irsEinEncrypted",
 		stateTaxIds: "stateTaxIds"
+	}, e.Prisma.ConnectedBankAccountScalarFieldEnum = {
+		id: "id",
+		organizationId: "organizationId",
+		plaidAccessToken: "plaidAccessToken",
+		plaidItemId: "plaidItemId",
+		institutionName: "institutionName",
+		accountName: "accountName",
+		accountType: "accountType",
+		accountSubtype: "accountSubtype",
+		mask: "mask",
+		status: "status",
+		createdAt: "createdAt"
+	}, e.Prisma.BankTransactionScalarFieldEnum = {
+		id: "id",
+		organizationId: "organizationId",
+		plaidTransactionId: "plaidTransactionId",
+		accountId: "accountId",
+		amount: "amount",
+		date: "date",
+		merchantName: "merchantName",
+		description: "description",
+		status: "status",
+		matchedJournalId: "matchedJournalId",
+		createdAt: "createdAt"
 	}, e.Prisma.OrganizationWebhookScalarFieldEnum = {
 		id: "id",
 		organizationId: "organizationId",
@@ -1028,6 +1052,36 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		secret: "secret",
 		events: "events",
 		isActive: "isActive",
+		createdAt: "createdAt",
+		updatedAt: "updatedAt"
+	}, e.Prisma.SmsNotificationScalarFieldEnum = {
+		id: "id",
+		userId: "userId",
+		phone: "phone",
+		message: "message",
+		channel: "channel",
+		category: "category",
+		status: "status",
+		scheduledFor: "scheduledFor",
+		sentAt: "sentAt",
+		deliveredAt: "deliveredAt",
+		errorMessage: "errorMessage",
+		costCents: "costCents",
+		carrier: "carrier",
+		reference: "reference",
+		createdAt: "createdAt",
+		updatedAt: "updatedAt"
+	}, e.Prisma.NotificationPreferenceScalarFieldEnum = {
+		id: "id",
+		userId: "userId",
+		channel: "channel",
+		category: "category",
+		enabled: "enabled",
+		thresholdHours: "thresholdHours",
+		quietStartHour: "quietStartHour",
+		quietEndHour: "quietEndHour",
+		quietDays: "quietDays",
+		maxDailyAlerts: "maxDailyAlerts",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
 	}, e.Prisma.UserScalarFieldEnum = {
@@ -1068,33 +1122,21 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		expiresAt: "expiresAt",
 		type: "type",
 		createdAt: "createdAt"
-	}, e.Prisma.SmsNotificationScalarFieldEnum = {
+	}, e.Prisma.VendorTaxInfoScalarFieldEnum = {
 		id: "id",
-		userId: "userId",
-		phoneNumber: "phoneNumber",
-		message: "message",
-		category: "category",
-		status: "status",
-		provider: "provider",
-		providerMsgId: "providerMsgId",
-		failureReason: "failureReason",
-		sentAt: "sentAt",
-		deliveredAt: "deliveredAt",
-		createdAt: "createdAt",
-		updatedAt: "updatedAt"
-	}, e.Prisma.NotificationPreferenceScalarFieldEnum = {
-		id: "id",
-		userId: "userId",
-		rentReminders: "rentReminders",
-		paymentReceipts: "paymentReceipts",
-		maintenance: "maintenance",
-		utilityAlerts: "utilityAlerts",
-		marketing: "marketing",
-		preferredChannel: "preferredChannel",
+		vendorId: "vendorId",
+		taxId: "taxId",
+		taxIdEncrypted: "taxIdEncrypted",
+		isTaxExempt: "isTaxExempt",
+		exemptionCertificateUrl: "exemptionCertificateUrl",
+		stateOfIncorporation: "stateOfIncorporation",
+		incorporationDate: "incorporationDate",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
 	}, e.Prisma.VendorScalarFieldEnum = {
 		id: "id",
+		name: "name",
+		businessType: "businessType",
 		organizationId: "organizationId",
 		userId: "userId",
 		companyName: "companyName",
@@ -1104,6 +1146,18 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		isActive: "isActive",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
+	}, e.Prisma.VendorInvoiceScalarFieldEnum = {
+		id: "id",
+		vendorId: "vendorId",
+		organizationId: "organizationId",
+		propertyId: "propertyId",
+		amount: "amount",
+		category: "category",
+		description: "description",
+		dueDate: "dueDate",
+		postingStatus: "postingStatus",
+		journalEntryId: "journalEntryId",
+		createdAt: "createdAt"
 	}, e.Prisma.InviteScalarFieldEnum = {
 		id: "id",
 		email: "email",
@@ -1412,21 +1466,15 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 	}, e.Prisma.InvoiceScalarFieldEnum = {
 		id: "id",
 		leaseId: "leaseId",
-		organizationId: "organizationId",
 		type: "type",
 		totalAmount: "totalAmount",
 		amountPaid: "amountPaid",
 		balance: "balance",
-		taxAmount: "taxAmount",
-		taxRate: "taxRate",
-		taxExempt: "taxExempt",
 		dueDate: "dueDate",
 		status: "status",
 		postingStatus: "postingStatus",
 		journalEntryId: "journalEntryId",
 		utilityBillId: "utilityBillId",
-		referenceType: "referenceType",
-		referenceId: "referenceId",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
 	}, e.Prisma.InvoiceItemScalarFieldEnum = {
@@ -1513,7 +1561,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		fileSizeBytes: "fileSizeBytes",
 		originalPdfSha256Hex: "originalPdfSha256Hex",
 		finalPdfSha256Hex: "finalPdfSha256Hex",
-		finalFileUrl: "finalFileUrl",
 		status: "status",
 		signingMode: "signingMode",
 		currentStep: "currentStep",
@@ -1542,9 +1589,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		signatureHash: "signatureHash",
 		signedAt: "signedAt",
 		isProxy: "isProxy",
-		onBehalfOf: "onBehalfOf",
-		ipAddress: "ipAddress",
-		userAgent: "userAgent"
+		onBehalfOf: "onBehalfOf"
 	}, e.Prisma.DssFieldScalarFieldEnum = {
 		id: "id",
 		documentId: "documentId",
@@ -1587,7 +1632,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		id: "id",
 		organizationId: "organizationId",
 		createdBy: "createdBy",
-		categoryId: "categoryId",
 		statusId: "statusId",
 		locationId: "locationId",
 		title: "title",
@@ -1598,7 +1642,8 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		propertyId: "propertyId",
 		unitId: "unitId",
 		availabilityDate: "availabilityDate",
-		expirationDate: "expirationDate"
+		expirationDate: "expirationDate",
+		categoryId: "categoryId"
 	}, e.Prisma.ServiceMarketplaceScalarFieldEnum = {
 		id: "id",
 		listingId: "listingId",
@@ -1919,7 +1964,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		usedAt: "usedAt",
 		isUsed: "isUsed",
 		tenantId: "tenantId",
-		invitedAgentId: "invitedAgentId",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
 	}, e.Prisma.ListingAuditEntryScalarFieldEnum = {
@@ -1977,14 +2021,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		nextRetryAt: "nextRetryAt",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
-	}, e.Prisma.VendorTaxInfoScalarFieldEnum = {
-		id: "id",
-		vendorId: "vendorId",
-		w9Collected: "w9Collected",
-		w9CollectedAt: "w9CollectedAt",
-		taxIdType: "taxIdType",
-		taxIdEncrypted: "taxIdEncrypted",
-		backupWithholding: "backupWithholding"
 	}, e.Prisma.SortOrder = {
 		asc: "asc",
 		desc: "desc"
@@ -2012,12 +2048,43 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		paystackSubaccountCode: "paystackSubaccountCode",
 		stripeConnectId: "stripeConnectId",
 		irsEinEncrypted: "irsEinEncrypted"
+	}, e.Prisma.ConnectedBankAccountOrderByRelevanceFieldEnum = {
+		id: "id",
+		organizationId: "organizationId",
+		plaidAccessToken: "plaidAccessToken",
+		plaidItemId: "plaidItemId",
+		institutionName: "institutionName",
+		accountName: "accountName",
+		accountType: "accountType",
+		accountSubtype: "accountSubtype",
+		mask: "mask",
+		status: "status"
+	}, e.Prisma.BankTransactionOrderByRelevanceFieldEnum = {
+		id: "id",
+		organizationId: "organizationId",
+		plaidTransactionId: "plaidTransactionId",
+		accountId: "accountId",
+		merchantName: "merchantName",
+		description: "description",
+		status: "status",
+		matchedJournalId: "matchedJournalId"
 	}, e.Prisma.OrganizationWebhookOrderByRelevanceFieldEnum = {
 		id: "id",
 		organizationId: "organizationId",
 		name: "name",
 		url: "url",
 		secret: "secret"
+	}, e.Prisma.SmsNotificationOrderByRelevanceFieldEnum = {
+		id: "id",
+		userId: "userId",
+		phone: "phone",
+		message: "message",
+		errorMessage: "errorMessage",
+		carrier: "carrier",
+		reference: "reference"
+	}, e.Prisma.NotificationPreferenceOrderByRelevanceFieldEnum = {
+		id: "id",
+		userId: "userId"
 	}, e.Prisma.UserOrderByRelevanceFieldEnum = {
 		id: "id",
 		email: "email",
@@ -2039,25 +2106,32 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		code: "code",
 		phone: "phone",
 		userId: "userId"
-	}, e.Prisma.SmsNotificationOrderByRelevanceFieldEnum = {
+	}, e.Prisma.VendorTaxInfoOrderByRelevanceFieldEnum = {
 		id: "id",
-		userId: "userId",
-		phoneNumber: "phoneNumber",
-		message: "message",
-		provider: "provider",
-		providerMsgId: "providerMsgId",
-		failureReason: "failureReason"
-	}, e.Prisma.NotificationPreferenceOrderByRelevanceFieldEnum = {
-		id: "id",
-		userId: "userId"
+		vendorId: "vendorId",
+		taxId: "taxId",
+		taxIdEncrypted: "taxIdEncrypted",
+		exemptionCertificateUrl: "exemptionCertificateUrl",
+		stateOfIncorporation: "stateOfIncorporation"
 	}, e.Prisma.VendorOrderByRelevanceFieldEnum = {
 		id: "id",
+		name: "name",
+		businessType: "businessType",
 		organizationId: "organizationId",
 		userId: "userId",
 		companyName: "companyName",
 		serviceType: "serviceType",
 		phone: "phone",
 		email: "email"
+	}, e.Prisma.VendorInvoiceOrderByRelevanceFieldEnum = {
+		id: "id",
+		vendorId: "vendorId",
+		organizationId: "organizationId",
+		propertyId: "propertyId",
+		category: "category",
+		description: "description",
+		postingStatus: "postingStatus",
+		journalEntryId: "journalEntryId"
 	}, e.Prisma.InviteOrderByRelevanceFieldEnum = {
 		id: "id",
 		email: "email",
@@ -2231,11 +2305,8 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 	}, e.Prisma.InvoiceOrderByRelevanceFieldEnum = {
 		id: "id",
 		leaseId: "leaseId",
-		organizationId: "organizationId",
 		journalEntryId: "journalEntryId",
-		utilityBillId: "utilityBillId",
-		referenceType: "referenceType",
-		referenceId: "referenceId"
+		utilityBillId: "utilityBillId"
 	}, e.Prisma.InvoiceItemOrderByRelevanceFieldEnum = {
 		id: "id",
 		invoiceId: "invoiceId",
@@ -2282,8 +2353,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		originalFileKey: "originalFileKey",
 		mimeType: "mimeType",
 		originalPdfSha256Hex: "originalPdfSha256Hex",
-		finalPdfSha256Hex: "finalPdfSha256Hex",
-		finalFileUrl: "finalFileUrl"
+		finalPdfSha256Hex: "finalPdfSha256Hex"
 	}, e.Prisma.DssParticipantOrderByRelevanceFieldEnum = {
 		id: "id",
 		documentId: "documentId",
@@ -2297,9 +2367,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		documentId: "documentId",
 		participantId: "participantId",
 		signatureHash: "signatureHash",
-		onBehalfOf: "onBehalfOf",
-		ipAddress: "ipAddress",
-		userAgent: "userAgent"
+		onBehalfOf: "onBehalfOf"
 	}, e.Prisma.DssFieldOrderByRelevanceFieldEnum = {
 		id: "id",
 		documentId: "documentId",
@@ -2327,13 +2395,13 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		id: "id",
 		organizationId: "organizationId",
 		createdBy: "createdBy",
-		categoryId: "categoryId",
 		statusId: "statusId",
 		locationId: "locationId",
 		title: "title",
 		description: "description",
 		propertyId: "propertyId",
-		unitId: "unitId"
+		unitId: "unitId",
+		categoryId: "categoryId"
 	}, e.Prisma.ServiceMarketplaceOrderByRelevanceFieldEnum = {
 		id: "id",
 		listingId: "listingId",
@@ -2522,8 +2590,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 	}, e.Prisma.AgentInviteOrderByRelevanceFieldEnum = {
 		id: "id",
 		inviteTokenHash: "inviteTokenHash",
-		tenantId: "tenantId",
-		invitedAgentId: "invitedAgentId"
+		tenantId: "tenantId"
 	}, e.Prisma.ListingAuditEntryOrderByRelevanceFieldEnum = {
 		id: "id",
 		unitId: "unitId",
@@ -2552,14 +2619,26 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		gateway: "gateway",
 		eventType: "eventType",
 		processingError: "processingError"
-	}, e.Prisma.VendorTaxInfoOrderByRelevanceFieldEnum = {
-		id: "id",
-		vendorId: "vendorId",
-		taxIdType: "taxIdType",
-		taxIdEncrypted: "taxIdEncrypted"
 	}, e.Region = e.$Enums.Region = {
 		USA: "USA",
 		KEN: "KEN"
+	}, e.NotificationChannel = e.$Enums.NotificationChannel = {
+		SMS: "SMS",
+		EMAIL: "EMAIL",
+		PUSH: "PUSH",
+		IN_APP: "IN_APP"
+	}, e.NotificationCategory = e.$Enums.NotificationCategory = {
+		RENT_REMINDER: "RENT_REMINDER",
+		PAYMENT_RECEIPT: "PAYMENT_RECEIPT",
+		MAINTENANCE_UPDATE: "MAINTENANCE_UPDATE",
+		LEASE_DOCUMENT: "LEASE_DOCUMENT",
+		UTILITY_BILL: "UTILITY_BILL",
+		SYSTEM_ALERT: "SYSTEM_ALERT"
+	}, e.SmsStatus = e.$Enums.SmsStatus = {
+		QUEUED: "QUEUED",
+		SENT: "SENT",
+		DELIVERED: "DELIVERED",
+		FAILED: "FAILED"
 	}, e.UserStatus = e.$Enums.UserStatus = {
 		ACTIVE: "ACTIVE",
 		INACTIVE: "INACTIVE",
@@ -2578,23 +2657,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 	}, e.OtpType = e.$Enums.OtpType = {
 		TWO_FACTOR: "TWO_FACTOR",
 		PHONE_VERIFICATION: "PHONE_VERIFICATION"
-	}, e.NotificationCategory = e.$Enums.NotificationCategory = {
-		RENT_REMINDER: "RENT_REMINDER",
-		PAYMENT_RECEIPT: "PAYMENT_RECEIPT",
-		MAINTENANCE_UPDATE: "MAINTENANCE_UPDATE",
-		LEASE_DOCUMENT: "LEASE_DOCUMENT",
-		UTILITY_BILL: "UTILITY_BILL",
-		SYSTEM_ALERT: "SYSTEM_ALERT"
-	}, e.SmsStatus = e.$Enums.SmsStatus = {
-		QUEUED: "QUEUED",
-		SENT: "SENT",
-		DELIVERED: "DELIVERED",
-		FAILED: "FAILED"
-	}, e.NotificationChannel = e.$Enums.NotificationChannel = {
-		SMS: "SMS",
-		EMAIL: "EMAIL",
-		PUSH: "PUSH",
-		IN_APP: "IN_APP"
 	}, e.InviteRole = e.$Enums.InviteRole = {
 		SYSTEM_ADMIN: "SYSTEM_ADMIN",
 		PROPERTY_MANAGER: "PROPERTY_MANAGER",
@@ -2677,15 +2739,13 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		COMPLIANT: "COMPLIANT",
 		NON_COMPLIANT: "NON_COMPLIANT",
 		UNDER_REVIEW: "UNDER_REVIEW"
-	}, e.InvoiceType = e.$Enums.InvoiceType = {
+	}, e.invoice_type = e.$Enums.invoice_type = {
 		RENT: "RENT",
 		UTILITY: "UTILITY",
 		MAINTENANCE: "MAINTENANCE",
-		DAMAGE: "DAMAGE",
-		FEE: "FEE"
-	}, e.InvoiceStatus = e.$Enums.InvoiceStatus = {
+		DAMAGE: "DAMAGE"
+	}, e.invoice_status = e.$Enums.invoice_status = {
 		DRAFT: "DRAFT",
-		ISSUED: "ISSUED",
 		PENDING: "PENDING",
 		PAID: "PAID",
 		OVERDUE: "OVERDUE",
@@ -2857,13 +2917,17 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		FAILED: "FAILED"
 	}, e.Prisma.ModelName = {
 		Organization: "Organization",
+		ConnectedBankAccount: "ConnectedBankAccount",
+		BankTransaction: "BankTransaction",
 		OrganizationWebhook: "OrganizationWebhook",
+		SmsNotification: "SmsNotification",
+		NotificationPreference: "NotificationPreference",
 		User: "User",
 		OrganizationUser: "OrganizationUser",
 		Otp: "Otp",
-		SmsNotification: "SmsNotification",
-		NotificationPreference: "NotificationPreference",
+		VendorTaxInfo: "VendorTaxInfo",
 		Vendor: "Vendor",
+		VendorInvoice: "VendorInvoice",
 		Invite: "Invite",
 		PasswordResetToken: "PasswordResetToken",
 		FinancialEntity: "FinancialEntity",
@@ -2941,8 +3005,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		UsageMetric: "UsageMetric",
 		SubscriptionEvent: "SubscriptionEvent",
 		FeatureLimit: "FeatureLimit",
-		WebhookEvent: "WebhookEvent",
-		VendorTaxInfo: "VendorTaxInfo"
+		WebhookEvent: "WebhookEvent"
 	}, e.PrismaClient = class {
 		constructor() {
 			return new Proxy(this, { get(e, t) {
@@ -3093,17 +3156,17 @@ function C(e) {
 		"boolean"
 	].includes(typeof e);
 }
-function w(e) {
+function te(e) {
 	let t = e.match(/\{\w+\}/g);
 	return t ? t.map((e) => e.replace(/[{}]/g, "")) : [];
 }
-function te(e) {
+function ne(e) {
 	if (!Array.isArray(e) || !e[0] || typeof e[0] != "object") return {};
 	if (!v(e[0])) return e.shift();
 	let t = Object.keys(e[0]), n = t.filter((e) => _.includes(e));
-	return n.length > 0 && n.length !== t.length && oe(`Options found in arguments (${n.join(", ")}). Did you mean to pass an options object? See https://github.com/stripe/stripe-node/wiki/Passing-Options.`), {};
+	return n.length > 0 && n.length !== t.length && se(`Options found in arguments (${n.join(", ")}). Did you mean to pass an options object? See https://github.com/stripe/stripe-node/wiki/Passing-Options.`), {};
 }
-function T(e) {
+function w(e) {
 	let t = {
 		host: null,
 		headers: {},
@@ -3115,7 +3178,7 @@ function T(e) {
 		if (typeof n == "string") t.authenticator = pe(e.pop());
 		else if (v(n)) {
 			let n = Object.assign({}, e.pop()), r = Object.keys(n).filter((e) => !_.includes(e));
-			if (r.length && oe(`Invalid options found (${r.join(", ")}); ignoring.`), n.apiKey && (t.authenticator = pe(n.apiKey)), n.idempotencyKey && (t.headers["Idempotency-Key"] = n.idempotencyKey), n.stripeAccount && (t.headers["Stripe-Account"] = n.stripeAccount), n.stripeContext) {
+			if (r.length && se(`Invalid options found (${r.join(", ")}); ignoring.`), n.apiKey && (t.authenticator = pe(n.apiKey)), n.idempotencyKey && (t.headers["Idempotency-Key"] = n.idempotencyKey), n.stripeAccount && (t.headers["Stripe-Account"] = n.stripeAccount), n.stripeContext) {
 				if (t.headers["Stripe-Account"]) throw Error("Can't specify both stripeAccount and stripeContext.");
 				t.headers["Stripe-Context"] = n.stripeContext;
 			}
@@ -3129,23 +3192,23 @@ function T(e) {
 	}
 	return t;
 }
-function ne(e) {
+function re(e) {
 	let t = this, n = Object.prototype.hasOwnProperty.call(e, "constructor") ? e.constructor : function(...e) {
 		t.apply(this, e);
 	};
 	return Object.assign(n, t), n.prototype = Object.create(t.prototype), Object.assign(n.prototype, e), n;
 }
-function re(e) {
+function ie(e) {
 	if (typeof e != "object") throw Error("Argument must be an object");
 	return Object.keys(e).reduce((t, n) => (e[n] != null && (t[n] = e[n]), t), {});
 }
-function ie(e) {
-	return e && typeof e == "object" ? Object.keys(e).reduce((t, n) => (t[E(n)] = e[n], t), {}) : e;
+function ae(e) {
+	return e && typeof e == "object" ? Object.keys(e).reduce((t, n) => (t[T(n)] = e[n], t), {}) : e;
 }
-function E(e) {
+function T(e) {
 	return e.split("-").map((e) => e.charAt(0).toUpperCase() + e.substr(1).toLowerCase()).join("-");
 }
-function D(e, t) {
+function E(e, t) {
 	return t ? e.then((e) => {
 		setTimeout(() => {
 			t(null, e);
@@ -3156,21 +3219,21 @@ function D(e, t) {
 		}, 0);
 	}) : e;
 }
-function ae(e) {
+function oe(e) {
 	return e === "OAuth" ? "oauth" : e[0].toLowerCase() + e.substring(1);
 }
-function oe(e) {
+function se(e) {
 	return typeof process.emitWarning == "function" ? process.emitWarning(e, "Stripe") : console.warn(`Stripe: ${e}`);
 }
-function se(e) {
+function ce(e) {
 	let t = typeof e;
 	return (t === "function" || t === "object") && !!e;
 }
-function ce(e) {
+function le(e) {
 	let t = {}, n = (e, r) => {
 		Object.entries(e).forEach(([e, i]) => {
 			let a = r ? `${r}[${e}]` : e;
-			if (se(i)) {
+			if (ce(i)) {
 				if (!(i instanceof Uint8Array) && !Object.prototype.hasOwnProperty.call(i, "data")) return n(i, a);
 				t[a] = i;
 			} else t[a] = String(i);
@@ -3178,14 +3241,14 @@ function ce(e) {
 	};
 	return n(e, null), t;
 }
-function le(e, t, n) {
+function ue(e, t, n) {
 	if (!Number.isInteger(t)) {
 		if (n !== void 0) return n;
 		throw Error(`${e} must be an integer`);
 	}
 	return t;
 }
-function ue() {
+function D() {
 	return typeof process > "u" ? {} : {
 		lang_version: process.version,
 		platform: process.platform
@@ -3558,7 +3621,7 @@ var F = class extends P {
 	}
 	_makeResponseEvent(e, t, n) {
 		let r = Date.now(), i = r - e.request_start_time;
-		return re({
+		return ie({
 			api_version: n["stripe-version"],
 			account: n["stripe-account"],
 			idempotency_key: n["idempotency-key"],
@@ -3644,7 +3707,7 @@ var F = class extends P {
 			"Stripe-Context": c,
 			"Idempotency-Key": this._defaultIdempotencyKey(i, o, l)
 		}, d = i == "POST" || i == "PUT" || i == "PATCH";
-		return (d || t) && (d || oe(`${i} method had non-zero contentLength but no payload is expected for this verb`), u["Content-Length"] = t), Object.assign(re(u), ie(a));
+		return (d || t) && (d || se(`${i} method had non-zero contentLength but no payload is expected for this verb`), u["Content-Length"] = t), Object.assign(ie(u), ae(a));
 	}
 	_getUserAgentString(e) {
 		let t = this._stripe.getConstant("PACKAGE_VERSION"), n = this._stripe._appInfo ? this._stripe.getAppInfoAsString() : "", r = this._stripe.getConstant("AI_AGENT"), i = `Stripe/${e} NodeBindings/${t}`;
@@ -3657,7 +3720,7 @@ var F = class extends P {
 		}
 	}
 	_recordRequestMetrics(e, t, n) {
-		if (this._stripe.getTelemetryEnabled() && e) if (this._stripe._prevRequestMetrics.length > this._maxBufferedRequestMetric) oe("Request metrics buffer is full, dropping telemetry message.");
+		if (this._stripe.getTelemetryEnabled() && e) if (this._stripe._prevRequestMetrics.length > this._maxBufferedRequestMetric) se("Request metrics buffer is full, dropping telemetry message.");
 		else {
 			let r = {
 				request_id: e,
@@ -3672,7 +3735,7 @@ var F = class extends P {
 			try {
 				let a = e.toUpperCase();
 				if (a !== "POST" && n && Object.keys(n).length !== 0) throw Error("rawRequest only supports params on POST requests. Please pass null and add your parameters to path.");
-				let o = [].slice.call([n, r]), c = te(o), l = a === "POST" ? Object.assign({}, c) : null, u = T(o), d = u.headers;
+				let o = [].slice.call([n, r]), c = ne(o), l = a === "POST" ? Object.assign({}, c) : null, u = w(o), d = u.headers;
 				s = {
 					requestMethod: a,
 					requestPath: t,
@@ -3717,7 +3780,7 @@ var F = class extends P {
 				protocol: this._stripe.getApiField("protocol")
 			};
 			a(g).then(() => {
-				let n = this._stripe.getApiField("httpClient").makeRequest(g.host, g.port, g.path, g.method, g.headers, g.body, g.protocol, h), a = Date.now(), u = re({
+				let n = this._stripe.getApiField("httpClient").makeRequest(g.host, g.port, g.path, g.method, g.headers, g.body, g.protocol, h), a = Date.now(), u = ie({
 					api_version: i,
 					account: O(l["Stripe-Account"]),
 					idempotency_key: O(l["Idempotency-Key"]),
@@ -3885,7 +3948,7 @@ function Ke(e) {
 	return function() {
 		let t = [].slice.call(arguments), n = We(t), r = V(t);
 		if (t.length > 2) throw Error(`autoPagingEach takes up to two arguments; received ${t}`);
-		return D(Je(e, n), r);
+		return E(Je(e, n), r);
 	};
 }
 function qe(e) {
@@ -3893,7 +3956,7 @@ function qe(e) {
 		let r = t && t.limit;
 		if (!r) throw Error("You must pass a `limit` option to autoPagingToArray, e.g., `autoPagingToArray({limit: 1000});`.");
 		if (r > 1e4) throw Error("You cannot specify a limit of more than 10,000 items to fetch in `autoPagingToArray`; use `autoPagingEach` to iterate through longer lists.");
-		return D(new Promise((t, n) => {
+		return E(new Promise((t, n) => {
 			let i = [];
 			e((e) => {
 				if (i.push(e), i.length >= r) return !1;
@@ -3922,7 +3985,7 @@ function Je(e, t) {
 	});
 }
 function Ye(e) {
-	return !!te([].slice.call(e)).ending_before;
+	return !!ne([].slice.call(e)).ending_before;
 }
 //#endregion
 //#region ../../node_modules/stripe/esm/StripeMethod.js
@@ -3930,12 +3993,12 @@ function Xe(e) {
 	if (e.path !== void 0 && e.fullPath !== void 0) throw Error(`Method spec specified both a 'path' (${e.path}) and a 'fullPath' (${e.fullPath}).`);
 	return function(...t) {
 		let n = typeof t[t.length - 1] == "function" && t.pop();
-		e.urlParams = w(e.fullPath || this.createResourcePathWithSymbols(e.path || ""));
-		let r = D(this._makeRequest(t, e, {}), n);
+		e.urlParams = te(e.fullPath || this.createResourcePathWithSymbols(e.path || ""));
+		let r = E(this._makeRequest(t, e, {}), n);
 		return Object.assign(r, Ve(this, t, e, r)), r;
 	};
 }
-H.extend = ne, H.method = Xe, H.MAX_BUFFERED_REQUEST_METRICS = 100;
+H.extend = re, H.method = Xe, H.MAX_BUFFERED_REQUEST_METRICS = 100;
 function H(e, t) {
 	if (this._stripe = e, t) throw Error("Support for curried url params was dropped in stripe-node v7.0.0. Instead, pass two ids.");
 	this.basePath = S(this.basePath || e.getApiField("basePath")), this.resourcePath = this.path, this.path = S(this.path), this.initialize(...arguments);
@@ -3967,7 +4030,7 @@ H.prototype = {
 			let n = u.shift();
 			if (typeof n != "string") throw Error(`Stripe: Argument "${t}" must be a string, but got: ${n} (on API request to \`${r} ${l}\`)`);
 			return e[t] = n, e;
-		}, {}), f = te(u), p = o(Object.assign({}, f, n)), m = T(u), h = m.host || t.host, g = !!t.streaming || !!m.streaming;
+		}, {}), f = ne(u), p = o(Object.assign({}, f, n)), m = w(u), h = m.host || t.host, g = !!t.streaming || !!m.streaming;
 		if (u.filter((e) => e != null).length) throw Error(`Stripe: Unknown arguments (${u}). Did you mean to pass an options object? See https://github.com/stripe/stripe-node/wiki/Passing-Options. (on API request to ${r} \`${l}\`)`);
 		let _ = s ? c(d) : this.createFullPath(c, d), v = Object.assign(m.headers, t.headers);
 		t.validator && t.validator(p, { headers: v });
@@ -5801,7 +5864,7 @@ var tt = H.method, nt = H.extend({ create: tt({
 	function c(e) {
 		return `"${e.replace(/"|"/g, "%22").replace(/\r\n|\r|\n/g, " ")}"`;
 	}
-	let l = ce(t);
+	let l = le(t);
 	for (let e in l) {
 		if (!Object.prototype.hasOwnProperty.call(l, e)) continue;
 		let t = l[e];
@@ -6881,7 +6944,7 @@ function Po(e, t = No) {
 		publisher: "stripe",
 		uname: null,
 		typescript: !1
-	}, ue()), n ? { ai_agent: n } : {}), r.StripeResource = H, r.StripeContext = Ze, r.resources = io, r.HttpClient = ye, r.HttpClientResponse = be, r.CryptoProvider = A, r.webhooks = Qe(e);
+	}, D()), n ? { ai_agent: n } : {}), r.StripeResource = H, r.StripeContext = Ze, r.resources = io, r.HttpClient = ye, r.HttpClientResponse = be, r.CryptoProvider = A, r.webhooks = Qe(e);
 	function r(n, i = {}) {
 		if (!(this instanceof r)) return new r(n, i);
 		let a = this._getPropsFromConfig(i);
@@ -6898,8 +6961,8 @@ function Po(e, t = No) {
 			protocol: a.protocol || "https",
 			basePath: Eo,
 			version: a.apiVersion || Do,
-			timeout: le("timeout", a.timeout, Oo),
-			maxNetworkRetries: le("maxNetworkRetries", a.maxNetworkRetries, 2),
+			timeout: ue("timeout", a.timeout, Oo),
+			maxNetworkRetries: ue("maxNetworkRetries", a.maxNetworkRetries, 2),
 			agent: o,
 			httpClient: a.httpClient || (o ? this._platformFunctions.createNodeHttpClient(o) : this._platformFunctions.createDefaultHttpClient()),
 			dev: !1,
@@ -6965,7 +7028,7 @@ function Po(e, t = No) {
 			return this.getApiField("maxNetworkRetries");
 		},
 		_setApiNumberField(e, t, n) {
-			let r = le(e, t, n);
+			let r = ue(e, t, n);
 			this._setApiField(e, r);
 		},
 		getMaxNetworkRetryDelay() {
@@ -6995,7 +7058,7 @@ function Po(e, t = No) {
 			return this._enableTelemetry;
 		},
 		_prepResources() {
-			for (let e in io) Object.prototype.hasOwnProperty.call(io, e) && (this[ae(e)] = new io[e](this));
+			for (let e in io) Object.prototype.hasOwnProperty.call(io, e) && (this[oe(e)] = new io[e](this));
 		},
 		_getPropsFromConfig(e) {
 			if (!e) return {};
@@ -7246,16 +7309,16 @@ var zo = /* @__PURE__ */ c(((e, t) => {
 		} catch {
 			return !1;
 		}
-	}, x = c("Date"), S = c("File"), C = c("Blob"), w = c("FileList"), te = (e) => v(e) && g(e.pipe), T = (e) => {
+	}, x = c("Date"), S = c("File"), C = c("Blob"), te = c("FileList"), ne = (e) => v(e) && g(e.pipe), w = (e) => {
 		let t;
 		return e && (typeof FormData == "function" && e instanceof FormData || g(e.append) && ((t = s(e)) === "formdata" || t === "object" && g(e.toString) && e.toString() === "[object FormData]"));
-	}, ne = c("URLSearchParams"), [re, ie, E, D] = [
+	}, re = c("URLSearchParams"), [ie, ae, T, E] = [
 		"ReadableStream",
 		"Request",
 		"Response",
 		"Headers"
-	].map(c), ae = (e) => e.trim ? e.trim() : e.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, "");
-	function oe(e, t, { allOwnKeys: n = !1 } = {}) {
+	].map(c), oe = (e) => e.trim ? e.trim() : e.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, "");
+	function se(e, t, { allOwnKeys: n = !1 } = {}) {
 		if (e == null) return;
 		let r, i;
 		if (typeof e != "object" && (e = [e]), u(e)) for (r = 0, i = e.length; r < i; r++) t.call(null, e[r], r, e);
@@ -7265,24 +7328,24 @@ var zo = /* @__PURE__ */ c(((e, t) => {
 			for (r = 0; r < a; r++) o = i[r], t.call(null, e[o], o, e);
 		}
 	}
-	function se(e, t) {
+	function ce(e, t) {
 		if (f(e)) return null;
 		t = t.toLowerCase();
 		let n = Object.keys(e), r = n.length, i;
 		for (; r-- > 0;) if (i = n[r], t === i.toLowerCase()) return i;
 		return null;
 	}
-	var ce = typeof globalThis < "u" ? globalThis : typeof self < "u" ? self : typeof window < "u" ? window : global, le = (e) => !d(e) && e !== ce;
-	function ue() {
-		let { caseless: e, skipUndefined: t } = le(this) && this || {}, n = {}, r = (r, i) => {
+	var le = typeof globalThis < "u" ? globalThis : typeof self < "u" ? self : typeof window < "u" ? window : global, ue = (e) => !d(e) && e !== le;
+	function D() {
+		let { caseless: e, skipUndefined: t } = ue(this) && this || {}, n = {}, r = (r, i) => {
 			if (i === "__proto__" || i === "constructor" || i === "prototype") return;
-			let a = e && se(n, i) || i;
-			b(n[a]) && b(r) ? n[a] = ue(n[a], r) : b(r) ? n[a] = ue({}, r) : u(r) ? n[a] = r.slice() : (!t || !d(r)) && (n[a] = r);
+			let a = e && ce(n, i) || i;
+			b(n[a]) && b(r) ? n[a] = D(n[a], r) : b(r) ? n[a] = D({}, r) : u(r) ? n[a] = r.slice() : (!t || !d(r)) && (n[a] = r);
 		};
-		for (let e = 0, t = arguments.length; e < t; e++) arguments[e] && oe(arguments[e], r);
+		for (let e = 0, t = arguments.length; e < t; e++) arguments[e] && se(arguments[e], r);
 		return n;
 	}
-	var de = (e, t, r, { allOwnKeys: i } = {}) => (oe(t, (t, i) => {
+	var de = (e, t, r, { allOwnKeys: i } = {}) => (se(t, (t, i) => {
 		r && g(t) ? Object.defineProperty(e, i, {
 			value: n(t, r),
 			writable: !0,
@@ -7335,7 +7398,7 @@ var zo = /* @__PURE__ */ c(((e, t) => {
 		return t.toUpperCase() + n;
 	}), xe = (({ hasOwnProperty: e }) => (t, n) => e.call(t, n))(Object.prototype), k = c("RegExp"), A = (e, t) => {
 		let n = Object.getOwnPropertyDescriptors(e), r = {};
-		oe(n, (n, i) => {
+		se(n, (n, i) => {
 			let a;
 			(a = t(n, i, e)) !== !1 && (r[i] = a || n);
 		}), Object.defineProperties(e, r);
@@ -7376,7 +7439,7 @@ var zo = /* @__PURE__ */ c(((e, t) => {
 				if (!("toJSON" in e)) {
 					t[r] = e;
 					let i = u(e) ? [] : {};
-					return oe(e, (e, t) => {
+					return se(e, (e, t) => {
 						let a = n(e, r + 1);
 						!d(a) && (i[t] = a);
 					}), t[r] = void 0, i;
@@ -7385,15 +7448,15 @@ var zo = /* @__PURE__ */ c(((e, t) => {
 			return e;
 		};
 		return n(e, 0);
-	}, Ee = c("AsyncFunction"), De = (e) => e && (v(e) || g(e)) && g(e.then) && g(e.catch), Oe = ((e, t) => e ? setImmediate : t ? ((e, t) => (ce.addEventListener("message", ({ source: n, data: r }) => {
-		n === ce && r === e && t.length && t.shift()();
+	}, Ee = c("AsyncFunction"), De = (e) => e && (v(e) || g(e)) && g(e.then) && g(e.catch), Oe = ((e, t) => e ? setImmediate : t ? ((e, t) => (le.addEventListener("message", ({ source: n, data: r }) => {
+		n === le && r === e && t.length && t.shift()();
 	}, !1), (n) => {
-		t.push(n), ce.postMessage(e, "*");
-	}))(`axios@${Math.random()}`, []) : (e) => setTimeout(e))(typeof setImmediate == "function", g(ce.postMessage)), N = {
+		t.push(n), le.postMessage(e, "*");
+	}))(`axios@${Math.random()}`, []) : (e) => setTimeout(e))(typeof setImmediate == "function", g(le.postMessage)), N = {
 		isArray: u,
 		isArrayBuffer: p,
 		isBuffer: f,
-		isFormData: T,
+		isFormData: w,
 		isArrayBufferView: m,
 		isString: h,
 		isNumber: _,
@@ -7401,24 +7464,24 @@ var zo = /* @__PURE__ */ c(((e, t) => {
 		isObject: v,
 		isPlainObject: b,
 		isEmptyObject: ee,
-		isReadableStream: re,
-		isRequest: ie,
-		isResponse: E,
-		isHeaders: D,
+		isReadableStream: ie,
+		isRequest: ae,
+		isResponse: T,
+		isHeaders: E,
 		isUndefined: d,
 		isDate: x,
 		isFile: S,
 		isBlob: C,
 		isRegExp: k,
 		isFunction: g,
-		isStream: te,
-		isURLSearchParams: ne,
+		isStream: ne,
+		isURLSearchParams: re,
 		isTypedArray: O,
-		isFileList: w,
-		forEach: oe,
-		merge: ue,
+		isFileList: te,
+		forEach: se,
+		merge: D,
 		extend: de,
-		trim: ae,
+		trim: oe,
 		stripBOM: fe,
 		inherits: pe,
 		toFlatObject: me,
@@ -7437,15 +7500,15 @@ var zo = /* @__PURE__ */ c(((e, t) => {
 		toCamelCase: be,
 		noop: we,
 		toFiniteNumber: Te,
-		findKey: se,
-		global: ce,
-		isContextDefined: le,
+		findKey: ce,
+		global: le,
+		isContextDefined: ue,
 		isSpecCompliantForm: j,
 		toJSONObject: M,
 		isAsyncFn: Ee,
 		isThenable: De,
 		setImmediate: Oe,
-		asap: typeof queueMicrotask < "u" ? queueMicrotask.bind(ce) : typeof process < "u" && process.nextTick || Oe,
+		asap: typeof queueMicrotask < "u" ? queueMicrotask.bind(le) : typeof process < "u" && process.nextTick || Oe,
 		isIterable: (e) => e != null && g(e[a])
 	}, P = class e extends Error {
 		static from(t, n, r, i, a, o) {
@@ -8266,16 +8329,16 @@ var zo = /* @__PURE__ */ c(((e, t) => {
 			_ = _ ? (_ + "").toLowerCase() : "text";
 			let x = Tt([c, f && f.toAbortSignal()], m), S = null, C = x && x.unsubscribe && (() => {
 				x.unsubscribe();
-			}), w;
+			}), te;
 			try {
-				if (g && l && o !== "get" && o !== "head" && (w = await p(v, s)) !== 0) {
+				if (g && l && o !== "get" && o !== "head" && (te = await p(v, s)) !== 0) {
 					let e = new n(i, {
 						method: "POST",
 						body: s,
 						duplex: "half"
 					}), t;
 					if (N.isFormData(s) && (t = e.headers.get("content-type")) && v.setContentType(t), e.body) {
-						let [t, n] = mt(w, pt(ht(g)));
+						let [t, n] = mt(te, pt(ht(g)));
 						s = kt(e.body, At, t, n);
 					}
 				}
@@ -8306,10 +8369,10 @@ var zo = /* @__PURE__ */ c(((e, t) => {
 					}), e);
 				}
 				_ ||= "text";
-				let te = await d[N.findKey(d, _) || "text"](f, e);
+				let ne = await d[N.findKey(d, _) || "text"](f, e);
 				return !m && C && C(), await new Promise((t, n) => {
 					lt(t, n, {
-						data: te,
+						data: ne,
 						headers: W.from(f.headers),
 						status: f.status,
 						statusText: f.statusText,
@@ -18102,10 +18165,75 @@ var is = /* @__PURE__ */ d((/* @__PURE__ */ c(((e, t) => {
 			rawResponse: { message: "Verification not implemented in compatibility strategy" }
 		};
 	}
-}, ds = new m.PrismaClient();
-async function fs(e) {
+}, ds = new Wo.PlaidApi(new Wo.Configuration({
+	basePath: Wo.PlaidEnvironments[process.env.PLAID_ENV || "sandbox"],
+	baseOptions: { headers: {
+		"PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID,
+		"PLAID-SECRET": process.env.PLAID_SECRET
+	} }
+})), fs = class {
+	async createBusinessLinkToken(e, t) {
+		let n = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "", r = n ? `${n}/api/webhooks/plaid` : void 0;
+		return (await ds.linkTokenCreate({
+			user: { client_user_id: t },
+			client_name: "RentFlow360 Business",
+			products: [Wo.Products.Transactions],
+			country_codes: [Wo.CountryCode.Us],
+			language: "en",
+			webhook: r
+		})).data.link_token;
+	}
+	async exchangeAndSaveAccount(e, n) {
+		let r = await ds.itemPublicTokenExchange({ public_token: e }), i = r.data.access_token, a = r.data.item_id, o = (await ds.accountsGet({ access_token: i })).data.accounts[0];
+		if (!o) throw Error("No accounts returned by Plaid for this item");
+		return t.connectedBankAccount.create({ data: {
+			organizationId: n,
+			plaidAccessToken: i,
+			plaidItemId: a,
+			institutionName: "Verified Institution",
+			accountName: o.name,
+			accountType: o.type,
+			accountSubtype: o.subtype || "checking",
+			mask: o.mask || "0000"
+		} });
+	}
+	async syncTransactions(e, n) {
+		let r = /* @__PURE__ */ new Date(), i = new Date(r);
+		i.setDate(r.getDate() - 30);
+		let a = i.toISOString().slice(0, 10), o = r.toISOString().slice(0, 10), s = 0, c = 0, l = 0;
+		do {
+			let r = await ds.transactionsGet({
+				access_token: n,
+				start_date: a,
+				end_date: o,
+				options: {
+					count: 100,
+					offset: s
+				}
+			}), i = r.data.transactions;
+			c = r.data.total_transactions;
+			for (let n of i) await t.bankTransaction.upsert({
+				where: { plaidTransactionId: n.transaction_id },
+				update: { status: "UNMATCHED" },
+				create: {
+					organizationId: e,
+					plaidTransactionId: n.transaction_id,
+					accountId: n.account_id,
+					amount: new m.Prisma.Decimal(n.amount),
+					date: new Date(n.date),
+					merchantName: n.merchant_name || n.name,
+					description: n.name,
+					status: "UNMATCHED"
+				}
+			}), l += 1;
+			s += i.length;
+		} while (s < c);
+		return l;
+	}
+}, ps = new m.PrismaClient();
+async function ms(e) {
 	let t = new Io(), { webhookEventId: n, stripeEventId: r } = e.data, i = e.name;
-	console.log(`[Stripe Worker] Starting job ${e.id} (attempt ${e.attemptsMade + 1}) for ${i}`), await ds.webhookEvent.update({
+	console.log(`[Stripe Worker] Starting job ${e.id} (attempt ${e.attemptsMade + 1}) for ${i}`), await ps.webhookEvent.update({
 		where: { id: n },
 		data: {
 			status: "PROCESSING",
@@ -18113,16 +18241,16 @@ async function fs(e) {
 		}
 	});
 	try {
-		let a = await ds.webhookEvent.findUnique({ where: { id: n } });
+		let a = await ps.webhookEvent.findUnique({ where: { id: n } });
 		if (!a) throw Error(`Webhook event ${n} not found`);
 		let o = a.payload;
-		i && o.type !== i && console.warn(`[Stripe Worker] Event type mismatch for ${n}: job=${i}, payload=${o.type}`), await t.processEvent(o), await ds.webhookEvent.update({
+		i && o.type !== i && console.warn(`[Stripe Worker] Event type mismatch for ${n}: job=${i}, payload=${o.type}`), await t.processEvent(o), await ps.webhookEvent.update({
 			where: { id: n },
 			data: { status: "PROCESSED" }
 		}), console.log(`[Stripe Worker] Completed job ${e.id} for ${i} (${r ?? "no-stripe-id"})`);
 	} catch (t) {
 		let r = t instanceof Error ? t.message : "Unknown error";
-		throw console.error(`[Stripe Worker] Failed job ${e.id} for ${i}: ${r}`, t), await ds.webhookEvent.update({
+		throw console.error(`[Stripe Worker] Failed job ${e.id} for ${i}: ${r}`, t), await ps.webhookEvent.update({
 			where: { id: n },
 			data: {
 				status: "FAILED",
@@ -18132,5 +18260,5 @@ async function fs(e) {
 	}
 }
 //#endregion
-var ps = m.PaymentGateway, ms = m.TransactionStatus;
-export { Qo as DEFAULT_RETRY_CONFIG, $ as EncryptionPurpose, ts as FraudDetectionService, us as KenyaPaymentStrategy, us as MpesaPaymentStrategy, os as PaymentEncryptionError, ss as PaymentEncryptionUtils, Zo as PaymentError, $o as PaymentErrorHandler, Q as PaymentErrorType, Xo as PaymentFactory, ps as PaymentGateway, Ro as Payments, Io as SubscriptionService, ms as TransactionStatus, Yo as UsaPaymentStrategy, g as UsageService, Jo as checkBalance, rs as checkForFraud, qo as createStripeBankAccountToken, ns as fraudDetectionService, ls as paymentEncryption, cs as paymentEncryptionUtils, es as paymentErrorHandler, Ko as plaidClient, fs as processStripeWebhookJob };
+var hs = m.PaymentGateway, gs = m.TransactionStatus;
+export { Qo as DEFAULT_RETRY_CONFIG, $ as EncryptionPurpose, ts as FraudDetectionService, us as KenyaPaymentStrategy, us as MpesaPaymentStrategy, os as PaymentEncryptionError, ss as PaymentEncryptionUtils, Zo as PaymentError, $o as PaymentErrorHandler, Q as PaymentErrorType, Xo as PaymentFactory, hs as PaymentGateway, Ro as Payments, fs as PlaidB2BService, Io as SubscriptionService, gs as TransactionStatus, Yo as UsaPaymentStrategy, g as UsageService, Jo as checkBalance, rs as checkForFraud, qo as createStripeBankAccountToken, ns as fraudDetectionService, ls as paymentEncryption, cs as paymentEncryptionUtils, es as paymentErrorHandler, Ko as plaidClient, ms as processStripeWebhookJob };
