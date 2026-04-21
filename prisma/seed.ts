@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { AccountType, PrismaClient, SidebarItemRole } from '@prisma/client';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
@@ -139,6 +139,300 @@ async function seedTestimonialsIfMissing() {
     console.log('✅ Default testimonials seeded.');
 }
 
+async function seedCmsBaselineIfMissing() {
+  console.log('🌱 Seeding CMS baseline content...');
+
+  const aboutSections = [
+    {
+      section: 'mission',
+      description:
+        'RentFlow360 helps property managers and landlords automate operations, tenant workflows, and finance reporting.',
+    },
+    {
+      section: 'vision',
+      description:
+        'Build trusted, data-driven rental ecosystems that scale across regions without losing compliance and control.',
+    },
+  ];
+
+  for (const section of aboutSections) {
+    const existing = await prisma.aboutUs.findFirst({ where: { section: section.section } });
+    if (!existing) {
+      await prisma.aboutUs.create({ data: section });
+    }
+  }
+
+  const heroPages = [
+    {
+      page: 'home',
+      title: 'Property Operations, Unified',
+      subtitle: 'Run listings, leases, finance, and payments in one platform.',
+      description: 'Scale property management with real-time visibility and workflow automation.',
+      buttonText: 'Get Started',
+      buttonUrl: '/auth/register',
+      gradient: 'from-emerald-600 to-sky-600',
+      layout: 'split',
+      searchBar: true,
+    },
+    {
+      page: 'pricing',
+      title: 'Plans That Grow With Your Portfolio',
+      subtitle: 'Start lean, expand fast.',
+      description: 'Choose the plan that matches your current property volume and team needs.',
+      buttonText: 'View Plans',
+      buttonUrl: '/plans',
+      gradient: 'from-amber-500 to-orange-600',
+      layout: 'centered',
+      searchBar: false,
+    },
+  ];
+
+  for (const hero of heroPages) {
+    const existing = await prisma.heroSection.findFirst({ where: { page: hero.page } });
+    if (existing) {
+      await prisma.heroSection.update({
+        where: { id: existing.id },
+        data: {
+          title: hero.title,
+          subtitle: hero.subtitle,
+          description: hero.description,
+          buttonText: hero.buttonText,
+          buttonUrl: hero.buttonUrl,
+          gradient: hero.gradient,
+          layout: hero.layout,
+          searchBar: hero.searchBar,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      await prisma.heroSection.create({
+        data: {
+          ...hero,
+          updatedAt: new Date(),
+        },
+      });
+    }
+  }
+
+  const ctaPages = [
+    {
+      page: 'home',
+      title: 'Ready to simplify your rental operations?',
+      subtitle: 'Onboard your first property and activate your workflow in minutes.',
+      buttonText: 'Create Account',
+      buttonUrl: '/auth/register',
+      gradient: 'from-slate-900 to-slate-700',
+    },
+    {
+      page: 'dashboard',
+      title: 'Need help optimizing your setup?',
+      subtitle: 'Use guided onboarding checklists and recommended next actions.',
+      buttonText: 'Open Setup Guide',
+      buttonUrl: '/property-manager',
+      gradient: 'from-sky-600 to-indigo-600',
+    },
+  ];
+
+  for (const cta of ctaPages) {
+    const existing = await prisma.cTA.findFirst({ where: { page: cta.page } });
+    if (existing) {
+      await prisma.cTA.update({
+        where: { id: existing.id },
+        data: {
+          title: cta.title,
+          subtitle: cta.subtitle,
+          buttonText: cta.buttonText,
+          buttonUrl: cta.buttonUrl,
+          gradient: cta.gradient,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      await prisma.cTA.create({
+        data: {
+          ...cta,
+          updatedAt: new Date(),
+        },
+      });
+    }
+  }
+
+  const existingPolicy = await prisma.policy.findFirst({
+    where: {
+      title: 'Privacy Policy',
+      companyName: 'RentFlow360',
+    },
+  });
+
+  const policy = existingPolicy
+    ? await prisma.policy.update({
+        where: { id: existingPolicy.id },
+        data: {
+          contactEmail: 'support@rentflow360.com',
+          privacyEmail: 'privacy@rentflow360.com',
+          website: 'https://rentflow360.com',
+          responseTime: '72 hours',
+          inactiveAccountThreshold: '24 months',
+          updatedAt: new Date(),
+        },
+      })
+    : await prisma.policy.create({
+        data: {
+          title: 'Privacy Policy',
+          companyName: 'RentFlow360',
+          contactEmail: 'support@rentflow360.com',
+          privacyEmail: 'privacy@rentflow360.com',
+          website: 'https://rentflow360.com',
+          mailingAddress: 'Nairobi, Kenya',
+          responseTime: '72 hours',
+          inactiveAccountThreshold: '24 months',
+          updatedAt: new Date(),
+        },
+      });
+
+  const policySections = [
+    {
+      key: 'introduction',
+      title: 'Introduction',
+      intro: 'Overview of what data we collect and why.',
+      content: { summary: 'We process account and tenancy data to provide rental management services.' },
+      order: 1,
+    },
+    {
+      key: 'data-usage',
+      title: 'How Data Is Used',
+      intro: 'How RentFlow360 uses data across platform modules.',
+      content: { summary: 'Data supports leasing, payments, reporting, maintenance, and compliance.' },
+      order: 2,
+    },
+    {
+      key: 'rights',
+      title: 'User Rights',
+      intro: 'Your controls over personal data.',
+      content: { summary: 'Users may request data access, correction, and deletion where applicable.' },
+      order: 3,
+    },
+  ];
+
+  for (const section of policySections) {
+    const existing = await prisma.section.findFirst({
+      where: {
+        policyId: policy.id,
+        key: section.key,
+      },
+    });
+
+    if (existing) {
+      await prisma.section.update({
+        where: { id: existing.id },
+        data: {
+          title: section.title,
+          intro: section.intro,
+          content: section.content,
+          order: section.order,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      await prisma.section.create({
+        data: {
+          policyId: policy.id,
+          key: section.key,
+          title: section.title,
+          intro: section.intro,
+          content: section.content,
+          order: section.order,
+          updatedAt: new Date(),
+        },
+      });
+    }
+  }
+
+  const sidebarDefaults = [
+    {
+      label: 'Dashboard',
+      path: '/dashboard',
+      section: 'General',
+      order: 10,
+      icon: 'LayoutDashboard',
+      role: SidebarItemRole.ALL,
+    },
+    {
+      label: 'Properties',
+      path: '/property-manager/view-own-property',
+      section: 'Management',
+      order: 20,
+      icon: 'Building2',
+      role: SidebarItemRole.PROPERTY_MANAGER,
+    },
+    {
+      label: 'Leases',
+      path: '/property-manager/lease',
+      section: 'Management',
+      order: 30,
+      icon: 'FileSignature',
+      role: SidebarItemRole.PROPERTY_MANAGER,
+    },
+    {
+      label: 'Invoices',
+      path: '/tenant/invoices',
+      section: 'Finance',
+      order: 40,
+      icon: 'Receipt',
+      role: SidebarItemRole.TENANT,
+    },
+    {
+      label: 'Maintenance',
+      path: '/tenant/maintenance',
+      section: 'Support',
+      order: 50,
+      icon: 'Wrench',
+      role: SidebarItemRole.TENANT,
+    },
+    {
+      label: 'Admin Console',
+      path: '/admin',
+      section: 'Administration',
+      order: 60,
+      icon: 'ShieldCheck',
+      role: SidebarItemRole.SYSTEM_ADMIN,
+    },
+  ];
+
+  for (const item of sidebarDefaults) {
+    const existing = await prisma.sidebarItem.findFirst({
+      where: {
+        role: item.role,
+        path: item.path,
+      },
+    });
+
+    if (existing) {
+      await prisma.sidebarItem.update({
+        where: { id: existing.id },
+        data: {
+          label: item.label,
+          section: item.section,
+          order: item.order,
+          icon: item.icon,
+          isActive: true,
+          isExternal: false,
+        },
+      });
+    } else {
+      await prisma.sidebarItem.create({
+        data: {
+          ...item,
+          isActive: true,
+          isExternal: false,
+        },
+      });
+    }
+  }
+
+  console.log('✅ CMS baseline content seeded.');
+}
+
 async function seedMarketplaceCategories() {
   console.log('🌱 Seeding marketplace categories...');
 
@@ -155,6 +449,210 @@ async function seedMarketplaceCategories() {
   console.log('✅ Marketplace categories seeded.');
 }
 
+async function seedListingStatuses() {
+  console.log('🌱 Seeding listing statuses...');
+
+  const statuses = [
+    { name: 'PRIVATE', description: 'Unit exists but not listed' },
+    { name: 'ACTIVE', description: 'Listed and visible in marketplace' },
+    { name: 'SUSPENDED', description: 'Temporarily hidden from marketplace' },
+    { name: 'PENDING', description: 'Listing created but not yet active' },
+    { name: 'EXPIRED', description: 'Listing has expired' },
+    { name: 'MAINTENANCE', description: 'Temporarily removed for maintenance' },
+    { name: 'COMING_SOON', description: 'Listed but not yet available' },
+  ];
+
+  for (const status of statuses) {
+    await prisma.listingStatus.upsert({
+      where: { name: status.name },
+      update: { description: status.description },
+      create: status,
+    });
+  }
+
+  console.log('✅ Listing statuses seeded.');
+}
+
+async function seedActionTypes() {
+  console.log('🌱 Seeding admin action types...');
+
+  const actionTypes = [
+    { name: 'LIST', description: 'Listing created or activated' },
+    { name: 'UNLIST', description: 'Listing removed from marketplace' },
+    { name: 'SUSPEND', description: 'Listing temporarily suspended' },
+    { name: 'ACTIVATE', description: 'Listing re-activated by admin' },
+    { name: 'MAINTENANCE_START', description: 'Listing marked as in maintenance' },
+    { name: 'MAINTENANCE_END', description: 'Listing maintenance completed' },
+  ];
+
+  for (const item of actionTypes) {
+    await prisma.actionType.upsert({
+      where: { name: item.name },
+      update: { description: item.description },
+      create: item,
+    });
+  }
+
+  console.log('✅ Admin action types seeded.');
+}
+
+async function seedServiceCatalog() {
+  console.log('🌱 Seeding service catalog...');
+
+  const categories = [
+    { name: 'Maintenance', tagline: 'Property repairs and maintenance', color: '#1F6FEB' },
+    { name: 'Operations', tagline: 'Operational support services', color: '#0E9F6E' },
+    { name: 'Legal', tagline: 'Compliance and legal services', color: '#D97706' },
+  ];
+
+  for (const category of categories) {
+    const existing = await prisma.serviceCategory.findFirst({
+      where: { name: category.name },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      await prisma.serviceCategory.create({ data: category });
+    }
+  }
+
+  const serviceTypes = [
+    { name: 'PROPERTY', description: 'Property related marketplace services' },
+    { name: 'VEHICLE', description: 'Vehicle listing and related services' },
+    { name: 'SERVICE', description: 'General service marketplace entries' },
+  ];
+
+  for (const serviceType of serviceTypes) {
+    await prisma.serviceType.upsert({
+      where: { name: serviceType.name },
+      update: { description: serviceType.description },
+      create: serviceType,
+    });
+  }
+
+  console.log('✅ Service catalog seeded.');
+}
+
+async function seedPlansIfMissing() {
+  console.log('🌱 Seeding subscription plans...');
+
+  const plans = [
+    {
+      name: 'BASIC',
+      badge: 'Starter',
+      monthlyPrice: 0,
+      yearlyPrice: 0,
+      description: 'For individual landlords getting started',
+      gradient: 'from-slate-500 to-slate-700',
+      trialDays: 0,
+      signingFee: 0,
+    },
+    {
+      name: 'BUSINESS',
+      badge: 'Popular',
+      monthlyPrice: 49,
+      yearlyPrice: 490,
+      description: 'For growing property management teams',
+      gradient: 'from-emerald-500 to-teal-600',
+      trialDays: 14,
+      signingFee: 9.99,
+    },
+    {
+      name: 'ENTERPRISE',
+      badge: 'Scale',
+      monthlyPrice: 149,
+      yearlyPrice: 1490,
+      description: 'For enterprise portfolios and advanced automation',
+      gradient: 'from-amber-500 to-orange-600',
+      trialDays: 30,
+      signingFee: 9.99,
+    },
+  ];
+
+  for (const plan of plans) {
+    const existing = await prisma.plan.findFirst({ where: { name: plan.name } });
+
+    if (existing) {
+      await prisma.plan.update({
+        where: { id: existing.id },
+        data: {
+          badge: plan.badge,
+          monthlyPrice: plan.monthlyPrice,
+          yearlyPrice: plan.yearlyPrice,
+          description: plan.description,
+          gradient: plan.gradient,
+          trialDays: plan.trialDays,
+          signingFee: plan.signingFee,
+        },
+      });
+    } else {
+      await prisma.plan.create({ data: plan });
+    }
+  }
+
+  console.log('✅ Subscription plans seeded.');
+}
+
+async function seedChartOfAccounts() {
+  console.log('🌱 Seeding chart of accounts per organization...');
+
+  const standardCoa = [
+    { code: '1000', name: 'Cash - Operating Account', type: AccountType.ASSET },
+    { code: '1100', name: 'Accounts Receivable', type: AccountType.ASSET },
+    { code: '1200', name: 'Security Deposit Bank Account', type: AccountType.ASSET },
+    { code: '2100', name: 'Tenant Security Deposits Liability', type: AccountType.LIABILITY },
+    { code: '2200', name: 'Accounts Payable', type: AccountType.LIABILITY },
+    { code: '2300', name: 'Prepaid Rent (Unearned Income)', type: AccountType.LIABILITY },
+    { code: '3000', name: "Owner's Capital", type: AccountType.EQUITY },
+    { code: '4000', name: 'Rental Income', type: AccountType.INCOME },
+    { code: '4100', name: 'Utility Reimbursement', type: AccountType.INCOME },
+    { code: '4200', name: 'Late Fee Income', type: AccountType.INCOME },
+    { code: '4300', name: 'Maintenance Reimbursement', type: AccountType.INCOME },
+    { code: '5100', name: 'Maintenance Expense', type: AccountType.EXPENSE },
+    { code: '5200', name: 'Utilities Expense', type: AccountType.EXPENSE },
+    { code: '5300', name: 'Property Management Fees', type: AccountType.EXPENSE },
+  ];
+
+  const orgs = await prisma.organization.findMany({
+    include: { financialEntities: true },
+  });
+
+  for (const org of orgs) {
+    let entityId = org.financialEntities[0]?.id;
+
+    if (!entityId) {
+      const createdEntity = await prisma.financialEntity.create({
+        data: {
+          name: org.name,
+          organizationId: org.id,
+        },
+      });
+      entityId = createdEntity.id;
+    }
+
+    for (const account of standardCoa) {
+      await prisma.account.upsert({
+        where: {
+          entityId_code: {
+            entityId,
+            code: account.code,
+          },
+        },
+        update: {},
+        create: {
+          entityId,
+          code: account.code,
+          name: account.name,
+          type: account.type,
+          isSystem: true,
+        },
+      });
+    }
+  }
+
+  console.log('✅ Chart of accounts seeded.');
+}
+
 // Feature Keys for Usage Tracking
 const FEATURE_KEYS = {
   PROPERTY_CREATE: 'property.create',
@@ -166,7 +664,7 @@ const FEATURE_KEYS = {
 
 // Plan-specific limits (0 = unlimited)
 const PLAN_LIMITS: Record<string, Record<string, number>> = {
-  FREE: {
+  BASIC: {
     'property.create': 3,
     'unit.create': 10,
     'dss.documents.monthly': 5,
@@ -254,7 +752,7 @@ async function seedStripePriceIds() {
   }
 
   const stripe = new Stripe(stripeSecretKey, {
-    apiVersion: '2026-01-28.clover',
+    apiVersion: '2026-02-25.clover',
   });
 
   const plansToSeed = [
@@ -292,6 +790,10 @@ async function main() {
     // Run this seed when setting up a new database or environment.
     // Uses upsert to prevent duplicates - safe to run multiple times.
   await seedMarketplaceCategories();
+  await seedListingStatuses();
+  await seedActionTypes();
+  await seedServiceCatalog();
+  await seedPlansIfMissing();
 
     const propertyTypes = [
         { id: "1", name: "House", description: "Single family home" },
@@ -413,6 +915,7 @@ async function main() {
                     skipDuplicates: true
                 });
             } catch (err: any) {
+              console.warn(`⚠️ Skipped ${clientKey} createMany due to error:`, err?.message || err);
             }
         }
         }
@@ -423,12 +926,19 @@ async function main() {
         // Ensure the marketing testimonials section has content
         await seedTestimonialsIfMissing();
 
+        // Ensure CMS baseline content exists for marketing and dashboard modules
+        await seedCmsBaselineIfMissing();
+
         // Seed Features and FeatureLimits for B2B Monetization
         await seedMonetizationFeatures();
+
+        // Seed financial chart of accounts for existing organizations
+        await seedChartOfAccounts();
 
         // Seed Stripe Price IDs for Plans
         await seedStripePriceIds();
     } catch (e) {
+      console.error('❌ Seed execution failed:', e);
     } finally {
         if (hasBackupDir) {
             await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS=1;');

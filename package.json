@@ -60,6 +60,7 @@
     "uat:setup:db": "npx tsx scripts/test-db.ts",
     "uat:setup:coa": "npx tsx scripts/seed-coa.ts",
     "uat:setup:utility": "npx tsx scripts/seed-utility.ts",
+    "uat:smoke:post-seed": "npx tsx scripts/smoke-post-seed.ts",
     "uat:setup:e2e-seed": "dotenv -e .env.test -- tsx scripts/seed-e2e.ts",
     "uat:dss:seed-notarize": "dotenv -e .env.test -- tsx scripts/seed-dss-test.ts",
     "uat:dss:notarize": "powershell -ExecutionPolicy Bypass -File scripts/test-notarize.ps1",
