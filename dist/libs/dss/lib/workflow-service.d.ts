@@ -24,7 +24,6 @@ export declare class WorkflowService {
         fileSizeBytes: number | null;
         originalPdfSha256Hex: string;
         finalPdfSha256Hex: string | null;
-        finalFileUrl: string | null;
         signingMode: import("@prisma/client").$Enums.DssSigningMode;
         currentStep: number;
         sentAt: Date | null;
