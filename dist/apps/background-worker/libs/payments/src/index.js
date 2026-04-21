@@ -27,6 +27,7 @@ __reExport(src_exports, require("./lib/strategies/kenya"), module.exports);
 __reExport(src_exports, require("./lib/strategies/mpesa"), module.exports);
 __reExport(src_exports, require("./lib/strategies/usa"), module.exports);
 __reExport(src_exports, require("./lib/services/plaid-service"), module.exports);
+__reExport(src_exports, require("./lib/plaid-b2b-service"), module.exports);
 __reExport(src_exports, require("./lib/stripe-webhook-processor"), module.exports);
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
@@ -43,6 +44,6 @@ __reExport(src_exports, require("./lib/stripe-webhook-processor"), module.export
   ...require("./lib/strategies/mpesa"),
   ...require("./lib/strategies/usa"),
   ...require("./lib/services/plaid-service"),
+  ...require("./lib/plaid-b2b-service"),
   ...require("./lib/stripe-webhook-processor")
 });
-//# sourceMappingURL=index.js.map

@@ -29,4 +29,3 @@ describe("Payments", () => {
     expect(baseElement).toBeTruthy();
   });
 });
-//# sourceMappingURL=payments.spec.js.map
