@@ -1,14 +1,59 @@
-export * from './lib/lease-automation';
-export * from './lib/lease-listing-integration';
-export * from './lib/lease-notification-service';
-export * from './lib/amendment-utils';
-export * from './lib/amendment-service';
-export * from './lib/renewal-escalation-service';
-export * from './lib/workflow-service';
-export * from './lib/lease-details-service';
-export * from './lib/management-service';
-export * from './lib/status-changes-service';
-export * from './lib/pending-service';
-export * from './lib/document-service';
-export * from './lib/status-service';
-export * from './lib/signing-service';
+export type SplitMethod = 'RUBS_OCCUPANCY' | 'SQUARE_FOOTAGE' | 'EQUAL' | 'DIRECT_METER';
+/**
+ * This interface perfectly matches the JSON payload that the future
+ * Python FastAPI Sidecar will send via webhook, AND the payload the
+ * manual Next.js UI will generate.
+ */
+export interface UtilityAllocationPayload {
+    utilityBillId: string;
+    propertyId: string;
+    fileUrl?: string;
+    splitMethod: SplitMethod;
+    billingPeriodStart: Date;
+    billingPeriodEnd: Date;
+    aiConfidenceScore?: number;
+    anomalyFlag?: boolean;
+    allocations: {
+        unitId: string;
+        tenantId: string;
+        amount: number;
+        percentage: number;
+        explanation: string;
+    }[];
+}
+export interface IUtilityService {
+    /**
+     * Saves the allocation as a DRAFT for Property Manager review
+     */
+    stageAllocation(payload: UtilityAllocationPayload): Promise<{
+        billId: string;
+        status: string;
+    }>;
+    /**
+     * Approves the draft, generates Tenant Invoices via the Finance module,
+     * and posts to the General Ledger.
+     */
+    approveAllocation(utilityBillId: string, managerId: string): Promise<{
+        billId: string;
+        status: string;
+        invoicesGenerated: number;
+    }>;
+}
+export { UtilityService } from './lib/utility-service';
+export * from './lib/utility-ai-job-store';
+export * from './lib/utility-allocation-service';
+export * from './lib/utility-bill-service';
+export * from './lib/utility-posting-service';
+export * from './lib/utility-reading-service';
+export * from './lib/utility-types';
+export * from './lib/utility-validators';
+export * from './lib/notifications/notification-service';
+export * from './lib/notifications/sms-factory';
+export type { IFinanceModule } from '@rentflow/finance';
+export * from './lib/utilities';
+export * from './lib/queue';
+export * from './lib/dss-queue';
+export * from './lib/mail';
+export * from './lib/webhook-processors';
+export * from './lib/notification-service';
+export * from './lib/outbound-webhook';
