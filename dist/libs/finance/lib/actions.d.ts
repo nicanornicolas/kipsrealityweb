@@ -16,6 +16,7 @@ export declare class FinanceActions {
      */
     billOrganizationForService(params: {
         organizationId: string;
+        leaseId?: string;
         amount: number;
         description: string;
         referenceType: string;
@@ -25,5 +26,13 @@ export declare class FinanceActions {
         invoiceId: string;
         journalEntryId: string;
     }>;
+    /**
+     * Recognizes a Vendor Expense (Liability) to GL.
+     * Dr. 5100 Maintenance Expense (or 5200 for Utility)
+     * Cr. 2200 Accounts Payable
+     *
+     * USA Compliance: This posts the expense amount, tracking YTD spend for 1099-MISC eligibility.
+     */
+    postExpenseToGL(vendorInvoiceId: string): Promise<void>;
 }
 export declare const financeActions: FinanceActions;

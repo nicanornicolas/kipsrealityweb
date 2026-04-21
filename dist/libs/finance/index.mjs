@@ -2977,8 +2977,25 @@ C(ce()), B(class extends Error {
 	}
 }, "PrismaClientConstructorValidationError"), Ke("prisma:client"), typeof globalThis == "object" && (globalThis.NODE_CLIENT = !0);
 //#endregion
-//#region src/lib/journal-service.ts
-var La = class {
+//#region src/lib/types.ts
+var Q = {
+	CASH_IN_BANK: "1000",
+	ACCOUNTS_RECEIVABLE: "1100",
+	UNDEPOSITED_FUNDS: "1200",
+	SECURITY_DEPOSITS_LIABILITY: "2100",
+	ACCOUNTS_PAYABLE: "2200",
+	SALES_TAX_PAYABLE: "2250",
+	PREPAID_RENT: "2300",
+	OWNER_EQUITY: "3000",
+	RENTAL_INCOME: "4000",
+	UTILITY_RECOVERY_INCOME: "4100",
+	LATE_FEES_INCOME: "4200",
+	MAINTENANCE_INCOME: "4300",
+	DOCUMENT_SIGNING_INCOME: "4400",
+	MAINTENANCE_EXPENSE: "5100",
+	UTILITY_EXPENSE: "5200",
+	MANAGEMENT_FEES: "5300"
+}, La = class {
 	prisma;
 	constructor(e) {
 		this.prisma = e;
@@ -3023,6 +3040,199 @@ var La = class {
 			lines: { create: d }
 		} }))).id };
 	}
+	async getFinanceSummary(e, t) {
+		let n = [
+			Q.CASH_IN_BANK,
+			Q.ACCOUNTS_RECEIVABLE,
+			Q.SALES_TAX_PAYABLE,
+			Q.RENTAL_INCOME,
+			Q.MAINTENANCE_EXPENSE,
+			Q.UTILITY_EXPENSE,
+			Q.MANAGEMENT_FEES
+		], r = await this.prisma.financialEntity.findFirst({
+			where: { organizationId: e },
+			include: { accounts: {
+				where: { code: { in: n } },
+				select: {
+					id: !0,
+					code: !0
+				}
+			} }
+		});
+		if (!r) return {
+			cashInBank: new Y(0),
+			accountsReceivable: new Y(0),
+			salesTaxLiability: new Y(0),
+			totalRevenue: new Y(0),
+			operatingExpenses: new Y(0),
+			overdueAmount: new Y(0)
+		};
+		let i = /* @__PURE__ */ new Map();
+		for (let e of r.accounts) i.set(e.code, e.id);
+		let a = r.accounts.map((e) => e.id), o = a.length > 0 ? await this.prisma.journalLine.groupBy({
+			by: ["accountId"],
+			where: {
+				accountId: { in: a },
+				...t ? { propertyId: t } : {},
+				journalEntry: {
+					entityId: r.id,
+					isLocked: !0
+				}
+			},
+			_sum: {
+				debit: !0,
+				credit: !0
+			}
+		}) : [], s = /* @__PURE__ */ new Map();
+		for (let e of o) {
+			let t = new Y(e._sum.debit ?? 0), n = new Y(e._sum.credit ?? 0);
+			s.set(e.accountId, t.minus(n));
+		}
+		let c = (e) => {
+			let t = i.get(e);
+			if (!t) return new Y(0);
+			let n = e.startsWith("1") || e.startsWith("5"), r = s.get(t) ?? new Y(0);
+			return n ? r : r.negated();
+		}, l = await this.prisma.invoice.aggregate({
+			where: {
+				postingStatus: "POSTED",
+				status: { not: "PAID" },
+				dueDate: { lt: /* @__PURE__ */ new Date() },
+				Lease: {
+					property: { organizationId: e },
+					...t ? { propertyId: t } : {}
+				}
+			},
+			_sum: { totalAmount: !0 }
+		}), u = [
+			Q.MAINTENANCE_EXPENSE,
+			Q.UTILITY_EXPENSE,
+			Q.MANAGEMENT_FEES
+		].reduce((e, t) => e.plus(c(t)), new Y(0));
+		return {
+			cashInBank: c(Q.CASH_IN_BANK),
+			accountsReceivable: c(Q.ACCOUNTS_RECEIVABLE),
+			salesTaxLiability: c(Q.SALES_TAX_PAYABLE),
+			totalRevenue: c(Q.RENTAL_INCOME),
+			operatingExpenses: u,
+			overdueAmount: new Y(l._sum.totalAmount ?? 0)
+		};
+	}
+	async getInvoices(e, t) {
+		let n = Math.max(1, t.page ?? 1), r = Math.min(Math.max(t.limit ?? 10, 1), 100), i = t.status === "VOID" ? "CANCELLED" : t.status, a = t.search?.trim(), o = {
+			Lease: {
+				property: { organizationId: e },
+				...t.propertyId && t.propertyId !== "all" ? { propertyId: t.propertyId } : {}
+			},
+			...i ? { status: i } : {},
+			...a ? { OR: [
+				{ id: { contains: a } },
+				{ Lease: { property: { name: { contains: a } } } },
+				{ Lease: { property: { address: { contains: a } } } },
+				{ Lease: { unit: { unitNumber: { contains: a } } } },
+				{ Lease: { tenant: { firstName: { contains: a } } } },
+				{ Lease: { tenant: { lastName: { contains: a } } } }
+			] } : {}
+		}, [s, c] = await Promise.all([this.prisma.invoice.findMany({
+			where: o,
+			include: { Lease: { include: {
+				property: !0,
+				unit: !0,
+				tenant: !0
+			} } },
+			orderBy: { dueDate: "desc" },
+			skip: (n - 1) * r,
+			take: r
+		}), this.prisma.invoice.count({ where: o })]);
+		return {
+			data: s.map((e) => {
+				let t = [e.Lease?.tenant?.firstName?.trim() ?? "", e.Lease?.tenant?.lastName?.trim() ?? ""].filter(Boolean).join(" ") || "N/A", n = e.Lease?.property?.name?.trim() || e.Lease?.property?.address?.trim() || "N/A", r = e.Lease?.unit?.unitNumber?.trim() || "N/A";
+				return {
+					id: e.id,
+					invoiceNumber: `INV-${e.id.substring(0, 8).toUpperCase()}`,
+					tenantName: t,
+					propertyName: n,
+					unitNumber: r,
+					amount: Number(e.totalAmount ?? 0),
+					dueDate: e.dueDate,
+					status: e.status === "CANCELLED" ? "VOID" : e.status ?? "DRAFT",
+					postingStatus: e.postingStatus,
+					journalEntryId: e.journalEntryId
+				};
+			}),
+			pagination: {
+				total: c,
+				page: n,
+				limit: r
+			}
+		};
+	}
+	async getInvoiceDetail(e, t) {
+		let n = await this.prisma.invoice.findFirst({
+			where: {
+				id: t,
+				Lease: { property: { organizationId: e } }
+			},
+			include: {
+				Lease: { include: {
+					property: !0,
+					unit: !0,
+					tenant: !0
+				} },
+				InvoiceItem: !0,
+				journalEntry: { include: { lines: !0 } }
+			}
+		});
+		if (!n) throw Error("Invoice not found");
+		let r = [n.Lease?.tenant?.firstName?.trim() ?? "", n.Lease?.tenant?.lastName?.trim() ?? ""].filter(Boolean).join(" ") || "N/A", i = n.Lease?.property?.name?.trim() || n.Lease?.property?.address?.trim() || "N/A", a = n.Lease?.unit?.unitNumber?.trim() || "N/A", o = n.InvoiceItem[0]?.description?.trim() || "";
+		return {
+			id: n.id,
+			invoiceNumber: `INV-${n.id.substring(0, 8).toUpperCase()}`,
+			tenantName: r,
+			propertyName: i,
+			unitNumber: a,
+			amount: Number(n.totalAmount ?? 0),
+			dueDate: n.dueDate,
+			status: n.status === "CANCELLED" ? "VOID" : n.status ?? "DRAFT",
+			postingStatus: n.postingStatus,
+			journalEntryId: n.journalEntryId,
+			description: o,
+			createdAt: n.createdAt ?? /* @__PURE__ */ new Date(),
+			postedAt: n.journalEntry?.postedAt ?? void 0,
+			ledgerEntries: n.journalEntry?.lines.map((e) => ({
+				accountId: e.accountId,
+				debit: Number(e.debit ?? 0),
+				credit: Number(e.credit ?? 0)
+			})) ?? []
+		};
+	}
+	async getVendorComplianceList(e) {
+		let t = (/* @__PURE__ */ new Date()).getFullYear(), n = new Date(t, 0, 1);
+		return (await this.prisma.vendor.findMany({
+			where: { organizationId: e },
+			include: {
+				taxInfo: !0,
+				invoices: {
+					where: {
+						postingStatus: "POSTED",
+						createdAt: { gte: n }
+					},
+					select: { amount: !0 }
+				}
+			}
+		})).map((e) => {
+			let t = e.invoices.reduce((e, t) => e.plus(new Y(t.amount)), new Y(0)), n = e.taxInfo?.isTaxExempt ?? !1, r = e.businessType !== "CORPORATION" && t.greaterThanOrEqualTo(600);
+			return {
+				id: e.id,
+				name: e.companyName,
+				category: e.serviceType,
+				businessType: e.businessType,
+				w9Status: n ? "COLLECTED" : "MISSING",
+				totalPaidYTD: Number(t),
+				requires1099: r
+			};
+		});
+	}
 	async generateInvoice(e) {
 		throw Error("Not implemented");
 	}
@@ -3032,24 +3242,7 @@ var La = class {
 	async recordPayment(e, t, n) {
 		throw Error("Not implemented");
 	}
-}, Ra = new La(e), Q = {
-	CASH_IN_BANK: "1000",
-	ACCOUNTS_RECEIVABLE: "1100",
-	UNDEPOSITED_FUNDS: "1200",
-	SECURITY_DEPOSITS_LIABILITY: "2100",
-	ACCOUNTS_PAYABLE: "2200",
-	SALES_TAX_PAYABLE: "2250",
-	PREPAID_RENT: "2300",
-	OWNER_EQUITY: "3000",
-	RENTAL_INCOME: "4000",
-	UTILITY_RECOVERY_INCOME: "4100",
-	LATE_FEES_INCOME: "4200",
-	MAINTENANCE_INCOME: "4300",
-	DOCUMENT_SIGNING_INCOME: "4400",
-	MAINTENANCE_EXPENSE: "5100",
-	UTILITY_EXPENSE: "5200",
-	MANAGEMENT_FEES: "5300"
-}, za = class {
+}, Ra = new La(e), za = class {
 	constructor(e, t) {
 		this.db = e, this.journalService = t;
 	}
@@ -3066,11 +3259,11 @@ var La = class {
 			console.log(`[Finance] Invoice ${e} is already posted. Skipping.`);
 			return;
 		}
-		let n = t.organizationId ?? t.Lease?.property?.organizationId, r = t.propertyId ?? t.Lease?.propertyId ?? t.Lease?.property?.id, i = t.tenantId ?? t.Lease?.tenantId;
+		let n = t.Lease?.property?.organizationId, r = t.propertyId ?? t.Lease?.propertyId ?? t.Lease?.property?.id, i = t.tenantId ?? t.Lease?.tenantId;
 		if (!n) throw Error(`Invoice ${e} has no organization assigned`);
 		if (!r) throw Error(`Invoice ${e} has no property assigned`);
 		if (!i) throw Error(`Invoice ${e} has no tenant assigned`);
-		let a = new Y(t.totalAmount), o = t.taxAmount ? new Y(t.taxAmount) : new Y(0), s = a.plus(o);
+		let a = new Y(t.totalAmount), o = new Y(0), s = a.plus(o);
 		try {
 			let c = [{
 				accountCode: Q.ACCOUNTS_RECEIVABLE,
@@ -3167,51 +3360,100 @@ var La = class {
 		}
 	}
 	async billOrganizationForService(e) {
-		let t = await this.db.invoice.create({ data: {
-			organizationId: e.organizationId,
-			type: "FEE",
+		let t = e.leaseId ?? (await this.db.lease.findFirst({
+			where: { property: { organizationId: e.organizationId } },
+			select: { id: !0 }
+		}))?.id;
+		if (!t) throw Error(`Cannot create service invoice: no lease found for organization ${e.organizationId}`);
+		let n = await this.db.invoice.create({ data: {
+			leaseId: t,
+			type: "MAINTENANCE",
 			totalAmount: e.amount,
 			balance: e.amount,
 			dueDate: new Date(Date.now() + 720 * 60 * 60 * 1e3),
-			status: "ISSUED",
-			referenceType: e.referenceType,
-			referenceId: e.referenceId,
+			status: "PENDING",
 			InvoiceItem: { create: [{
-				description: e.description,
+				description: `${e.referenceType}:${e.referenceId} - ${e.description}`,
 				amount: e.amount
 			}] }
-		} }), n = new Y(e.amount), r = e.serviceType === "DSS_SIGNING" ? Q.DOCUMENT_SIGNING_INCOME : Q.MAINTENANCE_INCOME;
+		} }), r = new Y(e.amount), i = e.serviceType === "DSS_SIGNING" ? Q.DOCUMENT_SIGNING_INCOME : Q.MAINTENANCE_INCOME;
 		try {
-			let i = [{
+			let t = [{
 				accountCode: Q.ACCOUNTS_RECEIVABLE,
-				debit: n,
+				debit: r,
 				credit: new Y(0)
 			}, {
-				accountCode: r,
+				accountCode: i,
 				debit: new Y(0),
-				credit: n
+				credit: r
 			}], { journalEntryId: a } = await this.journalService.postJournalEntry({
 				organizationId: e.organizationId,
 				date: /* @__PURE__ */ new Date(),
-				reference: `SVC-${t.id.substring(0, 8)}`,
+				reference: `SVC-${n.id.substring(0, 8)}`,
 				description: `Service fee: ${e.description}`,
-				lines: i
+				lines: t
 			});
 			return await this.db.invoice.update({
-				where: { id: t.id },
+				where: { id: n.id },
 				data: {
 					postingStatus: "POSTED",
 					journalEntryId: a
 				}
 			}), {
-				invoiceId: t.id,
+				invoiceId: n.id,
 				journalEntryId: a
 			};
 		} catch (e) {
 			throw await this.db.invoice.update({
-				where: { id: t.id },
+				where: { id: n.id },
 				data: { postingStatus: "FAILED" }
 			}), e;
+		}
+	}
+	async postExpenseToGL(e) {
+		let t = await this.db.vendorInvoice.findUnique({
+			where: { id: e },
+			include: { vendor: !0 }
+		});
+		if (!t) throw Error("Vendor invoice not found");
+		if (t.postingStatus === "POSTED") {
+			console.log(`[Finance] Vendor invoice ${e} is already posted. Skipping.`);
+			return;
+		}
+		let { organizationId: n, propertyId: r, amount: i, category: a, vendor: o } = t;
+		if (!n) throw Error(`Vendor invoice ${e} has no organization assigned`);
+		if (!r) throw Error(`Vendor invoice ${e} has no property assigned`);
+		let s = new Y(i), c = a === "UTILITY" ? Q.UTILITY_EXPENSE : a === "TAX" ? "5300" : a === "MANAGEMENT_FEE" ? Q.MANAGEMENT_FEES : Q.MAINTENANCE_EXPENSE;
+		try {
+			let i = [{
+				accountCode: c,
+				debit: s,
+				credit: new Y(0),
+				propertyId: r
+			}, {
+				accountCode: Q.ACCOUNTS_PAYABLE,
+				debit: new Y(0),
+				credit: s,
+				propertyId: r
+			}], { journalEntryId: a } = await this.journalService.postJournalEntry({
+				organizationId: n,
+				date: t.createdAt || /* @__PURE__ */ new Date(),
+				reference: `VEND-${e.substring(0, 8)}`,
+				description: `Vendor Bill: ${o.companyName} - ${t.description || "Expense"}`,
+				lines: i
+			});
+			await this.db.vendorInvoice.update({
+				where: { id: e },
+				data: {
+					postingStatus: "POSTED",
+					journalEntryId: a
+				}
+			});
+		} catch (t) {
+			throw await this.db.vendorInvoice.update({
+				where: { id: e },
+				data: { postingStatus: "FAILED" }
+			}), t;
 		}
 	}
 }, Ba = new za(e, new La(e)), Va = /* @__PURE__ */ s(((e, t) => {
@@ -4217,6 +4459,30 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		stripeConnectId: "stripeConnectId",
 		irsEinEncrypted: "irsEinEncrypted",
 		stateTaxIds: "stateTaxIds"
+	}, e.Prisma.ConnectedBankAccountScalarFieldEnum = {
+		id: "id",
+		organizationId: "organizationId",
+		plaidAccessToken: "plaidAccessToken",
+		plaidItemId: "plaidItemId",
+		institutionName: "institutionName",
+		accountName: "accountName",
+		accountType: "accountType",
+		accountSubtype: "accountSubtype",
+		mask: "mask",
+		status: "status",
+		createdAt: "createdAt"
+	}, e.Prisma.BankTransactionScalarFieldEnum = {
+		id: "id",
+		organizationId: "organizationId",
+		plaidTransactionId: "plaidTransactionId",
+		accountId: "accountId",
+		amount: "amount",
+		date: "date",
+		merchantName: "merchantName",
+		description: "description",
+		status: "status",
+		matchedJournalId: "matchedJournalId",
+		createdAt: "createdAt"
 	}, e.Prisma.OrganizationWebhookScalarFieldEnum = {
 		id: "id",
 		organizationId: "organizationId",
@@ -4225,6 +4491,36 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		secret: "secret",
 		events: "events",
 		isActive: "isActive",
+		createdAt: "createdAt",
+		updatedAt: "updatedAt"
+	}, e.Prisma.SmsNotificationScalarFieldEnum = {
+		id: "id",
+		userId: "userId",
+		phone: "phone",
+		message: "message",
+		channel: "channel",
+		category: "category",
+		status: "status",
+		scheduledFor: "scheduledFor",
+		sentAt: "sentAt",
+		deliveredAt: "deliveredAt",
+		errorMessage: "errorMessage",
+		costCents: "costCents",
+		carrier: "carrier",
+		reference: "reference",
+		createdAt: "createdAt",
+		updatedAt: "updatedAt"
+	}, e.Prisma.NotificationPreferenceScalarFieldEnum = {
+		id: "id",
+		userId: "userId",
+		channel: "channel",
+		category: "category",
+		enabled: "enabled",
+		thresholdHours: "thresholdHours",
+		quietStartHour: "quietStartHour",
+		quietEndHour: "quietEndHour",
+		quietDays: "quietDays",
+		maxDailyAlerts: "maxDailyAlerts",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
 	}, e.Prisma.UserScalarFieldEnum = {
@@ -4265,33 +4561,21 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		expiresAt: "expiresAt",
 		type: "type",
 		createdAt: "createdAt"
-	}, e.Prisma.SmsNotificationScalarFieldEnum = {
+	}, e.Prisma.VendorTaxInfoScalarFieldEnum = {
 		id: "id",
-		userId: "userId",
-		phoneNumber: "phoneNumber",
-		message: "message",
-		category: "category",
-		status: "status",
-		provider: "provider",
-		providerMsgId: "providerMsgId",
-		failureReason: "failureReason",
-		sentAt: "sentAt",
-		deliveredAt: "deliveredAt",
-		createdAt: "createdAt",
-		updatedAt: "updatedAt"
-	}, e.Prisma.NotificationPreferenceScalarFieldEnum = {
-		id: "id",
-		userId: "userId",
-		rentReminders: "rentReminders",
-		paymentReceipts: "paymentReceipts",
-		maintenance: "maintenance",
-		utilityAlerts: "utilityAlerts",
-		marketing: "marketing",
-		preferredChannel: "preferredChannel",
+		vendorId: "vendorId",
+		taxId: "taxId",
+		taxIdEncrypted: "taxIdEncrypted",
+		isTaxExempt: "isTaxExempt",
+		exemptionCertificateUrl: "exemptionCertificateUrl",
+		stateOfIncorporation: "stateOfIncorporation",
+		incorporationDate: "incorporationDate",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
 	}, e.Prisma.VendorScalarFieldEnum = {
 		id: "id",
+		name: "name",
+		businessType: "businessType",
 		organizationId: "organizationId",
 		userId: "userId",
 		companyName: "companyName",
@@ -4301,6 +4585,18 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		isActive: "isActive",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
+	}, e.Prisma.VendorInvoiceScalarFieldEnum = {
+		id: "id",
+		vendorId: "vendorId",
+		organizationId: "organizationId",
+		propertyId: "propertyId",
+		amount: "amount",
+		category: "category",
+		description: "description",
+		dueDate: "dueDate",
+		postingStatus: "postingStatus",
+		journalEntryId: "journalEntryId",
+		createdAt: "createdAt"
 	}, e.Prisma.InviteScalarFieldEnum = {
 		id: "id",
 		email: "email",
@@ -4609,21 +4905,15 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 	}, e.Prisma.InvoiceScalarFieldEnum = {
 		id: "id",
 		leaseId: "leaseId",
-		organizationId: "organizationId",
 		type: "type",
 		totalAmount: "totalAmount",
 		amountPaid: "amountPaid",
 		balance: "balance",
-		taxAmount: "taxAmount",
-		taxRate: "taxRate",
-		taxExempt: "taxExempt",
 		dueDate: "dueDate",
 		status: "status",
 		postingStatus: "postingStatus",
 		journalEntryId: "journalEntryId",
 		utilityBillId: "utilityBillId",
-		referenceType: "referenceType",
-		referenceId: "referenceId",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
 	}, e.Prisma.InvoiceItemScalarFieldEnum = {
@@ -4710,7 +5000,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		fileSizeBytes: "fileSizeBytes",
 		originalPdfSha256Hex: "originalPdfSha256Hex",
 		finalPdfSha256Hex: "finalPdfSha256Hex",
-		finalFileUrl: "finalFileUrl",
 		status: "status",
 		signingMode: "signingMode",
 		currentStep: "currentStep",
@@ -4739,9 +5028,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		signatureHash: "signatureHash",
 		signedAt: "signedAt",
 		isProxy: "isProxy",
-		onBehalfOf: "onBehalfOf",
-		ipAddress: "ipAddress",
-		userAgent: "userAgent"
+		onBehalfOf: "onBehalfOf"
 	}, e.Prisma.DssFieldScalarFieldEnum = {
 		id: "id",
 		documentId: "documentId",
@@ -4784,7 +5071,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		id: "id",
 		organizationId: "organizationId",
 		createdBy: "createdBy",
-		categoryId: "categoryId",
 		statusId: "statusId",
 		locationId: "locationId",
 		title: "title",
@@ -4795,7 +5081,8 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		propertyId: "propertyId",
 		unitId: "unitId",
 		availabilityDate: "availabilityDate",
-		expirationDate: "expirationDate"
+		expirationDate: "expirationDate",
+		categoryId: "categoryId"
 	}, e.Prisma.ServiceMarketplaceScalarFieldEnum = {
 		id: "id",
 		listingId: "listingId",
@@ -5116,7 +5403,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		usedAt: "usedAt",
 		isUsed: "isUsed",
 		tenantId: "tenantId",
-		invitedAgentId: "invitedAgentId",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
 	}, e.Prisma.ListingAuditEntryScalarFieldEnum = {
@@ -5174,14 +5460,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		nextRetryAt: "nextRetryAt",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
-	}, e.Prisma.VendorTaxInfoScalarFieldEnum = {
-		id: "id",
-		vendorId: "vendorId",
-		w9Collected: "w9Collected",
-		w9CollectedAt: "w9CollectedAt",
-		taxIdType: "taxIdType",
-		taxIdEncrypted: "taxIdEncrypted",
-		backupWithholding: "backupWithholding"
 	}, e.Prisma.SortOrder = {
 		asc: "asc",
 		desc: "desc"
@@ -5209,12 +5487,43 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		paystackSubaccountCode: "paystackSubaccountCode",
 		stripeConnectId: "stripeConnectId",
 		irsEinEncrypted: "irsEinEncrypted"
+	}, e.Prisma.ConnectedBankAccountOrderByRelevanceFieldEnum = {
+		id: "id",
+		organizationId: "organizationId",
+		plaidAccessToken: "plaidAccessToken",
+		plaidItemId: "plaidItemId",
+		institutionName: "institutionName",
+		accountName: "accountName",
+		accountType: "accountType",
+		accountSubtype: "accountSubtype",
+		mask: "mask",
+		status: "status"
+	}, e.Prisma.BankTransactionOrderByRelevanceFieldEnum = {
+		id: "id",
+		organizationId: "organizationId",
+		plaidTransactionId: "plaidTransactionId",
+		accountId: "accountId",
+		merchantName: "merchantName",
+		description: "description",
+		status: "status",
+		matchedJournalId: "matchedJournalId"
 	}, e.Prisma.OrganizationWebhookOrderByRelevanceFieldEnum = {
 		id: "id",
 		organizationId: "organizationId",
 		name: "name",
 		url: "url",
 		secret: "secret"
+	}, e.Prisma.SmsNotificationOrderByRelevanceFieldEnum = {
+		id: "id",
+		userId: "userId",
+		phone: "phone",
+		message: "message",
+		errorMessage: "errorMessage",
+		carrier: "carrier",
+		reference: "reference"
+	}, e.Prisma.NotificationPreferenceOrderByRelevanceFieldEnum = {
+		id: "id",
+		userId: "userId"
 	}, e.Prisma.UserOrderByRelevanceFieldEnum = {
 		id: "id",
 		email: "email",
@@ -5236,25 +5545,32 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		code: "code",
 		phone: "phone",
 		userId: "userId"
-	}, e.Prisma.SmsNotificationOrderByRelevanceFieldEnum = {
+	}, e.Prisma.VendorTaxInfoOrderByRelevanceFieldEnum = {
 		id: "id",
-		userId: "userId",
-		phoneNumber: "phoneNumber",
-		message: "message",
-		provider: "provider",
-		providerMsgId: "providerMsgId",
-		failureReason: "failureReason"
-	}, e.Prisma.NotificationPreferenceOrderByRelevanceFieldEnum = {
-		id: "id",
-		userId: "userId"
+		vendorId: "vendorId",
+		taxId: "taxId",
+		taxIdEncrypted: "taxIdEncrypted",
+		exemptionCertificateUrl: "exemptionCertificateUrl",
+		stateOfIncorporation: "stateOfIncorporation"
 	}, e.Prisma.VendorOrderByRelevanceFieldEnum = {
 		id: "id",
+		name: "name",
+		businessType: "businessType",
 		organizationId: "organizationId",
 		userId: "userId",
 		companyName: "companyName",
 		serviceType: "serviceType",
 		phone: "phone",
 		email: "email"
+	}, e.Prisma.VendorInvoiceOrderByRelevanceFieldEnum = {
+		id: "id",
+		vendorId: "vendorId",
+		organizationId: "organizationId",
+		propertyId: "propertyId",
+		category: "category",
+		description: "description",
+		postingStatus: "postingStatus",
+		journalEntryId: "journalEntryId"
 	}, e.Prisma.InviteOrderByRelevanceFieldEnum = {
 		id: "id",
 		email: "email",
@@ -5428,11 +5744,8 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 	}, e.Prisma.InvoiceOrderByRelevanceFieldEnum = {
 		id: "id",
 		leaseId: "leaseId",
-		organizationId: "organizationId",
 		journalEntryId: "journalEntryId",
-		utilityBillId: "utilityBillId",
-		referenceType: "referenceType",
-		referenceId: "referenceId"
+		utilityBillId: "utilityBillId"
 	}, e.Prisma.InvoiceItemOrderByRelevanceFieldEnum = {
 		id: "id",
 		invoiceId: "invoiceId",
@@ -5479,8 +5792,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		originalFileKey: "originalFileKey",
 		mimeType: "mimeType",
 		originalPdfSha256Hex: "originalPdfSha256Hex",
-		finalPdfSha256Hex: "finalPdfSha256Hex",
-		finalFileUrl: "finalFileUrl"
+		finalPdfSha256Hex: "finalPdfSha256Hex"
 	}, e.Prisma.DssParticipantOrderByRelevanceFieldEnum = {
 		id: "id",
 		documentId: "documentId",
@@ -5494,9 +5806,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		documentId: "documentId",
 		participantId: "participantId",
 		signatureHash: "signatureHash",
-		onBehalfOf: "onBehalfOf",
-		ipAddress: "ipAddress",
-		userAgent: "userAgent"
+		onBehalfOf: "onBehalfOf"
 	}, e.Prisma.DssFieldOrderByRelevanceFieldEnum = {
 		id: "id",
 		documentId: "documentId",
@@ -5524,13 +5834,13 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		id: "id",
 		organizationId: "organizationId",
 		createdBy: "createdBy",
-		categoryId: "categoryId",
 		statusId: "statusId",
 		locationId: "locationId",
 		title: "title",
 		description: "description",
 		propertyId: "propertyId",
-		unitId: "unitId"
+		unitId: "unitId",
+		categoryId: "categoryId"
 	}, e.Prisma.ServiceMarketplaceOrderByRelevanceFieldEnum = {
 		id: "id",
 		listingId: "listingId",
@@ -5719,8 +6029,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 	}, e.Prisma.AgentInviteOrderByRelevanceFieldEnum = {
 		id: "id",
 		inviteTokenHash: "inviteTokenHash",
-		tenantId: "tenantId",
-		invitedAgentId: "invitedAgentId"
+		tenantId: "tenantId"
 	}, e.Prisma.ListingAuditEntryOrderByRelevanceFieldEnum = {
 		id: "id",
 		unitId: "unitId",
@@ -5749,14 +6058,26 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		gateway: "gateway",
 		eventType: "eventType",
 		processingError: "processingError"
-	}, e.Prisma.VendorTaxInfoOrderByRelevanceFieldEnum = {
-		id: "id",
-		vendorId: "vendorId",
-		taxIdType: "taxIdType",
-		taxIdEncrypted: "taxIdEncrypted"
 	}, e.Region = e.$Enums.Region = {
 		USA: "USA",
 		KEN: "KEN"
+	}, e.NotificationChannel = e.$Enums.NotificationChannel = {
+		SMS: "SMS",
+		EMAIL: "EMAIL",
+		PUSH: "PUSH",
+		IN_APP: "IN_APP"
+	}, e.NotificationCategory = e.$Enums.NotificationCategory = {
+		RENT_REMINDER: "RENT_REMINDER",
+		PAYMENT_RECEIPT: "PAYMENT_RECEIPT",
+		MAINTENANCE_UPDATE: "MAINTENANCE_UPDATE",
+		LEASE_DOCUMENT: "LEASE_DOCUMENT",
+		UTILITY_BILL: "UTILITY_BILL",
+		SYSTEM_ALERT: "SYSTEM_ALERT"
+	}, e.SmsStatus = e.$Enums.SmsStatus = {
+		QUEUED: "QUEUED",
+		SENT: "SENT",
+		DELIVERED: "DELIVERED",
+		FAILED: "FAILED"
 	}, e.UserStatus = e.$Enums.UserStatus = {
 		ACTIVE: "ACTIVE",
 		INACTIVE: "INACTIVE",
@@ -5775,23 +6096,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 	}, e.OtpType = e.$Enums.OtpType = {
 		TWO_FACTOR: "TWO_FACTOR",
 		PHONE_VERIFICATION: "PHONE_VERIFICATION"
-	}, e.NotificationCategory = e.$Enums.NotificationCategory = {
-		RENT_REMINDER: "RENT_REMINDER",
-		PAYMENT_RECEIPT: "PAYMENT_RECEIPT",
-		MAINTENANCE_UPDATE: "MAINTENANCE_UPDATE",
-		LEASE_DOCUMENT: "LEASE_DOCUMENT",
-		UTILITY_BILL: "UTILITY_BILL",
-		SYSTEM_ALERT: "SYSTEM_ALERT"
-	}, e.SmsStatus = e.$Enums.SmsStatus = {
-		QUEUED: "QUEUED",
-		SENT: "SENT",
-		DELIVERED: "DELIVERED",
-		FAILED: "FAILED"
-	}, e.NotificationChannel = e.$Enums.NotificationChannel = {
-		SMS: "SMS",
-		EMAIL: "EMAIL",
-		PUSH: "PUSH",
-		IN_APP: "IN_APP"
 	}, e.InviteRole = e.$Enums.InviteRole = {
 		SYSTEM_ADMIN: "SYSTEM_ADMIN",
 		PROPERTY_MANAGER: "PROPERTY_MANAGER",
@@ -5874,15 +6178,13 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		COMPLIANT: "COMPLIANT",
 		NON_COMPLIANT: "NON_COMPLIANT",
 		UNDER_REVIEW: "UNDER_REVIEW"
-	}, e.InvoiceType = e.$Enums.InvoiceType = {
+	}, e.invoice_type = e.$Enums.invoice_type = {
 		RENT: "RENT",
 		UTILITY: "UTILITY",
 		MAINTENANCE: "MAINTENANCE",
-		DAMAGE: "DAMAGE",
-		FEE: "FEE"
-	}, e.InvoiceStatus = e.$Enums.InvoiceStatus = {
+		DAMAGE: "DAMAGE"
+	}, e.invoice_status = e.$Enums.invoice_status = {
 		DRAFT: "DRAFT",
-		ISSUED: "ISSUED",
 		PENDING: "PENDING",
 		PAID: "PAID",
 		OVERDUE: "OVERDUE",
@@ -6054,13 +6356,17 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		FAILED: "FAILED"
 	}, e.Prisma.ModelName = {
 		Organization: "Organization",
+		ConnectedBankAccount: "ConnectedBankAccount",
+		BankTransaction: "BankTransaction",
 		OrganizationWebhook: "OrganizationWebhook",
+		SmsNotification: "SmsNotification",
+		NotificationPreference: "NotificationPreference",
 		User: "User",
 		OrganizationUser: "OrganizationUser",
 		Otp: "Otp",
-		SmsNotification: "SmsNotification",
-		NotificationPreference: "NotificationPreference",
+		VendorTaxInfo: "VendorTaxInfo",
 		Vendor: "Vendor",
+		VendorInvoice: "VendorInvoice",
 		Invite: "Invite",
 		PasswordResetToken: "PasswordResetToken",
 		FinancialEntity: "FinancialEntity",
@@ -6138,8 +6444,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		UsageMetric: "UsageMetric",
 		SubscriptionEvent: "SubscriptionEvent",
 		FeatureLimit: "FeatureLimit",
-		WebhookEvent: "WebhookEvent",
-		VendorTaxInfo: "VendorTaxInfo"
+		WebhookEvent: "WebhookEvent"
 	}, e.PrismaClient = class {
 		constructor() {
 			return new Proxy(this, { get(e, t) {
@@ -6501,6 +6806,34 @@ var Wa = { async postMaintenanceBill(t) {
 			};
 		}, { timeout: 3e4 });
 	}
+}, Ka = class {
+	async getSuggestedMatches(t, n) {
+		let r = await e.bankTransaction.findUnique({ where: { id: t } });
+		if (!r || n && r.organizationId !== n) throw Error("Transaction not found");
+		let i = new Y(r.amount).abs(), a = new Date(r.date);
+		a.setDate(a.getDate() - 3);
+		let o = new Date(r.date);
+		return o.setDate(o.getDate() + 3), await e.journalEntry.findMany({
+			where: {
+				entity: { organizationId: r.organizationId },
+				isLocked: !0,
+				bankTransaction: null,
+				transactionDate: {
+					gte: a,
+					lte: o
+				},
+				lines: { some: { OR: [{
+					debit: i,
+					credit: new Y(0)
+				}, {
+					debit: new Y(0),
+					credit: i
+				}] } }
+			},
+			include: { lines: { include: { account: !0 } } },
+			orderBy: { transactionDate: "desc" }
+		});
+	}
 };
 //#endregion
-export { Q as CHART_OF_ACCOUNTS, za as FinanceActions, La as JournalService, Ba as financeActions, Ra as journalService, Wa as maintenanceService, Ua as setupFinancials, Ga as utilityService };
+export { Q as CHART_OF_ACCOUNTS, za as FinanceActions, La as JournalService, Ka as ReconciliationService, Ba as financeActions, Ra as journalService, Wa as maintenanceService, Ua as setupFinancials, Ga as utilityService };
