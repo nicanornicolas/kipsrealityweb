@@ -104,4 +104,3 @@ async function getCurrentUserRole() {
   requireRole,
   requireSystemAdmin
 });
-//# sourceMappingURL=require-role.js.map

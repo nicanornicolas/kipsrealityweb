@@ -40,4 +40,3 @@ if (process.env.NODE_ENV !== "production") {
   db,
   prisma
 });
-//# sourceMappingURL=db.js.map

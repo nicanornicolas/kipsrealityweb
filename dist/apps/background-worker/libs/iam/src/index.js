@@ -29,4 +29,3 @@ __reExport(src_exports, require("./lib/require-role"), module.exports);
   ...require("./lib/get-current-user"),
   ...require("./lib/require-role")
 });
-//# sourceMappingURL=index.js.map

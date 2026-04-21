@@ -55,4 +55,3 @@ async function getCurrentUser(req) {
 0 && (module.exports = {
   getCurrentUser
 });
-//# sourceMappingURL=get-current-user.js.map
