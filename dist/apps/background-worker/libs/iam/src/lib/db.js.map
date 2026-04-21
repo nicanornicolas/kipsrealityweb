@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../../libs/iam/src/lib/db.ts"],
-  "sourcesContent": ["// Polyfill to allow JSON serialization of BigInt\r\n// (Required for Payment.amountSubunits)\r\n(BigInt.prototype as any).toJSON = function () {\r\n    return this.toString();\r\n};\r\n\r\nimport { PrismaClient } from '@prisma/client'\r\n\r\nconst globalForPrisma = globalThis as unknown as {\r\n    prisma?: PrismaClient\r\n}\r\n\r\nexport const prisma =\r\n    globalForPrisma.prisma ??\r\n    new PrismaClient({\r\n        log: process.env.NODE_ENV === 'development'\r\n            ? ['query', 'error', 'warn']\r\n            : ['error'],\r\n    })\r\n\r\nexport const db = prisma // Add alias for compatibility\r\n\r\nif (process.env.NODE_ENV !== 'production') {\r\n    globalForPrisma.prisma = prisma\r\n}\r\n\r\nexport { PrismaClient }\r\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAMA,oBAA6B;AAJ5B,OAAO,UAAkB,SAAS,WAAY;AAC3C,SAAO,KAAK,SAAS;AACzB;AAIA,MAAM,kBAAkB;AAIjB,MAAM,SACT,gBAAgB,UAChB,IAAI,2BAAa;AAAA,EACb,KAAK,QAAQ,IAAI,aAAa,gBACxB,CAAC,SAAS,SAAS,MAAM,IACzB,CAAC,OAAO;AAClB,CAAC;AAEE,MAAM,KAAK;AAElB,IAAI,QAAQ,IAAI,aAAa,cAAc;AACvC,kBAAgB,SAAS;AAC7B;",
-  "names": []
-}

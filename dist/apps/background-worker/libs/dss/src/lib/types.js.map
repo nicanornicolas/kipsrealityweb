@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../../libs/dss/src/lib/types.ts"],
-  "sourcesContent": ["import { DssParticipantRole, DssDocumentStatus } from \"@prisma/client\";\r\n\r\n// Define the hierarchy of signing power if needed\r\nexport const ROLE_HIERARCHY: Record<DssParticipantRole, number> = {\r\n    TENANT: 1,           // Signs First\r\n    LANDLORD: 2,         // Signs Second\r\n    PROPERTY_MANAGER: 2, // Equivalent to Landlord\r\n    AGENT: 2,\r\n    WITNESS: 3,          // Signs Last\r\n    NOTARY: 4,           // Final seal\r\n    CUSTODIAN: 2,        // Equivalent to Landlord/Property Manager (signs on behalf of someone)\r\n    VENDOR: 0,\r\n    OTHER: 0\r\n};\r\n\r\nexport interface SignerAction {\r\n    userId: string;\r\n    role: DssParticipantRole;\r\n    signatureData: string; // Base64 or Text representation of signature\r\n    ipAddress?: string;\r\n    userAgent?: string;\r\n}\r\n\r\nexport interface WorkflowResult {\r\n    isComplete: boolean;\r\n    nextStep: number | null;\r\n    nextRole: DssParticipantRole | null;\r\n}\r\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAGO,MAAM,iBAAqD;AAAA,EAC9D,QAAQ;AAAA;AAAA,EACR,UAAU;AAAA;AAAA,EACV,kBAAkB;AAAA;AAAA,EAClB,OAAO;AAAA,EACP,SAAS;AAAA;AAAA,EACT,QAAQ;AAAA;AAAA,EACR,WAAW;AAAA;AAAA,EACX,QAAQ;AAAA,EACR,OAAO;AACX;",
-  "names": []
-}

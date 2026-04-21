@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../../libs/payments/src/lib/payments.tsx"],
-  "sourcesContent": ["import styles from './payments.module.css';\n\nexport function Payments() {\n  return (\n    <div className={styles['container']}>\n      <h1>Welcome to Payments!</h1>\n    </div>\n  );\n}\n\nexport default Payments;\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAKM;AALN,sBAAmB;AAEZ,SAAS,WAAW;AACzB,SACE,4CAAC,SAAI,WAAW,gBAAAA,QAAO,WAAW,GAChC,sDAAC,QAAG,kCAAoB,GAC1B;AAEJ;AAEA,IAAO,mBAAQ;",
-  "names": ["styles"]
-}

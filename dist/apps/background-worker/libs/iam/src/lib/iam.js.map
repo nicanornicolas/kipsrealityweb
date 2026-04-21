@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../../libs/iam/src/lib/iam.tsx"],
-  "sourcesContent": ["import styles from './iam.module.css';\n\nexport function Iam() {\n  return (\n    <div className={styles['container']}>\n      <h1>Welcome to Iam!</h1>\n    </div>\n  );\n}\n\nexport default Iam;\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAKM;AALN,iBAAmB;AAEZ,SAAS,MAAM;AACpB,SACE,4CAAC,SAAI,WAAW,WAAAA,QAAO,WAAW,GAChC,sDAAC,QAAG,6BAAe,GACrB;AAEJ;AAEA,IAAO,cAAQ;",
-  "names": ["styles"]
-}

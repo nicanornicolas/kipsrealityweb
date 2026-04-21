@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../../libs/payments/src/lib/payment-factory.ts"],
-  "sourcesContent": ["import { UsaPaymentStrategy } from './strategies/usa';\r\nimport { IPaymentStrategy } from './types';\n\r\nexport class PaymentFactory {\r\n  /**\r\n   * @deprecated region parameter is no longer used. System is strictly USA-focused.\r\n   */\r\n  static getStrategy(region?: string): IPaymentStrategy {\r\n    // We completely bypass the switch statement. USA is the only strategy.\r\n    return new UsaPaymentStrategy();\r\n  }\r\n}\r\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,iBAAmC;AAG5B,MAAM,eAAe;AAAA;AAAA;AAAA;AAAA,EAI1B,OAAO,YAAY,QAAmC;AAEpD,WAAO,IAAI,8BAAmB;AAAA,EAChC;AACF;",
-  "names": []
-}

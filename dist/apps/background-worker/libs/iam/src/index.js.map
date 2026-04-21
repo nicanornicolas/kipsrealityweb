@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../libs/iam/src/index.ts"],
-  "sourcesContent": ["export * from './lib/iam';\r\nexport * from './lib/db';\r\nexport * from './lib/auth';\r\nexport * from './lib/auth/otp';\r\nexport * from './lib/get-current-user';\r\nexport * from './lib/require-role';\r\n"],
-  "mappings": ";;;;;;;;;;;;;;AAAA;AAAA;AAAA,wBAAc,sBAAd;AACA,wBAAc,qBADd;AAEA,wBAAc,uBAFd;AAGA,wBAAc,2BAHd;AAIA,wBAAc,mCAJd;AAKA,wBAAc,+BALd;",
-  "names": []
-}
