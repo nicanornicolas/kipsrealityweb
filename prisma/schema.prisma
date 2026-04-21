@@ -36,12 +36,53 @@ model Organization {
   users                  OrganizationUser[]
   plan                   Plan?                    @relation(fields: [planId], references: [id])
   vendors                Vendor[]
+  vendorInvoices         VendorInvoice[]
+  connectedBankAccounts  ConnectedBankAccount[]
+  bankTransactions       BankTransaction[]
   usageMetrics           UsageMetric[]
   subscriptionEvents     SubscriptionEvent[]
   webhooks               OrganizationWebhook[]
 
   @@index([planId], map: "organizations_planId_fkey")
   @@map("organizations")
+}
+
+model ConnectedBankAccount {
+  id               String @id @default(uuid())
+  organizationId   String @map("organization_id")
+  plaidAccessToken String @map("plaid_access_token")
+  plaidItemId      String @map("plaid_item_id")
+  institutionName  String @map("institution_name")
+  accountName      String @map("account_name")
+  accountType      String @map("account_type")
+  accountSubtype   String @map("account_subtype")
+  mask             String
+  status           String @default("ACTIVE")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  @@map("connected_bank_accounts")
+}
+
+model BankTransaction {
+  id                 String   @id @default(uuid())
+  organizationId     String   @map("organization_id")
+  plaidTransactionId String   @unique @map("plaid_transaction_id")
+  accountId          String   @map("account_id")
+  amount             Decimal  @db.Decimal(15, 4)
+  date               DateTime
+  merchantName       String?  @map("merchant_name")
+  description        String?  @db.Text
+  status             String   @default("UNMATCHED")
+
+  matchedJournalId String?       @unique @map("matched_journal_id")
+  journalEntry     JournalEntry? @relation(fields: [matchedJournalId], references: [id])
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  @@map("bank_transactions")
 }
 
 model OrganizationWebhook {
@@ -60,46 +101,89 @@ model OrganizationWebhook {
   @@map("organization_webhooks")
 }
 
-model User {
-  id                   String                @id @default(uuid())
-  email                String                @unique
-  passwordHash         String                @map("password_hash")
-  firstName            String?               @map("first_name")
-  lastName             String?               @map("last_name")
-  phone                String?               @unique // E.164 format (e.g. +2547...)
-  phoneVerified        DateTime? // Null = not verified
-  avatarUrl            String?               @map("avatar_url")
-  status               UserStatus            @default(ACTIVE)
-  lastLoginAt          DateTime?             @map("last_login_at")
-  createdAt            DateTime              @default(now()) @map("created_at")
-  updatedAt            DateTime              @updatedAt @map("updated_at")
-  emailVerified        DateTime?             @map("email_verified")
-  verificationToken    String?               @unique
-  consentMarketing     Boolean               @default(false) @map("consent_marketing")
-  consentNotifications Boolean               @default(true) @map("consent_notifications")
-  consentTransactional Boolean               @default(true) @map("consent_transactional")
-  kycStatus            KycStatus             @default(PENDING) @map("kyc_status")
-  paystackCustomerCode String?               @map("paystack_customer_code")
-  plaidAccessToken     String?               @map("plaid_access_token")
-  region               Region?               @default(KEN)
-  stripeCustomerId     String?               @map("stripe_customer_id")
-  AgentInvite          AgentInvite[]
-  sentInvites          Invite[]              @relation("UserInvites")
-  leases               Lease[]
-  listings             Listing[]
-  passwordResetTokens  PasswordResetToken[]
-  tenantApplications   TenantApplication[]
-  twoFactorEnabled     Boolean               @default(false)
-  dssParticipants      DssParticipant[]
-  listingAuditEntries  ListingAuditEntry[]
-  organizationUsers    OrganizationUser[]
-  tenantPaymentMethods TenantPaymentMethod[]
-  vendors              Vendor[]
+model SmsNotification {
+  id           String               @id @default(uuid())
+  userId       String               @map("user_id")
+  phone        String               @db.VarChar(20)
+  message      String               @db.Text
+  channel      NotificationChannel
+  category     NotificationCategory
+  status       SmsStatus            @default(QUEUED)
+  scheduledFor DateTime?            @map("scheduled_for")
+  sentAt       DateTime?            @map("sent_at")
+  deliveredAt  DateTime?            @map("delivered_at")
+  errorMessage String?              @db.Text
+  costCents    Int?                 @map("cost_cents")
+  carrier      String?              @db.VarChar(50)
+  reference    String?              @db.VarChar(100)
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relation to OTPs
-  otps                   Otp[]
-  smsNotifications       SmsNotification[]
-  notificationPreference NotificationPreference?
+  @@index([userId])
+  @@index([status])
+  @@index([phone])
+  @@map("sms_notifications")
+}
+
+model NotificationPreference {
+  id             String               @id @default(uuid())
+  userId         String               @map("user_id")
+  channel        NotificationChannel
+  category       NotificationCategory
+  enabled        Boolean              @default(true)
+  thresholdHours Int?                 @map("threshold_hours")
+  quietStartHour Int?                 @map("quiet_start_hour") @db.TinyInt
+  quietEndHour   Int?                 @map("quiet_end_hour") @db.TinyInt
+  quietDays      Json?                @map("quiet_days") // ["MON", "SAT", "SUN"]
+  maxDailyAlerts Int?                 @map("max_daily_alerts")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, category])
+  @@index([userId])
+  @@map("notification_preferences")
+}
+
+model User {
+  id                      String                   @id @default(uuid())
+  email                   String                   @unique
+  passwordHash            String                   @map("password_hash")
+  firstName               String?                  @map("first_name")
+  lastName                String?                  @map("last_name")
+  phone                   String?                  @unique
+  phoneVerified           DateTime?
+  avatarUrl               String?                  @map("avatar_url")
+  status                  UserStatus               @default(ACTIVE)
+  lastLoginAt             DateTime?                @map("last_login_at")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @updatedAt @map("updated_at")
+  emailVerified           DateTime?                @map("email_verified")
+  verificationToken       String?                  @unique
+  consentMarketing        Boolean                  @default(false) @map("consent_marketing")
+  consentNotifications    Boolean                  @default(true) @map("consent_notifications")
+  consentTransactional    Boolean                  @default(true) @map("consent_transactional")
+  kycStatus               KycStatus                @default(PENDING) @map("kyc_status")
+  paystackCustomerCode    String?                  @map("paystack_customer_code")
+  plaidAccessToken        String?                  @map("plaid_access_token")
+  region                  Region?                  @default(KEN)
+  stripeCustomerId        String?                  @map("stripe_customer_id")
+  twoFactorEnabled        Boolean                  @default(false)
+  AgentInvite             AgentInvite[]
+  sentInvites             Invite[]                 @relation("UserInvites")
+  leases                  Lease[]
+  listings                Listing[]
+  otps                    Otp[]
+  smsNotifications        SmsNotification[]
+  notificationPreferences NotificationPreference[]
+  passwordResetTokens     PasswordResetToken[]
+  tenantApplications      TenantApplication[]
+  dssParticipants         DssParticipant[]
+  listingAuditEntries     ListingAuditEntry[]
+  organizationUsers       OrganizationUser[]
+  tenantPaymentMethods    TenantPaymentMethod[]
+  vendors                 Vendor[]
 
   @@map("users")
 }
@@ -123,62 +207,40 @@ model OrganizationUser {
   @@map("organization_users")
 }
 
-// New Table for 2FA Codes
 model Otp {
   id        String   @id @default(uuid())
-  code      String // The 6-digit code
-  phone     String // The destination
+  code      String
+  phone     String
   userId    String
   expiresAt DateTime
   type      OtpType  @default(TWO_FACTOR)
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([phone])
+  @@index([userId], map: "Otp_userId_fkey")
 }
 
-model SmsNotification {
-  id            String               @id @default(uuid())
-  userId        String
-  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phoneNumber   String // Stored in E.164 (+254...)
-  message       String               @db.Text
-  category      NotificationCategory
-  status        SmsStatus            @default(QUEUED)
-  provider      String // 'TWILIO' or 'AFRICASTALKING'
-  providerMsgId String? // The ID returned by Twilio/AT for delivery tracking
-  failureReason String?              @db.Text
-  sentAt        DateTime?
-  deliveredAt   DateTime?
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+model VendorTaxInfo {
+  id                      String    @id @default(uuid())
+  vendorId                String    @unique @map("vendor_id")
+  taxId                   String?   @map("tax_id")
+  taxIdEncrypted          String?   @map("tax_id_encrypted")
+  isTaxExempt             Boolean   @default(false) @map("is_tax_exempt")
+  exemptionCertificateUrl String?   @map("exemption_certificate_url")
+  stateOfIncorporation    String?   @map("state_of_incorporation")
+  incorporationDate       DateTime? @map("incorporation_date")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+  vendor                  Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([status])
-}
-
-model NotificationPreference {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Granular opt-ins
-  rentReminders   Boolean @default(true)
-  paymentReceipts Boolean @default(true)
-  maintenance     Boolean @default(true)
-  utilityAlerts   Boolean @default(true)
-  marketing       Boolean @default(false)
-
-  // Channel preferences
-  preferredChannel NotificationChannel @default(SMS)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@map("vendor_tax_info")
 }
 
 model Vendor {
   id                 String               @id @default(uuid())
+  name               String
+  businessType       String               @default("INDIVIDUAL")
   organizationId     String               @map("organization_id")
   userId             String               @map("user_id")
   companyName        String               @map("company_name")
@@ -191,11 +253,31 @@ model Vendor {
   MaintenanceRequest MaintenanceRequest[]
   organization       Organization         @relation(fields: [organizationId], references: [id])
   user               User                 @relation(fields: [userId], references: [id])
-  vendorTaxInfo      VendorTaxInfo?
+  taxInfo            VendorTaxInfo?
+  invoices           VendorInvoice[]
 
   @@unique([organizationId, userId])
   @@index([userId], map: "vendors_user_id_fkey")
   @@map("vendors")
+}
+
+model VendorInvoice {
+  id             String        @id @default(uuid())
+  vendorId       String        @map("vendor_id")
+  organizationId String        @map("organization_id")
+  propertyId     String        @map("property_id")
+  amount         Decimal       @db.Decimal(15, 4)
+  category       String        @default("MAINTENANCE")
+  description    String?
+  dueDate        DateTime      @map("due_date")
+  postingStatus  String        @default("PENDING")
+  journalEntryId String?       @unique @map("journal_entry_id")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  vendor         Vendor        @relation(fields: [vendorId], references: [id])
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+
+  @@map("vendor_invoices")
 }
 
 model Invite {
@@ -271,6 +353,8 @@ model JournalEntry {
   invoice            Invoice?
   payment            Payment?
   utilityBill        UtilityBill?
+  vendorInvoice      VendorInvoice?
+  bankTransaction    BankTransaction?
 
   @@index([transactionDate])
   @@index([entityId], map: "gl_journal_entries_entity_id_fkey")
@@ -355,30 +439,28 @@ model UtilityBill {
 }
 
 model UtilityAllocation {
-  id             String                  @id @default(uuid())
-  utilityBillId  String                  @map("utility_bill_id")
-  unitId         String                  @map("unit_id")
-  amount         Decimal                 @db.Decimal(10, 2)
-  invoiceId      String?                 @unique @map("invoice_id")
-  percentage     Decimal?                @db.Decimal(5, 2)
-  blockchainHash String?                 @map("blockchain_hash")
-  createdAt      DateTime                @default(now())
-  paidAmount     Decimal                 @default(0.00) @db.Decimal(10, 2)
-  status         UtilityAllocationStatus @default(PENDING)
-  tenantId       String?                 @map("tenant_id")
-  leaseId        String?                 @map("lease_id")
-  invoice        Invoice?                @relation(fields: [invoiceId], references: [id])
-  lease          Lease?                  @relation(fields: [leaseId], references: [id])
-  unit           Unit                    @relation(fields: [unitId], references: [id])
-  utilityBill    UtilityBill             @relation(fields: [utilityBillId], references: [id], onDelete: Cascade)
-  disputes       UtilityDispute[]
-  payments       UtilityPayment[]
-
-  // ------ AI Sidecar metadata -----
-  splitMethod           UtilitySplitMethod @default(EQUAL)
-  aiConfidenceScore     Float? // Null = not AI-generated
-  anomalyFlag           Boolean            @default(false)
-  allocationExplanation String?            @db.Text // AI explanation for the allocation
+  id                    String                  @id @default(uuid())
+  utilityBillId         String                  @map("utility_bill_id")
+  unitId                String                  @map("unit_id")
+  amount                Decimal                 @db.Decimal(10, 2)
+  invoiceId             String?                 @unique @map("invoice_id")
+  percentage            Decimal?                @db.Decimal(5, 2)
+  blockchainHash        String?                 @map("blockchain_hash")
+  createdAt             DateTime                @default(now())
+  paidAmount            Decimal                 @default(0.00) @db.Decimal(10, 2)
+  status                UtilityAllocationStatus @default(PENDING)
+  tenantId              String?                 @map("tenant_id")
+  leaseId               String?                 @map("lease_id")
+  splitMethod           UtilitySplitMethod      @default(EQUAL)
+  aiConfidenceScore     Float?
+  anomalyFlag           Boolean                 @default(false)
+  allocationExplanation String?                 @db.Text
+  invoice               Invoice?                @relation(fields: [invoiceId], references: [id])
+  lease                 Lease?                  @relation(fields: [leaseId], references: [id])
+  unit                  Unit                    @relation(fields: [unitId], references: [id])
+  utilityBill           UtilityBill             @relation(fields: [utilityBillId], references: [id], onDelete: Cascade)
+  disputes              UtilityDispute[]
+  payments              UtilityPayment[]
 
   @@index([utilityBillId])
   @@index([tenantId])
@@ -704,36 +786,29 @@ model Lease {
 
 model Invoice {
   id                 String              @id @default(uuid())
-  leaseId            String?             @map("lease_id")
-  organizationId     String?             @map("organization_id")
-  type               InvoiceType
+  leaseId            String              @map("lease_id")
+  type               invoice_type
   totalAmount        Float               @map("amount")
   amountPaid         Float               @default(0) @map("amount_paid")
   balance            Float               @default(0)
-  taxAmount          Decimal?            @default(0) @map("tax_amount") @db.Decimal(10, 2)
-  taxRate            Decimal?            @default(0) @map("tax_rate") @db.Decimal(5, 4)
-  taxExempt          Boolean             @default(false) @map("tax_exempt")
   dueDate            DateTime            @db.DateTime(0)
-  status             InvoiceStatus?      @default(PENDING)
+  status             invoice_status?     @default(PENDING)
   postingStatus      PostingStatus       @default(PENDING) @map("posting_status")
   journalEntryId     String?             @unique @map("journal_entry_id")
   utilityBillId      String?             @map("utility_bill_id")
-  referenceType      String?             @map("reference_type")
-  referenceId        String?             @map("reference_id")
   createdAt          DateTime?           @default(now()) @db.DateTime(0)
   updatedAt          DateTime?           @default(now()) @db.DateTime(0)
   InvoiceItem        InvoiceItem[]
   maintenanceRequest MaintenanceRequest?
   journalEntry       JournalEntry?       @relation(fields: [journalEntryId], references: [id])
-  Lease              Lease?              @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  Lease              Lease               @relation(fields: [leaseId], references: [id], onDelete: Cascade)
   utilityBill        UtilityBill?        @relation(fields: [utilityBillId], references: [id])
   payments           Payment[]
   receipts           Receipt[]
   utilityAllocation  UtilityAllocation?
 
-  @@index([leaseId], map: "invoice_lease_id_f420")
-  @@index([utilityBillId], map: "invoice_utility_bill_id_f420")
-  @@index([organizationId], map: "invoice_organization_id_fkey")
+  @@index([leaseId], map: "invoice_lease_id_fkey")
+  @@index([utilityBillId], map: "invoice_utility_bill_id_fkey")
   @@map("invoice")
 }
 
@@ -771,12 +846,11 @@ model Payment {
   status           TransactionStatus @default(PENDING)
   type             TransactionType   @default(RENT)
   metadata         Json?
+  riskScore        Int?              @map("risk_score")
   invoice          Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   journalEntry     JournalEntry?     @relation(fields: [journalEntryId], references: [id])
   paymentReversals PaymentReversal[]
   receipts         Receipt[]
-
-  riskScore Int? @map("risk_score") // Plaid Signal Score
 
   @@index([gatewayReference])
   @@index([status])
@@ -873,7 +947,6 @@ model DssDocument {
   fileSizeBytes        Int?                    @map("file_size_bytes")
   originalPdfSha256Hex String                  @map("original_pdf_sha256_hex")
   finalPdfSha256Hex    String?                 @map("final_pdf_sha256_hex")
-  finalFileUrl         String?                 @map("final_file_url") @db.Text
   status               DssDocumentStatus       @default(DRAFT)
   signingMode          DssSigningMode          @default(SEQUENTIAL)
   currentStep          Int                     @default(1) @map("current_step")
@@ -931,8 +1004,6 @@ model DssSignature {
   signedAt      DateTime       @default(now()) @map("signed_at")
   isProxy       Boolean        @default(false) @map("is_proxy")
   onBehalfOf    String?        @map("on_behalf_of")
-  ipAddress     String?        @map("ip_address") @db.VarChar(50)
-  userAgent     String?        @map("user_agent") @db.Text
   document      DssDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
   participant   DssParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
@@ -1014,38 +1085,38 @@ model DssWorkflowStep {
 }
 
 model Listing {
-  id                 String              @id @default(uuid())
+  id                 String               @id @default(uuid())
   organizationId     String
   createdBy          String
-  categoryId         String
   statusId           String?
   locationId         String?
   title              String
   description        String
   price              Float
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
   propertyId         String?
   unitId             String?
-  availabilityDate   DateTime?           @map("availability_date")
-  expirationDate     DateTime?           @map("expiration_date")
+  availabilityDate   DateTime?            @map("availability_date")
+  expirationDate     DateTime?            @map("expiration_date")
+  categoryId         String?
   adminActions       AdminAction[]
-  createdByUser      User                @relation(fields: [createdBy], references: [id])
-  category           CategoryMarketplace @relation(fields: [categoryId], references: [id])
-  location           Location?           @relation(fields: [locationId], references: [id])
-  organization       Organization        @relation(fields: [organizationId], references: [id])
-  status             ListingStatus?      @relation(fields: [statusId], references: [id])
+  category           CategoryMarketplace? @relation(fields: [categoryId], references: [id])
+  createdByUser      User                 @relation(fields: [createdBy], references: [id])
+  location           Location?            @relation(fields: [locationId], references: [id])
+  organization       Organization         @relation(fields: [organizationId], references: [id])
+  status             ListingStatus?       @relation(fields: [statusId], references: [id])
   images             ListingImage[]
-  property           Property?           @relation("PropertyListing")
+  property           Property?            @relation("PropertyListing")
   serviceMarketplace ServiceMarketplace?
-  unit               Unit?               @relation("UnitListing")
+  unit               Unit?                @relation("UnitListing")
   auditEntries       ListingAuditEntry[]
 
-  @@index([categoryId])
   @@index([createdBy])
   @@index([locationId])
   @@index([organizationId])
   @@index([statusId])
+  @@index([categoryId], map: "Listing_categoryId_fkey")
 }
 
 model ServiceMarketplace {
@@ -1132,10 +1203,10 @@ model AdminAction {
 }
 
 model CategoryMarketplace {
-  id          String   @id @default(uuid())
-  name        String   @unique
+  id          String    @id @default(uuid())
+  name        String    @unique
   description String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   listings    Listing[]
 }
 
@@ -1349,19 +1420,19 @@ model Plan {
 }
 
 model Feature {
-  id           Int            @id @default(autoincrement())
-  title        String
-  description  String?
-  category     String?
-  createdAt    DateTime       @default(now())
-  icon         String?
-  isActive     Boolean        @default(true)
-  key          String?        @unique
-  path         String?
-  updatedAt    DateTime?      @default(now())
-  sidebarItems SidebarItem[]
-  plans        Plan[]         @relation("PlanFeatures")
-  limits       FeatureLimit[]
+  id            Int            @id @default(autoincrement())
+  title         String
+  description   String?
+  category      String?
+  createdAt     DateTime       @default(now())
+  icon          String?
+  isActive      Boolean        @default(true)
+  key           String?        @unique
+  path          String?
+  updatedAt     DateTime?      @default(now())
+  sidebarItems  SidebarItem[]
+  plans         Plan[]         @relation("PlanFeatures")
+  featureLimits FeatureLimit[]
 }
 
 model SidebarItem {
@@ -1529,7 +1600,6 @@ model AgentInvite {
   usedAt          DateTime?
   isUsed          Boolean   @default(false)
   tenantId        String
-  invitedAgentId  String?   @unique @map("invited_agent_id")
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   tenant          User      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1605,14 +1675,6 @@ enum ApplicationStatus {
   UNDER_REVIEW
 }
 
-enum InvoiceType {
-  RENT
-  UTILITY
-  MAINTENANCE
-  DAMAGE
-  FEE
-}
-
 enum UtilityType {
   FIXED
   METERED
@@ -1627,15 +1689,6 @@ enum PaymentMethod {
   STRIPE
   PAYSTACK
   MANUAL
-}
-
-enum InvoiceStatus {
-  DRAFT
-  ISSUED
-  PENDING
-  PAID
-  OVERDUE
-  CANCELLED
 }
 
 enum MaintenanceRequestStatus {
@@ -1796,53 +1849,6 @@ enum UtilitySplitMethod {
   FIXED
 }
 
-// ==========================================
-// SUBSCRIPTION & USAGE TRACKING (MONETIZATION)
-// ==========================================
-
-model UsageMetric {
-  id             String   @id @default(uuid())
-  organizationId String   @map("organization_id")
-  featureKey     String   @map("feature_key") // References Feature.key programmatically
-  period         String // "monthly", "yearly", "lifetime"
-  periodStart    DateTime @map("period_start")
-  usedCount      Int      @default(0) @map("used_count")
-  limit          Int      @default(0) // 0 = unlimited
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([organizationId, featureKey, periodStart])
-  @@map("usage_metrics")
-}
-
-model SubscriptionEvent {
-  id             String   @id @default(uuid())
-  organizationId String   @map("organization_id")
-  eventType      String   @map("event_type") // "UPGRADE", "DOWNGRADE", "TRIAL_START", "CANCELED"
-  fromPlanId     Int?     @map("from_plan_id")
-  toPlanId       Int?     @map("to_plan_id")
-  triggeredBy    String   @map("triggered_by") // userId or "SYSTEM"
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@map("subscription_events")
-}
-
-model FeatureLimit {
-  id        Int    @id @default(autoincrement())
-  featureId Int    @map("feature_id")
-  planId    Int    @map("plan_id")
-  limit     Int    @default(0) // 0 = unlimited
-  period    String @default("monthly")
-
-  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
-  plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
-
-  @@unique([featureId, planId])
-  @@map("feature_limits")
-}
-
 enum UtilityBillStatus {
   DRAFT
   PROCESSING
@@ -1995,7 +2001,7 @@ enum PaymentGateway {
   PLAID
   PAYSTACK
   MPESA_DIRECT
-  MANUAL // for existing cash/bank logic
+  MANUAL
 }
 
 enum TransactionStatus {
@@ -2014,11 +2020,62 @@ enum TransactionType {
   MAINTENANCE
 }
 
-enum WebhookStatus {
+enum invoice_type {
+  RENT
+  UTILITY
+  MAINTENANCE
+  DAMAGE
+}
+
+enum invoice_status {
+  DRAFT
   PENDING
-  PROCESSING
-  PROCESSED
-  FAILED
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model UsageMetric {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  featureKey     String   @map("feature_key") // References Feature.key programmatically
+  period         String // "monthly", "yearly", "lifetime"
+  periodStart    DateTime @map("period_start")
+  usedCount      Int      @default(0) @map("used_count")
+  limit          Int      @default(0) // 0 = unlimited
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, featureKey, periodStart])
+  @@map("usage_metrics")
+}
+
+model SubscriptionEvent {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  eventType      String   @map("event_type") // "UPGRADE", "DOWNGRADE", "TRIAL_START", "CANCELED"
+  fromPlanId     Int?     @map("from_plan_id")
+  toPlanId       Int?     @map("to_plan_id")
+  triggeredBy    String   @map("triggered_by") // userId or "SYSTEM"
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("subscription_events")
+}
+
+model FeatureLimit {
+  id        Int    @id @default(autoincrement())
+  featureId Int    @map("feature_id")
+  planId    Int    @map("plan_id")
+  limit     Int    @default(0) // 0 = unlimited
+  period    String @default("monthly")
+
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([featureId, planId])
+  @@map("feature_limits")
 }
 
 model WebhookEvent {
@@ -2038,17 +2095,9 @@ model WebhookEvent {
   @@map("webhook_events")
 }
 
-// 2. Add Vendor Tax Compliance (W-9 / 1099)
-model VendorTaxInfo {
-  id                String    @id @default(uuid())
-  vendorId          String    @unique @map("vendor_id")
-  w9Collected       Boolean   @default(false) @map("w9_collected")
-  w9CollectedAt     DateTime? @map("w9_collected_at")
-  taxIdType         String // "SSN", "EIN", "ITIN"
-  taxIdEncrypted    String    @map("tax_id_encrypted")
-  backupWithholding Boolean   @default(false) @map("backup_withholding")
-
-  vendor Vendor @relation(fields: [vendorId], references: [id])
-
-  @@map("vendor_tax_info")
+enum WebhookStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
 }
