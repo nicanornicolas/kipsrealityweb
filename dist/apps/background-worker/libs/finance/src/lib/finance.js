@@ -41,4 +41,3 @@ var finance_default = Finance;
 0 && (module.exports = {
   Finance
 });
-//# sourceMappingURL=finance.js.map

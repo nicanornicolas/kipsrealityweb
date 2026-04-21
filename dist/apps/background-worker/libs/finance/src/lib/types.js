@@ -58,4 +58,3 @@ const CHART_OF_ACCOUNTS = {
 0 && (module.exports = {
   CHART_OF_ACCOUNTS
 });
-//# sourceMappingURL=types.js.map
