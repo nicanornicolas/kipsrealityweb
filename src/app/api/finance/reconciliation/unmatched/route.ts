@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser, prisma } from '@rentflow/iam';
-import { JournalService } from '@rentflow/finance';
-
-const journalService = new JournalService(prisma);
 
 export async function GET(req: Request) {
   try {
@@ -23,23 +20,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Organization required' }, { status: 403 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const propertyId = searchParams.get('propertyId') || undefined;
-
-    const summary = await journalService.getFinanceSummary(
-      user.organizationId,
-      propertyId,
-    );
-
-    return NextResponse.json({
-      success: true,
-      data: summary,
+    const unmatched = await prisma.bankTransaction.findMany({
+      where: {
+        organizationId: user.organizationId,
+        status: 'UNMATCHED',
+      },
+      orderBy: { date: 'desc' },
     });
+
+    return NextResponse.json({ success: true, data: unmatched });
   } catch (error: unknown) {
-    console.error('[FINANCE_SUMMARY_API]', error);
+    console.error('[RECONCILIATION_UNMATCHED_API]', error);
     const message =
-      error instanceof Error ? error.message : 'Failed to fetch financial summary';
+      error instanceof Error ? error.message : 'Failed to fetch unmatched transactions';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

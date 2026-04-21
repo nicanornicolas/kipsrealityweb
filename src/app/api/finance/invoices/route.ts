@@ -24,22 +24,20 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    const propertyId = searchParams.get('propertyId') || undefined;
-
-    const summary = await journalService.getFinanceSummary(
-      user.organizationId,
-      propertyId,
-    );
-
-    return NextResponse.json({
-      success: true,
-      data: summary,
+    const result = await journalService.getInvoices(user.organizationId, {
+      propertyId: searchParams.get('propertyId') || undefined,
+      status: (searchParams.get('status') as any) || undefined,
+      search: searchParams.get('search') || undefined,
+      page: Number(searchParams.get('page') || 1),
+      limit: Number(searchParams.get('limit') || 10),
     });
-  } catch (error: unknown) {
-    console.error('[FINANCE_SUMMARY_API]', error);
-    const message =
-      error instanceof Error ? error.message : 'Failed to fetch financial summary';
-    return NextResponse.json({ error: message }, { status: 500 });
+
+    return NextResponse.json({ success: true, ...result });
+  } catch (error) {
+    console.error('[FINANCE_INVOICES_API]', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch invoice list' },
+      { status: 500 },
+    );
   }
 }
-

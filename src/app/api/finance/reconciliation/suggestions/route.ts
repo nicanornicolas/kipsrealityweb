@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser, prisma } from '@rentflow/iam';
-import { JournalService } from '@rentflow/finance';
-
-const journalService = new JournalService(prisma);
+import { getCurrentUser } from '@rentflow/iam';
+import { ReconciliationService } from '@rentflow/finance';
 
 export async function GET(req: Request) {
   try {
@@ -24,22 +22,19 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    const propertyId = searchParams.get('propertyId') || undefined;
+    const txId = searchParams.get('bankTransactionId');
+    if (!txId) {
+      return NextResponse.json({ error: 'Missing bankTransactionId' }, { status: 400 });
+    }
 
-    const summary = await journalService.getFinanceSummary(
-      user.organizationId,
-      propertyId,
-    );
+    const service = new ReconciliationService();
+    const suggestions = await service.getSuggestedMatches(txId, user.organizationId);
 
-    return NextResponse.json({
-      success: true,
-      data: summary,
-    });
+    return NextResponse.json({ success: true, data: suggestions });
   } catch (error: unknown) {
-    console.error('[FINANCE_SUMMARY_API]', error);
+    console.error('[RECONCILIATION_SUGGESTIONS_API]', error);
     const message =
-      error instanceof Error ? error.message : 'Failed to fetch financial summary';
+      error instanceof Error ? error.message : 'Failed to fetch reconciliation suggestions';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

@@ -4,6 +4,28 @@ import { JournalService } from '@rentflow/finance';
 
 const journalService = new JournalService(prisma);
 
+/**
+ * GET /api/finance/vendors/compliance
+ * Returns vendor list with W-9 status and YTD spend for 1099-MISC compliance.
+ * 
+ * Authorization: PROPERTY_MANAGER, SYSTEM_ADMIN
+ * Scope: Current organization only
+ * 
+ * Response:
+ * {
+ *   success: true,
+ *   data: [
+ *     {
+ *       id: string,
+ *       name: string,
+ *       businessType: 'INDIVIDUAL' | 'LLC' | 'CORPORATION',
+ *       w9Status: 'MISSING' | 'COLLECTED' | 'EXPIRED',
+ *       totalPaidYTD: number,
+ *       requires1099: boolean  // IRS risk flag
+ *     }
+ *   ]
+ * }
+ */
 export async function GET(req: Request) {
   try {
     const user = await getCurrentUser(req);
@@ -23,23 +45,18 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Organization required' }, { status: 403 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const propertyId = searchParams.get('propertyId') || undefined;
-
-    const summary = await journalService.getFinanceSummary(
+    const vendors = await journalService.getVendorComplianceList(
       user.organizationId,
-      propertyId,
     );
 
     return NextResponse.json({
       success: true,
-      data: summary,
+      data: vendors,
     });
   } catch (error: unknown) {
-    console.error('[FINANCE_SUMMARY_API]', error);
+    console.error('[VENDOR_COMPLIANCE_API]', error);
     const message =
-      error instanceof Error ? error.message : 'Failed to fetch financial summary';
+      error instanceof Error ? error.message : 'Failed to fetch vendor compliance data';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
