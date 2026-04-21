@@ -74,4 +74,3 @@ async function verifyOtp(userId, code, type) {
   generateOtpCode,
   verifyOtp
 });
-//# sourceMappingURL=otp.js.map
