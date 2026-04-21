@@ -2,9 +2,9 @@
 // POST /api/utilities/[id]/bills - Create new bill
 
 import { NextRequest, NextResponse } from "next/server";
-import { createBill } from "@/lib/utilities/utility-bill-service";
-import { prisma } from "@/lib/db";
-import { UtilitySplitMethod } from "@/lib/utilities/utility-types";
+import { createBill } from "@rentflow/utilities";
+import { prisma } from "@rentflow/iam";
+import { UtilitySplitMethod } from "@rentflow/utilities";
 import { UtilityBill, Property, UtilityAllocation } from "@prisma/client";
 
 type BillWithRelations = UtilityBill & {

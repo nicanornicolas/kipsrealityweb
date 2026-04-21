@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../../libs/payments/src/lib/types.ts"],
+  "sourcesContent": ["import { PaymentGateway, TransactionStatus, User, Organization } from \"@prisma/client\";\r\nexport { PaymentGateway, TransactionStatus };\r\n\r\nexport interface PaymentRequest {\r\n    user: User;\r\n    organization: Organization; // The Landlord (Receiver)\r\n    amount: number;             // Decimal amount (e.g., 1000.00) for display\r\n    currency: string;           // \"KES\" or \"USD\"\r\n    invoiceId: string;\r\n    metadata?: any;\r\n}\r\n\r\nexport interface PaymentResult {\r\n    transactionId: string;      // The Processor's ID (e.g., Stripe PI or Paystack Ref)\r\n    status: TransactionStatus;\r\n    gateway: PaymentGateway;\r\n\r\n    // For redirection flows (Paystack/Standard Stripe)\r\n    checkoutUrl?: string;\r\n\r\n    // For embedded flows (Stripe Elements)\r\n    clientSecret?: string;\r\n\r\n    rawResponse?: any;          // For debugging logs\r\n}\r\n\r\n// The contract every strategy must obey\r\nexport interface IPaymentStrategy {\r\n    initializePayment(request: PaymentRequest): Promise<PaymentResult>;\r\n    verifyTransaction(reference: string): Promise<PaymentResult>;\r\n}\r\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,oBAAsE;",
+  "names": []
+}

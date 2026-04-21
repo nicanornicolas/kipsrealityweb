@@ -2,8 +2,8 @@
 // Handles recovery from accidental property deactivation
 
 import { NextRequest, NextResponse } from 'next/server';
-import { propertyDeactivationService } from '@/lib/property-deactivation-service';
-import { getCurrentUser } from '@/lib/Getcurrentuser';
+import { propertyDeactivationService } from "@rentflow/property";
+import { getCurrentUser } from "@rentflow/iam";
 
 interface RecoverPropertyRequest {
   reason?: string;

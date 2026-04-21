@@ -1,12 +1,23 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
-interface Plan { id: number; name: string; }
-interface Feature { id: number; title: string; }
+interface Plan {
+  id: number;
+  name: string;
+}
+interface Feature {
+  id: number;
+  title: string;
+}
 
-export type SidebarUserRole = "SYSTEM_ADMIN" | "PROPERTY_MANAGER" | "TENANT" | "VENDOR" | "ALL";
+export type SidebarUserRole =
+  | 'SYSTEM_ADMIN'
+  | 'PROPERTY_MANAGER'
+  | 'TENANT'
+  | 'VENDOR'
+  | 'ALL';
 
 interface SidebarItem {
   id?: number;
@@ -32,17 +43,17 @@ interface Props {
 }
 
 const INITIAL_FORM_STATE: SidebarItem = {
-  label: "",
-  path: "",
-  role: "ALL",
-  icon: "",
-  section: "",
+  label: '',
+  path: '',
+  role: 'ALL',
+  icon: '',
+  section: '',
   order: undefined,
-  badge: "",
-  description: "",
+  badge: '',
+  description: '',
   isActive: true,
   isExternal: false,
-  target: "",
+  target: '',
   featureId: null,
   planIds: [],
 };
@@ -71,23 +82,23 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
     setLoading(true);
     try {
       const [fRes, pRes] = await Promise.all([
-        fetch("/api/feature"),
-        fetch("/api/plan")
+        fetch('/api/feature'),
+        fetch('/api/plan'),
       ]);
 
       if (!fRes.ok || !pRes.ok) {
-        throw new Error("Failed to fetch data");
+        throw new Error('Failed to fetch data');
       }
 
       const [featuresData, plansData] = await Promise.all([
         fRes.json(),
-        pRes.json()
+        pRes.json(),
       ]);
 
       setFeatures(featuresData);
       setPlans(plansData);
     } catch (error) {
-      toast.error("Failed to load features and plans");
+      toast.error('Failed to load features and plans');
       console.error(error);
     } finally {
       setLoading(false);
@@ -98,55 +109,61 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
     const newErrors: Record<string, string> = {};
 
     if (!form.label.trim()) {
-      newErrors.label = "Label is required";
+      newErrors.label = 'Label is required';
     }
 
     if (!form.path.trim()) {
-      newErrors.path = "Path is required";
-    } else if (!form.path.startsWith("/")) {
-      newErrors.path = "Path must start with /";
+      newErrors.path = 'Path is required';
+    } else if (!form.path.startsWith('/')) {
+      newErrors.path = 'Path must start with /';
     }
 
     if (!form.role) {
-      newErrors.role = "Role is required";
+      newErrors.role = 'Role is required';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
 
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: "" }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
   const handlePlanChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedPlans = Array.from(e.target.selectedOptions, opt => Number(opt.value));
-    setForm(prev => ({ ...prev, planIds: selectedPlans }));
+    const selectedPlans = Array.from(e.target.selectedOptions, (opt) =>
+      Number(opt.value),
+    );
+    setForm((prev) => ({ ...prev, planIds: selectedPlans }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please fix the errors in the form");
+      toast.error('Please fix the errors in the form');
       return;
     }
 
     setSaving(true);
 
-    const method = item?.id ? "PUT" : "POST";
-    const url = item?.id ? `/api/sidebarItem/${item.id}` : "/api/sidebarItem";
+    const method = item?.id ? 'PUT' : 'POST';
+    const url = item?.id ? `/api/sidebarItem/${item.id}` : '/api/sidebarItem';
 
     // Clean up form data - ensure all required fields are included
     const payload = {
@@ -168,7 +185,7 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
     try {
       const response = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -176,11 +193,13 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      toast.success(`Sidebar item ${item ? "updated" : "created"} successfully`);
+      toast.success(
+        `Sidebar item ${item ? 'updated' : 'created'} successfully`,
+      );
       setForm(INITIAL_FORM_STATE);
       onSaved();
     } catch (error) {
-      toast.error("Failed to save sidebar item");
+      toast.error('Failed to save sidebar item');
       console.error(error);
     } finally {
       setSaving(false);
@@ -208,7 +227,7 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
       <form onSubmit={handleSubmit} className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900">
-            {item ? "Edit Sidebar Item" : "Create Sidebar Item"}
+            {item ? 'Edit Sidebar Item' : 'Create Sidebar Item'}
           </h2>
           {onCancel && (
             <button
@@ -225,10 +244,15 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
         <div className="space-y-4">
           {/* Basic Information */}
           <div className="space-y-4 pb-4 border-b border-gray-200">
-            <h3 className="text-sm font-medium text-gray-700">Basic Information</h3>
-            
+            <h3 className="text-sm font-medium text-gray-700">
+              Basic Information
+            </h3>
+
             <div>
-              <label htmlFor="label" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="label"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Label <span className="text-red-500">*</span>
               </label>
               <input
@@ -239,14 +263,19 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
                 placeholder="e.g., Dashboard"
                 required
                 className={`w-full border px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                  errors.label ? "border-red-500" : "border-gray-300"
+                  errors.label ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
-              {errors.label && <p className="mt-1 text-sm text-red-500">{errors.label}</p>}
+              {errors.label && (
+                <p className="mt-1 text-sm text-red-500">{errors.label}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="path" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="path"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Path <span className="text-red-500">*</span>
               </label>
               <input
@@ -257,24 +286,29 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
                 placeholder="/dashboard"
                 required
                 className={`w-full border px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                  errors.path ? "border-red-500" : "border-gray-300"
+                  errors.path ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
-              {errors.path && <p className="mt-1 text-sm text-red-500">{errors.path}</p>}
+              {errors.path && (
+                <p className="mt-1 text-sm text-red-500">{errors.path}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="role"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Role <span className="text-red-500">*</span>
               </label>
               <select
                 id="role"
                 name="role"
-                value={form.role || ""}
+                value={form.role || ''}
                 onChange={handleChange}
                 required
                 className={`w-full border px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                  errors.role ? "border-red-500" : "border-gray-300"
+                  errors.role ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
                 <option value="">-- Select Role --</option>
@@ -284,17 +318,22 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
                 <option value="VENDOR">Vendor</option>
                 <option value="ALL">All Roles</option>
               </select>
-              {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}
+              {errors.role && (
+                <p className="mt-1 text-sm text-red-500">{errors.role}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Description
               </label>
               <textarea
                 id="description"
                 name="description"
-                value={form.description || ""}
+                value={form.description || ''}
                 onChange={handleChange}
                 placeholder="Brief description of this menu item"
                 rows={3}
@@ -305,17 +344,22 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
 
           {/* Display Options */}
           <div className="space-y-4 pb-4 border-b border-gray-200">
-            <h3 className="text-sm font-medium text-gray-700">Display Options</h3>
+            <h3 className="text-sm font-medium text-gray-700">
+              Display Options
+            </h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="icon" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="icon"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Icon
                 </label>
                 <input
                   id="icon"
                   name="icon"
-                  value={form.icon || ""}
+                  value={form.icon || ''}
                   onChange={handleChange}
                   placeholder="e.g., home"
                   className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -323,13 +367,16 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
               </div>
 
               <div>
-                <label htmlFor="badge" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="badge"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Badge
                 </label>
                 <input
                   id="badge"
                   name="badge"
-                  value={form.badge || ""}
+                  value={form.badge || ''}
                   onChange={handleChange}
                   placeholder="e.g., New"
                   className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -339,13 +386,16 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="section" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="section"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Section
                 </label>
                 <input
                   id="section"
                   name="section"
-                  value={form.section || ""}
+                  value={form.section || ''}
                   onChange={handleChange}
                   placeholder="e.g., Main"
                   className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -353,14 +403,17 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
               </div>
 
               <div>
-                <label htmlFor="order" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="order"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Order
                 </label>
                 <input
                   id="order"
                   name="order"
                   type="number"
-                  value={form.order || ""}
+                  value={form.order || ''}
                   onChange={handleChange}
                   placeholder="0"
                   min="0"
@@ -372,29 +425,41 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
 
           {/* Access Control */}
           <div className="space-y-4 pb-4 border-b border-gray-200">
-            <h3 className="text-sm font-medium text-gray-700">Access Control</h3>
+            <h3 className="text-sm font-medium text-gray-700">
+              Access Control
+            </h3>
 
             <div>
-              <label htmlFor="featureId" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="featureId"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Feature Gate
               </label>
               <select
                 id="featureId"
                 name="featureId"
-                value={form.featureId || ""}
+                value={form.featureId || ''}
                 onChange={handleChange}
                 className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               >
                 <option value="">-- No Feature Restriction --</option>
-                {features.map(f => (
-                  <option key={f.id} value={f.id}>{f.title}</option>
+                {features.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.title}
+                  </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500">Link to a feature flag to control visibility</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Link to a feature flag to control visibility
+              </p>
             </div>
 
             <div>
-              <label htmlFor="planIds" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="planIds"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Plans
               </label>
               <select
@@ -405,17 +470,23 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
                 onChange={handlePlanChange}
                 className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[100px]"
               >
-                {plans.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                {plans.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple plans</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Hold Ctrl/Cmd to select multiple plans
+              </p>
             </div>
           </div>
 
           {/* Advanced Options */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-gray-700">Advanced Options</h3>
+            <h3 className="text-sm font-medium text-gray-700">
+              Advanced Options
+            </h3>
 
             <div className="flex items-center gap-6">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -442,18 +513,23 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
             </div>
 
             <div>
-              <label htmlFor="target" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="target"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Target
               </label>
               <input
                 id="target"
                 name="target"
-                value={form.target || ""}
+                value={form.target || ''}
                 onChange={handleChange}
                 placeholder="e.g., _blank"
                 className="w-full border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               />
-              <p className="mt-1 text-xs text-gray-500">HTML target attribute for links</p>
+              <p className="mt-1 text-xs text-gray-500">
+                HTML target attribute for links
+              </p>
             </div>
           </div>
         </div>
@@ -470,11 +546,13 @@ export default function SidebarItemForm({ item, onSaved, onCancel }: Props) {
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 Saving...
               </span>
+            ) : item ? (
+              'Update Item'
             ) : (
-              item ? "Update Item" : "Create Item"
+              'Create Item'
             )}
           </button>
-          
+
           <button
             type="button"
             onClick={handleReset}

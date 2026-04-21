@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { prisma } from '@/lib/db';
+import { prisma } from '@rentflow/iam';
 import { NextResponse } from 'next/server';
 
 // GET /api/properties/utilities?propertyIds=... or ?propertyId=...
@@ -71,3 +71,4 @@ export async function GET(req: Request) {
 
   return NextResponse.json(Object.values(result));
 }
+

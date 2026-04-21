@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 import * as fc from 'fast-check';
-import { auditService } from '../../src/lib/audit-service';
-import { ListingAction, ListingStatus } from '../../src/lib/listing-types';
-import { prisma } from '../../src/lib/db';
+import { auditService } from '@rentflow/property';
+import { ListingAction, ListingStatus } from '@rentflow/property';
+import { prisma } from '@rentflow/iam';
 
 /**
  * Property-Based Test for Comprehensive Audit Logging

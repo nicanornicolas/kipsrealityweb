@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { prisma } from '@rentflow/iam';
+import { getCurrentUser } from '@rentflow/iam';
 import { 
   sendTenantApplicationNotification, 
   sendApplicationConfirmation 
-} from "@/lib/mail-service";
-import { APP_NAME } from "@/lib/constants";
-import { encryptSSN } from '@/lib/encryption';
+} from "../../../lib/mail-service";
+import { APP_NAME } from "../../../lib/constants";
+import { encryptSSN } from "../../../lib/encryption";
 
 export async function POST(request: Request) {
   try {
@@ -207,7 +207,7 @@ export async function POST(request: Request) {
           leaseType
         );
         
-        console.log(`📧 Notification email sent to property manager: ${managerEmail}`);
+        console.log(`ðŸ“§ Notification email sent to property manager: ${managerEmail}`);
       } catch (emailError) {
         console.error('Failed to send notification email:', emailError);
         // Don't fail the application submission if email fails
@@ -228,7 +228,7 @@ export async function POST(request: Request) {
         unitNumber
       );
       
-      console.log(`📧 Application confirmation email sent to applicant: ${email}`);
+      console.log(`ðŸ“§ Application confirmation email sent to applicant: ${email}`);
     } catch (emailError) {
       console.error('Failed to send confirmation email:', emailError);
       // Don't fail the application submission if email fails
@@ -292,3 +292,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+

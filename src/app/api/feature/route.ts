@@ -1,6 +1,6 @@
 //api/feature/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 export async function GET(req: Request) {
   try {
@@ -44,3 +44,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to create feature" }, { status: 500 });
   }
 }
+

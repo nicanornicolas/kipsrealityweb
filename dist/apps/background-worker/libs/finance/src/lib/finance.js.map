@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../../libs/finance/src/lib/finance.tsx"],
+  "sourcesContent": ["import styles from './finance.module.css';\n\nexport function Finance() {\n  return (\n    <div className={styles['container']}>\n      <h1>Welcome to Finance!</h1>\n    </div>\n  );\n}\n\nexport default Finance;\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAKM;AALN,qBAAmB;AAEZ,SAAS,UAAU;AACxB,SACE,4CAAC,SAAI,WAAW,eAAAA,QAAO,WAAW,GAChC,sDAAC,QAAG,iCAAmB,GACzB;AAEJ;AAEA,IAAO,kBAAQ;",
+  "names": ["styles"]
+}

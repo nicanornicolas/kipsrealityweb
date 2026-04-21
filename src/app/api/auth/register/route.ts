@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { prisma } from '@rentflow/iam';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { sendVerificationEmail } from "@/lib/mail-service";
+import { sendVerificationEmail } from "../../../../lib/mail-service";
 
 // UserRole type - matches OrganizationUser.role accepted values
 type UserRole = 'SYSTEM_ADMIN' | 'PROPERTY_MANAGER' | 'VENDOR' | 'TENANT' | 'AGENT';
@@ -148,3 +148,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+

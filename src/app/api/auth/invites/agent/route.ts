@@ -1,8 +1,8 @@
 // src/app/api/auth/invites/agent/route.ts
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { verifyAccessToken } from "@/lib/auth";
+import { prisma } from "@rentflow/iam";
+import { verifyAccessToken } from "@rentflow/iam";
 import { cookies } from "next/headers";
 import crypto from "crypto";
 
@@ -201,3 +201,4 @@ export async function GET() {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

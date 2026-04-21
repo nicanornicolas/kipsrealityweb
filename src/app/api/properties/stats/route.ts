@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { verifyAccessToken } from "@/lib/auth";
+import { prisma } from "@rentflow/iam";
+import { verifyAccessToken } from "@rentflow/iam";
 
 /**
  * GET /api/properties/stats
@@ -183,3 +183,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+

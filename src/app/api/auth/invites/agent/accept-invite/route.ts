@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 export async function POST(request: Request) {
   try {
@@ -183,3 +183,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

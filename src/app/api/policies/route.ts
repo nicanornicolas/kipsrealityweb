@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { requireSystemAdmin } from "@/lib/rbac/requireRole";
+import { requireSystemAdmin } from "@rentflow/iam";
 
 const prisma = new PrismaClient();
 
@@ -59,3 +59,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to create policy" }, { status: 500 });
   }
 }
+

@@ -4,7 +4,9 @@ export interface Jobs {
     description:string;
     image:string
 }
-export const jobPositions:Jobs[] = [
+const demoEnabled = process.env.NEXT_PUBLIC_ENABLE_DEMO_CONTENT === 'true';
+
+export const jobPositions:Jobs[] = demoEnabled ? [
 {
 id: 1,
 title: "Frontend Web developer",
@@ -25,4 +27,4 @@ description: "The frontend developer will be expected to design and code web app
 image: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=500&fit=crop"
 },
 
-]
+] : [];

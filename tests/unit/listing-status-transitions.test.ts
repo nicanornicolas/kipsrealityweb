@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import { ListingStatus, isValidStatusTransition, VALID_STATUS_TRANSITIONS } from '../../src/lib/listing-types';
+import { ListingStatus, isValidStatusTransition, VALID_STATUS_TRANSITIONS } from '@rentflow/property';
 
 /**
  * Property-Based Test for Listing Status Transitions

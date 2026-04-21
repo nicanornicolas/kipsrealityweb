@@ -2,8 +2,8 @@
 
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { prisma } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 
 const INVITE_EXPIRY_HOURS = 1;
 
@@ -62,3 +62,4 @@ export async function POST() {
     );
   }
 }
+

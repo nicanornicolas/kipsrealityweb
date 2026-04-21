@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { requireSystemAdmin } from "@/lib/rbac/requireRole";
+import { prisma } from "@rentflow/iam";
+import { requireSystemAdmin } from "@rentflow/iam";
 
 // GET all services or by categoryId (supports both categoryId and category_id for compatibility)
 export async function GET(req: NextRequest) {
@@ -41,3 +41,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Database error", details: err }, { status: 500 });
   }
 }
+

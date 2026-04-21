@@ -1,9 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { FileText, Upload, Trash2, FileCheck } from "lucide-react";
-import { LeaseDocumentType } from "@prisma/client";
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { FileText, Upload, Trash2, FileCheck } from 'lucide-react';
+import { LeaseDocumentType } from '@prisma/client';
+import { toast } from 'sonner';
 
 interface Lease {
   id: string;
@@ -34,7 +35,7 @@ interface LeaseAmendment {
   leaseId: string;
   amendmentType: string;
   description?: string;
-  status: "PENDING" | "APPROVED" | "REJECTED" | "EXECUTED";
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXECUTED';
   createdAt: string;
   effectiveDate: string;
 }
@@ -43,7 +44,12 @@ export default function TenantLeasePage() {
   const params = useParams();
 
   // Get leaseId directly from params - it's already resolved in client components
-  const leaseId = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : null;
+  const leaseId =
+    typeof params.id === 'string'
+      ? params.id
+      : Array.isArray(params.id)
+        ? params.id[0]
+        : null;
 
   const [lease, setLease] = useState<Lease | null>(null);
   const [documents, setDocuments] = useState<LeaseDocument[]>([]);
@@ -52,15 +58,15 @@ export default function TenantLeasePage() {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [documentType, setDocumentType] = useState<LeaseDocumentType>("OTHER");
-  const [description, setDescription] = useState("");
+  const [documentType, setDocumentType] = useState<LeaseDocumentType>('OTHER');
+  const [description, setDescription] = useState('');
 
   // Fetch all lease-related data
   useEffect(() => {
-    console.log("LeaseId from params:", leaseId);
+    console.log('LeaseId from params:', leaseId);
 
     if (!leaseId) {
-      setError("No lease ID provided");
+      setError('No lease ID provided');
       setLoading(false);
       return;
     }
@@ -71,7 +77,7 @@ export default function TenantLeasePage() {
   async function fetchData() {
     if (!leaseId) return;
 
-    console.log("Fetching data for lease:", leaseId);
+    console.log('Fetching data for lease:', leaseId);
     setLoading(true);
     setError(null);
 
@@ -79,15 +85,19 @@ export default function TenantLeasePage() {
       // Fetch lease data
       const leaseRes = await fetch(`/api/lease/${leaseId}`);
       if (!leaseRes.ok) {
-        const errorData = await leaseRes.json().catch(() => ({ error: "Failed to fetch lease" }));
-        throw new Error(errorData.error || `Failed to fetch lease: ${leaseRes.status}`);
+        const errorData = await leaseRes
+          .json()
+          .catch(() => ({ error: 'Failed to fetch lease' }));
+        throw new Error(
+          errorData.error || `Failed to fetch lease: ${leaseRes.status}`,
+        );
       }
       const leaseDataRaw = await leaseRes.json();
 
       // Map API response to Lease interface
       const leaseData: Lease = {
         id: leaseDataRaw.id,
-        propertyName: leaseDataRaw.property?.name || "Unknown Property",
+        propertyName: leaseDataRaw.property?.name || 'Unknown Property',
         rentAmount: leaseDataRaw.rentAmount,
         paymentDueDay: leaseDataRaw.paymentDueDay,
         startDate: leaseDataRaw.startDate,
@@ -105,11 +115,11 @@ export default function TenantLeasePage() {
           const docData: LeaseDocument[] = await docRes.json();
           setDocuments(docData);
         } else {
-          console.warn("Failed to fetch documents, continuing anyway");
+          console.warn('Failed to fetch documents, continuing anyway');
           setDocuments([]);
         }
       } catch (docErr) {
-        console.warn("Document fetch error:", docErr);
+        console.warn('Document fetch error:', docErr);
         setDocuments([]);
       }
 
@@ -120,17 +130,18 @@ export default function TenantLeasePage() {
           const amendData: LeaseAmendment[] = await amendRes.json();
           setAmendments(amendData);
         } else {
-          console.warn("Failed to fetch amendments, continuing anyway");
+          console.warn('Failed to fetch amendments, continuing anyway');
           setAmendments([]);
         }
       } catch (amendErr) {
-        console.warn("Amendment fetch error:", amendErr);
+        console.warn('Amendment fetch error:', amendErr);
         setAmendments([]);
       }
-
     } catch (err) {
-      console.error("Fetch tenant lease data error:", err);
-      setError(err instanceof Error ? err.message : "Failed to fetch lease data");
+      console.error('Fetch tenant lease data error:', err);
+      setError(
+        err instanceof Error ? err.message : 'Failed to fetch lease data',
+      );
     } finally {
       setLoading(false);
     }
@@ -142,29 +153,31 @@ export default function TenantLeasePage() {
     try {
       setUploading(true);
       const formData = new FormData();
-      formData.append("file", file);
-      formData.append("documentType", documentType);
-      formData.append("description", description);
+      formData.append('file', file);
+      formData.append('documentType', documentType);
+      formData.append('description', description);
 
       const res = await fetch(`/api/lease/${leaseId}/document`, {
-        method: "POST",
+        method: 'POST',
         body: formData,
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({ error: "Upload failed" }));
-        throw new Error(errData.error || "Upload failed");
+        const errData = await res
+          .json()
+          .catch(() => ({ error: 'Upload failed' }));
+        throw new Error(errData.error || 'Upload failed');
       }
 
       const newDoc: LeaseDocument = await res.json();
       setDocuments([newDoc, ...documents]);
       setFile(null);
-      setDescription("");
-      setDocumentType("OTHER");
-      alert("Document uploaded successfully!");
+      setDescription('');
+      setDocumentType('OTHER');
+      toast.success('Document uploaded successfully!');
     } catch (err) {
-      console.error("Document upload error:", err);
-      alert(err instanceof Error ? err.message : "Upload failed");
+      console.error('Document upload error:', err);
+      toast.error(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setUploading(false);
     }
@@ -174,15 +187,20 @@ export default function TenantLeasePage() {
   async function signAmendment(amendmentId: string) {
     if (!leaseId) return;
     try {
-      const res = await fetch(`/api/lease/${leaseId}/amendment/${amendmentId}/sign`, {
-        method: "POST",
-      });
-      if (!res.ok) throw new Error("Failed to sign amendment");
-      alert("Amendment signed successfully!");
+      const res = await fetch(
+        `/api/lease/${leaseId}/amendment/${amendmentId}/sign`,
+        {
+          method: 'POST',
+        },
+      );
+      if (!res.ok) throw new Error('Failed to sign amendment');
+      toast.success('Amendment signed successfully!');
       fetchData(); // Refresh data
     } catch (err) {
-      console.error("Sign amendment error:", err);
-      alert(err instanceof Error ? err.message : "Failed to sign amendment");
+      console.error('Sign amendment error:', err);
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to sign amendment',
+      );
     }
   }
 
@@ -204,7 +222,9 @@ export default function TenantLeasePage() {
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-red-600 text-3xl">⚠</span>
           </div>
-          <p className="text-xl font-semibold text-red-600 mb-2">Error Loading Lease</p>
+          <p className="text-xl font-semibold text-red-600 mb-2">
+            Error Loading Lease
+          </p>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => fetchData()}
@@ -236,7 +256,9 @@ export default function TenantLeasePage() {
         <p>Payment Due Day: {lease.paymentDueDay}</p>
         <p>Start Date: {new Date(lease.startDate).toLocaleDateString()}</p>
         <p>End Date: {new Date(lease.endDate).toLocaleDateString()}</p>
-        <p>Status: <span className="font-semibold">{lease.leaseStatus}</span></p>
+        <p>
+          Status: <span className="font-semibold">{lease.leaseStatus}</span>
+        </p>
         <p>Document Version: {lease.documentVersion}</p>
       </div>
 
@@ -257,7 +279,7 @@ export default function TenantLeasePage() {
         >
           {Object.keys(LeaseDocumentType).map((type) => (
             <option key={type} value={type}>
-              {type.replace(/_/g, " ")}
+              {type.replace(/_/g, ' ')}
             </option>
           ))}
         </select>
@@ -273,28 +295,38 @@ export default function TenantLeasePage() {
           disabled={!file || uploading}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          <Upload className="w-4 h-4" /> {uploading ? "Uploading..." : "Upload Document"}
+          <Upload className="w-4 h-4" />{' '}
+          {uploading ? 'Uploading...' : 'Upload Document'}
         </button>
       </div>
 
       {/* Documents List */}
       <div className="bg-white p-6 rounded-xl shadow space-y-3">
         <h3 className="text-lg font-medium flex items-center gap-2">
-          <FileText className="w-5 h-5 text-blue-600" /> Lease Documents ({documents.length})
+          <FileText className="w-5 h-5 text-blue-600" /> Lease Documents (
+          {documents.length})
         </h3>
         {documents.length === 0 ? (
           <p className="text-gray-500">No documents uploaded yet.</p>
         ) : (
           <div className="space-y-2">
             {documents.map((doc) => (
-              <div key={doc.id} className="flex justify-between items-center border border-gray-200 rounded p-3 hover:bg-gray-50">
+              <div
+                key={doc.id}
+                className="flex justify-between items-center border border-gray-200 rounded p-3 hover:bg-gray-50"
+              >
                 <div>
                   <p className="font-medium">{doc.fileName}</p>
                   <p className="text-xs text-gray-500">
-                    {doc.documentType.replace(/_/g, " ")} &middot; {(doc.fileSize / 1024).toFixed(2)} KB &middot; Uploaded on{" "}
+                    {doc.documentType.replace(/_/g, ' ')} &middot;{' '}
+                    {(doc.fileSize / 1024).toFixed(2)} KB &middot; Uploaded on{' '}
                     {new Date(doc.createdAt).toLocaleDateString()}
                   </p>
-                  {doc.description && <p className="text-sm text-gray-600 mt-1">{doc.description}</p>}
+                  {doc.description && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      {doc.description}
+                    </p>
+                  )}
                 </div>
                 <a
                   href={doc.fileUrl}
@@ -313,21 +345,31 @@ export default function TenantLeasePage() {
       {/* Amendments */}
       <div className="bg-white p-6 rounded-xl shadow space-y-3">
         <h3 className="text-lg font-medium flex items-center gap-2">
-          <FileCheck className="w-5 h-5 text-blue-600" /> Amendments ({amendments.length})
+          <FileCheck className="w-5 h-5 text-blue-600" /> Amendments (
+          {amendments.length})
         </h3>
         {amendments.length === 0 ? (
           <p className="text-gray-500">No amendments proposed yet.</p>
         ) : (
           <div className="space-y-2">
             {amendments.map((amend) => (
-              <div key={amend.id} className="flex justify-between items-center border border-gray-200 rounded p-3 hover:bg-gray-50">
+              <div
+                key={amend.id}
+                className="flex justify-between items-center border border-gray-200 rounded p-3 hover:bg-gray-50"
+              >
                 <div>
-                  <p className="font-medium">{amend.description || amend.amendmentType.replace(/_/g, " ")}</p>
+                  <p className="font-medium">
+                    {amend.description ||
+                      amend.amendmentType.replace(/_/g, ' ')}
+                  </p>
                   <p className="text-xs text-gray-500">
-                    Status: <span className="font-semibold">{amend.status}</span> &middot; Effective: {new Date(amend.effectiveDate).toLocaleDateString()}
+                    Status:{' '}
+                    <span className="font-semibold">{amend.status}</span>{' '}
+                    &middot; Effective:{' '}
+                    {new Date(amend.effectiveDate).toLocaleDateString()}
                   </p>
                 </div>
-                {amend.status === "PENDING" && (
+                {amend.status === 'PENDING' && (
                   <button
                     onClick={() => signAmendment(amend.id)}
                     className="px-3 py-1 bg-navy-700 text-white rounded hover:bg-navy-800 text-sm font-medium"

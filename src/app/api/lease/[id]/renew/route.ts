@@ -1,85 +1,42 @@
-// src/app/api/lease/[id]/renew/route.ts
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
-import { randomUUID } from "crypto";
+import { getCurrentUser } from '@rentflow/iam';
+import {
+  LeaseWorkflowAction,
+  LeaseWorkflowActionError,
+  leaseWorkflowService,
+} from "@rentflow/lease";
 
-async function internalRenewLease(req: NextRequest, leaseId: string) {
+// POST: Approve lease and transition to APPROVED/ACTIVE/TERMINATED
+export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const body = await req.json();
-    const { newEndDate, newRentAmount, renewalType = "MANUAL", negotiationNotes } = body;
+    const { leaseId, action } = await req.json();
 
-    const lease = await prisma.lease.findUnique({
-      where: { id: leaseId },
-      include: { property: true, tenant: true, application: true },
+    if (!leaseId || !action) {
+      return NextResponse.json(
+        { error: "Missing leaseId or action" },
+        { status: 400 }
+      );
+    }
+
+    const updatedLease = await leaseWorkflowService.executeAction({
+      leaseId,
+      action: action as LeaseWorkflowAction,
+      organizationUserId: user.organizationUserId,
+      userId: user.id,
     });
 
-    if (!lease) return NextResponse.json({ error: "Lease not found" }, { status: 404 });
-    if (lease.property.managerId !== user.organizationUserId)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-
-    // Create renewal record
-    const renewal = await prisma.leaseRenewal.create({
-      data: {
-        leaseId,
-        renewalType,
-        oldEndDate: lease.endDate,
-        newEndDate: new Date(newEndDate),
-        oldRentAmount: lease.rentAmount,
-        newRentAmount: newRentAmount || lease.rentAmount,
-        negotiationNotes,
-        status: "PENDING",
-      } as Prisma.LeaseRenewalUncheckedCreateInput,
-    });
-
-    // Send notification
-    await prisma.leaseNotification.create({
-      data: {
-        leaseId,
-        notificationType: "RENEWAL_REMINDER",
-        recipientEmail: lease.tenant?.email || lease.application?.email || "",
-        recipientRole: "TENANT",
-        subject: "Lease Renewal Offer",
-        message: `Your lease is eligible for renewal. New terms: Rent ${newRentAmount}, End Date: ${newEndDate}`,
-        scheduledFor: new Date(),
-        status: "PENDING",
-      } as Prisma.LeaseNotificationUncheckedCreateInput,
-    });
-
-    // Audit log
-    await prisma.leaseAuditLog.create({
-      data: {
-        id: randomUUID(),
-        leaseId,
-        action: "RENEWAL_INITIATED",
-        performedBy: user.id,
-        changes: {
-          renewalId: renewal.id,
-          oldEndDate: renewal.oldEndDate,
-          newEndDate: renewal.newEndDate,
-          oldRentAmount: renewal.oldRentAmount,
-          newRentAmount: renewal.newRentAmount,
-          status: renewal.status,
-        } as Prisma.InputJsonValue,
-      } as Prisma.LeaseAuditLogUncheckedCreateInput,
-    });
-
-    return NextResponse.json({ renewal, message: "Renewal initiated" });
-  } catch (error: unknown) {
-    console.error("Renewal error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json(updatedLease);
+  } catch (error: any) {
+    if (error instanceof LeaseWorkflowActionError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    console.error("Workflow error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id } = await context.params;
-  return internalRenewLease(req, id);
-}

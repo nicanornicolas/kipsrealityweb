@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/Getcurrentuser';
-import { prisma } from '@/lib/db';
+import { getCurrentUser } from '@rentflow/iam';
+import { prisma } from '@rentflow/iam';
+import type { Prisma } from '@prisma/client';
 
 interface UnitExportFilters {
     propertyId?: string;
@@ -18,6 +19,68 @@ interface UnitExportOptions {
     groupByProperty?: boolean;
     customFields?: string[];
 }
+
+type EnhancedUnit = {
+    id: string;
+    unitNumber: string | null;
+    rent: number | null;
+    bedrooms: number | null;
+    bathrooms: number | null;
+    squareFootage: number | null;
+    propertyId: string | null;
+    propertyName?: string | null;
+    propertyAddress?: string | null;
+    organizationName?: string | null;
+    createdAt: Date;
+    listingStatus: string;
+    listingTitle?: string | null;
+    listingPrice?: number | null;
+    listingCreatedAt?: Date | null;
+    availabilityDate?: Date | null;
+    expirationDate?: Date | null;
+    daysListed?: number;
+    statusChanges?: number;
+    lastStatusChange?: Date | null;
+    totalApplications?: number;
+    approvedApplications?: number;
+    pendingApplications?: number;
+    rejectedApplications?: number;
+    conversionRate?: number;
+    recentApplications?: Array<{
+        applicantName: string;
+        email: string;
+        status: string;
+        appliedAt: Date;
+    }>;
+    hasActiveLease?: boolean;
+    activeLeaseTenant?: string | null;
+    activeLeaseStart?: Date | null;
+    activeLeaseEnd?: Date | null;
+    activeLeaseRent?: number | null;
+    totalLeases?: number;
+    expiredLeases?: number;
+    averageLeaseLength?: number;
+    [key: string]: unknown;
+};
+
+type GroupedUnits = Record<string, {
+    propertyId?: string | null;
+    propertyName?: string | null;
+    propertyAddress?: string | null;
+    units: EnhancedUnit[];
+}>;
+
+type UnitSummary = {
+    totalUnits: number;
+    listedUnits: number;
+    privateUnits: number;
+    suspendedUnits: number;
+    totalApplications: number;
+    unitsWithApplications: number;
+    unitsWithActiveLeases: number;
+    occupancyRate: number;
+    averageRent: number;
+};
 
 export async function POST(request: NextRequest) {
     try {
@@ -39,7 +102,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Build where clause for units
-        const whereClause: any = {};
+        const whereClause: Prisma.UnitWhereInput = {};
         
         if (filters?.propertyId) {
             whereClause.propertyId = filters.propertyId;
@@ -102,7 +165,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Enhance units with calculated metrics
-        const enhancedUnits = units.map(unit => {
+        const enhancedUnits: EnhancedUnit[] = units.map(unit => {
             const baseUnit = {
                 id: unit.id,
                 unitNumber: unit.unitNumber,
@@ -247,7 +310,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function generateUnitExport(
-    units: any[], 
+    units: EnhancedUnit[],
     options?: UnitExportOptions
 ): Promise<string | Buffer> {
     const format = options?.format || 'JSON';
@@ -273,8 +336,8 @@ async function generateUnitExport(
     }
 }
 
-function groupUnitsByProperty(units: any[]): Record<string, any> {
-    const grouped: Record<string, any> = {};
+function groupUnitsByProperty(units: EnhancedUnit[]): GroupedUnits {
+    const grouped: GroupedUnits = {};
     
     units.forEach(unit => {
         const propertyKey = unit.propertyName || 'Unknown Property';
@@ -292,14 +355,14 @@ function groupUnitsByProperty(units: any[]): Record<string, any> {
     return grouped;
 }
 
-function generateUnitSummary(units: any[]): any {
+function generateUnitSummary(units: EnhancedUnit[]): UnitSummary {
     const totalUnits = units.length;
     const listedUnits = units.filter(unit => unit.listingStatus === 'ACTIVE').length;
     const privateUnits = units.filter(unit => unit.listingStatus === 'PRIVATE').length;
     const suspendedUnits = units.filter(unit => unit.listingStatus === 'SUSPENDED').length;
     
-    const unitsWithApplications = units.filter(unit => unit.totalApplications > 0);
-    const totalApplications = units.reduce((sum, unit) => sum + (unit.totalApplications || 0), 0);
+    const unitsWithApplications = units.filter(unit => (unit.totalApplications ?? 0) > 0);
+    const totalApplications = units.reduce((sum, unit) => sum + (unit.totalApplications ?? 0), 0);
     
     const unitsWithLeases = units.filter(unit => unit.hasActiveLease);
     const occupancyRate = totalUnits > 0 ? (unitsWithLeases.length / totalUnits) * 100 : 0;
@@ -318,7 +381,7 @@ function generateUnitSummary(units: any[]): any {
     };
 }
 
-function generateUnitCSV(units: any[], options?: UnitExportOptions): string {
+function generateUnitCSV(units: EnhancedUnit[], options?: UnitExportOptions): string {
     if (units.length === 0) {
         return 'No units found';
     }
@@ -371,7 +434,8 @@ function generateUnitCSV(units: any[], options?: UnitExportOptions): string {
         // Add custom field values if specified
         if (options?.customFields) {
             options.customFields.forEach(field => {
-                row.push(unit[field]?.toString() || '');
+                const customValue = unit[field];
+                row.push(customValue != null ? String(customValue) : '');
             });
         }
 
@@ -383,7 +447,7 @@ function generateUnitCSV(units: any[], options?: UnitExportOptions): string {
     ).join('\n');
 }
 
-function generateUnitPDF(units: any[], options?: UnitExportOptions): Buffer {
+function generateUnitPDF(units: EnhancedUnit[], options?: UnitExportOptions): Buffer {
     const summary = generateUnitSummary(units);
     
     const content = `
@@ -412,3 +476,4 @@ ${unit.hasActiveLease ? 'Has Active Lease' : 'No Active Lease'}
     
     return Buffer.from(content, 'utf-8');
 }
+

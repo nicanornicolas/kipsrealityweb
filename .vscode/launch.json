@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug background-worker with Nx",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["nx", "serve", "background-worker"],
+      "env": {
+        "NODE_OPTIONS": "--inspect=9229"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/dist/apps/background-worker/**/*.js",
+        "${workspaceFolder}/dist/apps/background-worker/**/*.mjs",
+        "${workspaceFolder}/dist/apps/background-worker/**/*.cjs",
+        "!**/node_modules/**"
+      ]
+    }
+  ]
+}

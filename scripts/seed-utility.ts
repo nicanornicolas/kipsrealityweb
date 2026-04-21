@@ -3,7 +3,7 @@
  * Fixed for Prisma Client (CamelCase Field Names)
  */
 
-import { PrismaClient, utility_type, UtilityBillStatus, UtilitySplitMethod } from '@prisma/client';
+import { PrismaClient, UtilityType, UtilityBillStatus, UtilitySplitMethod } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 const prisma = new PrismaClient();
@@ -74,8 +74,8 @@ async function main() {
         await tx.utilityDispute.deleteMany({}); // New table
         await tx.utilityAllocation.deleteMany({});
         await tx.utilityBill.deleteMany({});
-        await tx.utility_reading.deleteMany({});
-        await tx.lease_utility.deleteMany({});
+        await tx.utilityReading.deleteMany({});
+        await tx.leaseUtility.deleteMany({});
         console.log(`  ✓ Cleaned up utility tables`);
     });
 
@@ -88,7 +88,7 @@ async function main() {
         create: {
             id: IDS.utilities.electricity,
             name: 'Electricity',
-            type: 'METERED' as utility_type,
+            type: 'METERED' as UtilityType,
             unitPrice: 0.18,
         },
     });
@@ -99,7 +99,7 @@ async function main() {
         create: {
             id: IDS.utilities.water,
             name: 'Water',
-            type: 'METERED' as utility_type,
+            type: 'METERED' as UtilityType,
             unitPrice: 0.006,
         },
     });
@@ -108,25 +108,25 @@ async function main() {
     // STEP 3: Seed lease_utility
     console.log('\n🔗 Linking utilities to lease...');
 
-    await prisma.lease_utility.upsert({
+    await prisma.leaseUtility.upsert({
         where: { id: IDS.leaseUtilities.elec },
         update: {},
         create: {
             id: IDS.leaseUtilities.elec,
-            lease_id: primaryLease.id,
-            utility_id: electricityUtil.id,
-            is_tenant_responsible: true,
+            leaseId: primaryLease.id,
+            utilityId: electricityUtil.id,
+            isTenantResponsible: true,
         },
     });
 
-    await prisma.lease_utility.upsert({
+    await prisma.leaseUtility.upsert({
         where: { id: IDS.leaseUtilities.water },
         update: {},
         create: {
             id: IDS.leaseUtilities.water,
-            lease_id: primaryLease.id,
-            utility_id: waterUtil.id,
-            is_tenant_responsible: true,
+            leaseId: primaryLease.id,
+            utilityId: waterUtil.id,
+            isTenantResponsible: true,
         },
     });
     console.log(`  ✓ 2 lease-utility links`);
@@ -137,25 +137,25 @@ async function main() {
     const prevDate = new Date('2024-12-15');
     const currDate = new Date('2025-01-15');
 
-    await prisma.utility_reading.upsert({
+    await prisma.utilityReading.upsert({
         where: { id: IDS.readings.previous },
         update: {},
         create: {
             id: IDS.readings.previous,
-            lease_utility_id: IDS.leaseUtilities.elec, // Use ID directly
-            reading_value: 10000,
+            leaseUtilityId: IDS.leaseUtilities.elec, // Use ID directly
+            readingValue: 10000,
             readingDate: prevDate,
             amount: null,
         },
     });
 
-    await prisma.utility_reading.upsert({
+    await prisma.utilityReading.upsert({
         where: { id: IDS.readings.current },
         update: {},
         create: {
             id: IDS.readings.current,
-            lease_utility_id: IDS.leaseUtilities.elec, // Use ID directly
-            reading_value: 10350,
+            leaseUtilityId: IDS.leaseUtilities.elec, // Use ID directly
+            readingValue: 10350,
             readingDate: currDate,
             amount: 350 * 0.18,
         },

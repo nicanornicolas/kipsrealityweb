@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../libs/dss/src/index.ts"],
+  "sourcesContent": ["export * from './lib/dss';\r\nexport * from './lib/types';\r\nexport * from './lib/hashing';\r\nexport * from './lib/workflow';\r\nexport * from './lib/document-service';\r\nexport * from './lib/notary-service';\r\nexport * from './lib/workflow-service';\r\nexport * from './lib/pdf-generator';\r\n"],
+  "mappings": ";;;;;;;;;;;;;;AAAA;AAAA;AAAA,wBAAc,sBAAd;AACA,wBAAc,wBADd;AAEA,wBAAc,0BAFd;AAGA,wBAAc,2BAHd;AAIA,wBAAc,mCAJd;AAKA,wBAAc,iCALd;AAMA,wBAAc,mCANd;AAOA,wBAAc,gCAPd;",
+  "names": []
+}

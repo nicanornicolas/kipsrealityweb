@@ -1,24 +1,30 @@
-'use client'
+'use client';
 
-import { Suspense, useEffect, useState, FormEvent, ChangeEvent } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { Button, TextField, Card, Typography, CircularProgress } from '@mui/material'
-import { toast } from 'react-toastify'
+import { Suspense, useEffect, useState, FormEvent, ChangeEvent } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import {
+  Button,
+  TextField,
+  Card,
+  Typography,
+  CircularProgress,
+} from '@mui/material';
+import { toast } from 'sonner';
 
 interface FormData {
-  email: string
-  token: string
-  password: string
-  firstName: string
-  lastName: string
-  phone: string
+  email: string;
+  token: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
 }
 
 function VendorAcceptInviteForm() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [inviteValid, setInviteValid] = useState(true)
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [inviteValid, setInviteValid] = useState(true);
 
   const [formData, setFormData] = useState<FormData>({
     email: '',
@@ -26,57 +32,62 @@ function VendorAcceptInviteForm() {
     password: '',
     firstName: '',
     lastName: '',
-    phone: ''
-  })
+    phone: '',
+  });
 
   useEffect(() => {
-    const email = searchParams.get('email')
-    const token = searchParams.get('token')
+    const email = searchParams.get('email');
+    const token = searchParams.get('token');
 
-    console.log("Vendor Accept Invite URL params:", { email, token }) // Debug
+    console.log('Vendor Accept Invite URL params:', { email, token }); // Debug
 
     if (!email || !token) {
-      console.error("Missing required params:", { email: !!email, token: !!token })
-      setInviteValid(false)
-      return
+      console.error('Missing required params:', {
+        email: !!email,
+        token: !!token,
+      });
+      setInviteValid(false);
+      return;
     }
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       email,
-      token
-    }))
-  }, [searchParams])
+      token,
+    }));
+  }, [searchParams]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
-  }
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
-      console.log("Creating vendor account with:", formData) // Debug
+      console.log('Creating vendor account with:', formData); // Debug
 
       const res = await fetch(`/api/auth/invites/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
+        body: JSON.stringify(formData),
+      });
 
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
 
-      toast.success('Vendor account created successfully! Redirecting to login...')
-      setTimeout(() => router.push('/login'), 1500)
+      toast.success(
+        'Vendor account created successfully! Redirecting to login...',
+      );
+      setTimeout(() => router.push('/login'), 1500);
     } catch (error: any) {
-      console.error("Vendor account creation error:", error)
-      toast.error(error.message || 'Something went wrong.')
+      console.error('Vendor account creation error:', error);
+      toast.error(error.message || 'Something went wrong.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (!inviteValid) {
     return (
@@ -86,17 +97,15 @@ function VendorAcceptInviteForm() {
             Invalid Invite Link
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            The invite link is invalid or missing required information. Please check your email for the correct link.
+            The invite link is invalid or missing required information. Please
+            check your email for the correct link.
           </Typography>
-          <Button
-            variant="outlined"
-            onClick={() => window.history.back()}
-          >
+          <Button variant="outlined" onClick={() => window.history.back()}>
             Go Back
           </Button>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -165,22 +174,24 @@ function VendorAcceptInviteForm() {
             disabled={loading}
             sx={{ mt: 2 }}
           >
-            {loading ? <CircularProgress size={24} /> : "Create Account"}
+            {loading ? <CircularProgress size={24} /> : 'Create Account'}
           </Button>
         </form>
       </Card>
     </div>
-  )
+  );
 }
 
 export default function VendorAcceptInvitePage() {
   return (
-    <Suspense fallback={
-      <div className="flex justify-center items-center min-h-screen">
-        <CircularProgress />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-screen">
+          <CircularProgress />
+        </div>
+      }
+    >
       <VendorAcceptInviteForm />
     </Suspense>
-  )
+  );
 }

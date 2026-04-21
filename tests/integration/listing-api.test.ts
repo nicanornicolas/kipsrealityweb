@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { db } from "@rentflow/iam";
 import { GET, POST, PATCH } from "@/app/api/listings/route";
 import { POST as BulkPOST } from "@/app/api/listings/bulk/route";
 import { PATCH as StatusPATCH } from "@/app/api/listings/[id]/status/route";

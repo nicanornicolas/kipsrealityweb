@@ -28,13 +28,13 @@ interface RevenueChartProps {
 
 export default function RevenueChart({ data, isLoading }: RevenueChartProps) {
     if (isLoading) {
-        return <Skeleton className="h-[350px] w-full rounded-2xl" />;
+        return <Skeleton className="h-[300px] w-full rounded-2xl" />;
     }
 
     // Fallback for empty state (New User)
     if (!data || data.length === 0) {
         return (
-            <div className="h-[350px] w-full flex flex-col items-center justify-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+            <div className="h-[300px] w-full flex flex-col items-center justify-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
                 <div className="p-3 bg-white rounded-full shadow-sm mb-3">
                     <BarChart3 size={24} className="text-gray-300" />
                 </div>
@@ -45,16 +45,17 @@ export default function RevenueChart({ data, isLoading }: RevenueChartProps) {
     }
 
     return (
-        <div className="h-[350px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+        <div className="w-full overflow-hidden">
+            <ResponsiveContainer width="100%" height={300} minHeight={300}>
+                <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 14 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                     <XAxis
                         dataKey="month"
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#9ca3af', fontSize: 12, fontWeight: 500 }}
-                        dy={10}
+                        dy={6}
+                        interval={0}
                     />
                     <YAxis
                         axisLine={false}

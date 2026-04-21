@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { prisma } from '@rentflow/iam';
 import crypto from 'crypto';
 import { z } from 'zod';
-import { sendPasswordResetEmail } from "@/lib/mail-service";
+import { sendPasswordResetEmail } from "../../../../lib/mail-service";
 
 const forgotPasswordSchema = z.object({
     email: z.string().email(),
@@ -86,3 +86,4 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+

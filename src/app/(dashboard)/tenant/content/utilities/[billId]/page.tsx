@@ -16,7 +16,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import type { PaymentInitializationRequest } from "@/lib/payment/client-types";
+import type { PaymentInitializationRequest } from "@rentflow/payments";
 import { useAuth } from "@/context/AuthContext";
 import { z } from "zod";
 import { PhoneNumberUtil } from "google-libphonenumber";

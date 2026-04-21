@@ -1,7 +1,16 @@
-"use client";
+'use client';
 
-import React, { ChangeEvent, useState, useCallback, memo } from "react";
-import { CheckCircle2, User, Briefcase, Home, FileCheck, X, AlertCircle } from "lucide-react";
+import React, { ChangeEvent, useState, useCallback, memo } from 'react';
+import {
+  CheckCircle2,
+  User,
+  Briefcase,
+  Home,
+  FileCheck,
+  X,
+  AlertCircle,
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ApplyModalProps {
   open: boolean;
@@ -14,7 +23,11 @@ interface ApplyModalProps {
     price: number;
     unitId?: string | null;
     propertyId?: string | null;
-    unit?: { id: string; unitNumber?: string; property?: { id: string; name?: string } } | null;
+    unit?: {
+      id: string;
+      unitNumber?: string;
+      property?: { id: string; name?: string };
+    } | null;
     property?: { id: string; name?: string } | null;
   } | null;
 }
@@ -45,108 +58,148 @@ interface TenantFormData {
 }
 
 //input component to prevent re-renders
-const InputField = memo(({ name, placeholder, type = "text", value, onChange, required = false }: any) => (
-  <div className="space-y-1.5">
-    <label className="block text-sm font-medium text-gray-700">
-      {placeholder} {required && <span className="text-red-500">*</span>}
-    </label>
-    <input
-      name={name}
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={onChange}
-      required={required}
-      autoComplete="off"
-      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-    />
-  </div>
-));
+const InputField = memo(
+  ({
+    name,
+    placeholder,
+    type = 'text',
+    value,
+    onChange,
+    required = false,
+  }: any) => (
+    <div className="space-y-1.5">
+      <label className="block text-sm font-medium text-gray-700">
+        {placeholder} {required && <span className="text-red-500">*</span>}
+      </label>
+      <input
+        name={name}
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+        autoComplete="off"
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+      />
+    </div>
+  ),
+);
 
 InputField.displayName = 'InputField';
 
 // select component
-const SelectField = memo(({ name, placeholder, value, options, onChange, required = false }: any) => (
-  <div className="space-y-1.5">
-    <label className="block text-sm font-medium text-gray-700">
-      {placeholder} {required && <span className="text-red-500">*</span>}
-    </label>
-    <select
-      name={name}
-      value={value}
-      onChange={onChange}
-      required={required}
-      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
-    >
-      <option value="">Select {placeholder}</option>
-      {options.map((opt: any) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
-  </div>
-));
+const SelectField = memo(
+  ({ name, placeholder, value, options, onChange, required = false }: any) => (
+    <div className="space-y-1.5">
+      <label className="block text-sm font-medium text-gray-700">
+        {placeholder} {required && <span className="text-red-500">*</span>}
+      </label>
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+      >
+        <option value="">Select {placeholder}</option>
+        {options.map((opt: any) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  ),
+);
 
 SelectField.displayName = 'SelectField';
 
-export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyModalProps) {
+export default function ApplyModal({
+  open,
+  onClose,
+  onSubmit,
+  listing,
+}: ApplyModalProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<TenantFormData>({
-    fullName: "",
-    email: "",
-    phone: "",
-    dob: "",
-    ssn: "",
-    address: "",
-    employerName: "",
-    jobTitle: "",
-    monthlyIncome: "",
-    employmentDuration: "",
-    leaseType: "",
-    occupancyType: "",
-    moveInDate: "",
-    leaseDuration: "",
-    occupants: "",
-    pets: "",
-    landlordName: "",
-    landlordContact: "",
-    reasonForMoving: "",
-    referenceName: "",
-    referenceContact: "",
+    fullName: '',
+    email: '',
+    phone: '',
+    dob: '',
+    ssn: '',
+    address: '',
+    employerName: '',
+    jobTitle: '',
+    monthlyIncome: '',
+    employmentDuration: '',
+    leaseType: '',
+    occupancyType: '',
+    moveInDate: '',
+    leaseDuration: '',
+    occupants: '',
+    pets: '',
+    landlordName: '',
+    landlordContact: '',
+    reasonForMoving: '',
+    referenceName: '',
+    referenceContact: '',
     consent: false,
   });
 
   // Input Change Handler
-  const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, type, value } = e.target;
-    const checked = (e.target as HTMLInputElement).type === "checkbox" ? (e.target as HTMLInputElement).checked : undefined;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  }, []);
+  const handleInputChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const { name, type, value } = e.target;
+      const checked =
+        (e.target as HTMLInputElement).type === 'checkbox'
+          ? (e.target as HTMLInputElement).checked
+          : undefined;
+      setFormData((prev) => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      }));
+    },
+    [],
+  );
 
   // Select Change Handler
-  const handleSelectChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  }, []);
+  const handleSelectChange = useCallback(
+    (e: ChangeEvent<HTMLSelectElement>) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    },
+    [],
+  );
 
-  const nextStep = useCallback(() => setStep((prev) => Math.min(prev + 1, 4)), []);
-  const prevStep = useCallback(() => setStep((prev) => Math.max(prev - 1, 1)), []);
+  const nextStep = useCallback(
+    () => setStep((prev) => Math.min(prev + 1, 4)),
+    [],
+  );
+  const prevStep = useCallback(
+    () => setStep((prev) => Math.max(prev - 1, 1)),
+    [],
+  );
 
   const isStepValid = useCallback(() => {
     switch (step) {
       case 1:
-        return formData.fullName && formData.email && formData.phone && formData.dob;
+        return (
+          formData.fullName && formData.email && formData.phone && formData.dob
+        );
       case 2:
-        return formData.employerName && formData.jobTitle && formData.monthlyIncome;
+        return (
+          formData.employerName && formData.jobTitle && formData.monthlyIncome
+        );
       case 3:
-        return formData.leaseType && formData.occupancyType && formData.moveInDate && formData.leaseDuration;
+        return (
+          formData.leaseType &&
+          formData.occupancyType &&
+          formData.moveInDate &&
+          formData.leaseDuration
+        );
       case 4:
         return formData.consent;
       default:
@@ -164,31 +217,36 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
       const payload = {
         ...formData,
         unitId: listing?.unit?.id || listing?.unitId || null,
-        propertyId: listing?.unit?.property?.id || listing?.property?.id || null,
-        monthlyIncome: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : null,
+        propertyId:
+          listing?.unit?.property?.id || listing?.property?.id || null,
+        monthlyIncome: formData.monthlyIncome
+          ? parseFloat(formData.monthlyIncome)
+          : null,
         occupants: formData.occupants ? Number(formData.occupants) : null,
       };
 
-      console.log("Submitting payload:", payload);
+      console.log('Submitting payload:', payload);
 
-      const res = await fetch("/api/tenant-application", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/tenant-application', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       const result = await res.json();
-      
+
       if (!res.ok) {
         // Handle specific error for units not listed
         if (result.code === 'UNIT_NOT_LISTED') {
-          throw new Error("This unit is not currently available for applications. Only units with active marketplace listings accept applications.");
+          throw new Error(
+            'This unit is not currently available for applications. Only units with active marketplace listings accept applications.',
+          );
         }
-        throw new Error(result.error || "Failed to submit application");
+        throw new Error(result.error || 'Failed to submit application');
       }
 
       onSubmit(result);
-      alert("Your tenant application has been submitted successfully!");
+      toast.success('Your tenant application has been submitted successfully!');
       onClose();
     } catch (err: any) {
       console.error(err);
@@ -203,10 +261,10 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
   const progress = (step / 4) * 100;
 
   const stepIcons = [
-    { icon: User, label: "Personal Info" },
-    { icon: Briefcase, label: "Employment" },
-    { icon: Home, label: "Lease Details" },
-    { icon: FileCheck, label: "References" },
+    { icon: User, label: 'Personal Info' },
+    { icon: Briefcase, label: 'Employment' },
+    { icon: Home, label: 'Lease Details' },
+    { icon: FileCheck, label: 'References' },
   ];
 
   return (
@@ -227,12 +285,17 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
               <div className="flex items-center gap-2 text-blue-100 text-sm">
                 <Home className="w-4 h-4" />
                 <span>
-                  Unit {listing.unit?.unitNumber || "N/A"} • {listing.unit?.property?.name || listing.property?.name || "Property"}
+                  Unit {listing.unit?.unitNumber || 'N/A'} •{' '}
+                  {listing.unit?.property?.name ||
+                    listing.property?.name ||
+                    'Property'}
                 </span>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xl font-bold">USD {listing.price.toLocaleString()}</p>
+              <p className="text-xl font-bold">
+                USD {listing.price.toLocaleString()}
+              </p>
               <p className="text-xs text-blue-200">per month</p>
             </div>
           </div>
@@ -247,7 +310,9 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
                 />
               </div>
             </div>
-            <span className="text-sm text-blue-100 font-medium whitespace-nowrap">Step {step}/4</span>
+            <span className="text-sm text-blue-100 font-medium whitespace-nowrap">
+              Step {step}/4
+            </span>
           </div>
 
           {/* Step Indicators */}
@@ -260,16 +325,23 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
               return (
                 <div key={stepNum} className="flex items-center gap-2 flex-1">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 flex-shrink-0 ${isCompleted
-                      ? "bg-blue-500"
-                      : isActive
-                        ? "bg-white text-blue-600 ring-2 ring-white/50"
-                        : "bg-blue-800/50 text-blue-300"
-                      }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
+                      isCompleted
+                        ? 'bg-blue-500'
+                        : isActive
+                          ? 'bg-white text-blue-600 ring-2 ring-white/50'
+                          : 'bg-blue-800/50 text-blue-300'
+                    }`}
                   >
-                    {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                    {isCompleted ? (
+                      <CheckCircle2 className="w-4 h-4" />
+                    ) : (
+                      <Icon className="w-4 h-4" />
+                    )}
                   </div>
-                  <span className={`text-xs font-medium hidden sm:block ${isActive ? "text-white" : "text-blue-200"}`}>
+                  <span
+                    className={`text-xs font-medium hidden sm:block ${isActive ? 'text-white' : 'text-blue-200'}`}
+                  >
                     {item.label}
                   </span>
                 </div>
@@ -284,36 +356,109 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
             {step === 1 && (
               <div className="space-y-5 max-w-2xl mx-auto">
                 <div className="mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Personal Information</h3>
-                  <p className="text-gray-600">Please provide your basic details to begin your application</p>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    Personal Information
+                  </h3>
+                  <p className="text-gray-600">
+                    Please provide your basic details to begin your application
+                  </p>
                 </div>
-                <InputField name="fullName" placeholder="Full Legal Name" value={formData.fullName} onChange={handleInputChange} required />
-                <InputField name="email" type="email" placeholder="Email Address" value={formData.email} onChange={handleInputChange} required />
-                <InputField name="phone" type="tel" placeholder="Phone Number" value={formData.phone} onChange={handleInputChange} required />
-                <InputField name="dob" type="date" placeholder="Date of Birth" value={formData.dob} onChange={handleInputChange} required />
-                <InputField name="ssn" placeholder="National ID / Passport Number" value={formData.ssn} onChange={handleInputChange} />
-                <InputField name="address" placeholder="Current Address" value={formData.address} onChange={handleInputChange} />
+                <InputField
+                  name="fullName"
+                  placeholder="Full Legal Name"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  required
+                />
+                <InputField
+                  name="email"
+                  type="email"
+                  placeholder="Email Address"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                />
+                <InputField
+                  name="phone"
+                  type="tel"
+                  placeholder="Phone Number"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  required
+                />
+                <InputField
+                  name="dob"
+                  type="date"
+                  placeholder="Date of Birth"
+                  value={formData.dob}
+                  onChange={handleInputChange}
+                  required
+                />
+                <InputField
+                  name="ssn"
+                  placeholder="National ID / Passport Number"
+                  value={formData.ssn}
+                  onChange={handleInputChange}
+                />
+                <InputField
+                  name="address"
+                  placeholder="Current Address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                />
               </div>
             )}
 
             {step === 2 && (
               <div className="space-y-5 max-w-2xl mx-auto">
                 <div className="mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Employment Details</h3>
-                  <p className="text-gray-600">Tell us about your current employment situation</p>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    Employment Details
+                  </h3>
+                  <p className="text-gray-600">
+                    Tell us about your current employment situation
+                  </p>
                 </div>
-                <InputField name="employerName" placeholder="Employer Name" value={formData.employerName} onChange={handleInputChange} required />
-                <InputField name="jobTitle" placeholder="Job Title / Position" value={formData.jobTitle} onChange={handleInputChange} required />
-                <InputField name="monthlyIncome" type="number" placeholder="Monthly Income " value={formData.monthlyIncome} onChange={handleInputChange} required />
-                <InputField name="employmentDuration" placeholder="Employment Duration (e.g., 2 years)" value={formData.employmentDuration} onChange={handleInputChange} />
+                <InputField
+                  name="employerName"
+                  placeholder="Employer Name"
+                  value={formData.employerName}
+                  onChange={handleInputChange}
+                  required
+                />
+                <InputField
+                  name="jobTitle"
+                  placeholder="Job Title / Position"
+                  value={formData.jobTitle}
+                  onChange={handleInputChange}
+                  required
+                />
+                <InputField
+                  name="monthlyIncome"
+                  type="number"
+                  placeholder="Monthly Income "
+                  value={formData.monthlyIncome}
+                  onChange={handleInputChange}
+                  required
+                />
+                <InputField
+                  name="employmentDuration"
+                  placeholder="Employment Duration (e.g., 2 years)"
+                  value={formData.employmentDuration}
+                  onChange={handleInputChange}
+                />
               </div>
             )}
 
             {step === 3 && (
               <div className="space-y-5 max-w-2xl mx-auto">
                 <div className="mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Lease Information</h3>
-                  <p className="text-gray-600">Specify your lease preferences and move-in details</p>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    Lease Information
+                  </h3>
+                  <p className="text-gray-600">
+                    Specify your lease preferences and move-in details
+                  </p>
                 </div>
                 <SelectField
                   name="leaseType"
@@ -321,8 +466,8 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
                   value={formData.leaseType}
                   onChange={handleSelectChange}
                   options={[
-                    { value: "long-term", label: "Long Term (12+ months)" },
-                    { value: "short-term", label: "Short Term (1-11 months)" },
+                    { value: 'long-term', label: 'Long Term (12+ months)' },
+                    { value: 'short-term', label: 'Short Term (1-11 months)' },
                   ]}
                   required
                 />
@@ -332,30 +477,84 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
                   value={formData.occupancyType}
                   onChange={handleSelectChange}
                   options={[
-                    { value: "single", label: "Single Occupant" },
-                    { value: "family", label: "Family" },
-                    { value: "shared", label: "Shared" },
+                    { value: 'single', label: 'Single Occupant' },
+                    { value: 'family', label: 'Family' },
+                    { value: 'shared', label: 'Shared' },
                   ]}
                   required
                 />
-                <InputField name="moveInDate" type="date" placeholder="Preferred Move-in Date" value={formData.moveInDate} onChange={handleInputChange} required />
-                <InputField name="leaseDuration" type="number" placeholder="Lease Duration (months)" value={formData.leaseDuration} onChange={handleInputChange} required />
-                <InputField name="occupants" type="number" placeholder="Number of Occupants" value={formData.occupants} onChange={handleInputChange} />
-                <InputField name="pets" placeholder="Pets (if any)" value={formData.pets} onChange={handleInputChange} />
+                <InputField
+                  name="moveInDate"
+                  type="date"
+                  placeholder="Preferred Move-in Date"
+                  value={formData.moveInDate}
+                  onChange={handleInputChange}
+                  required
+                />
+                <InputField
+                  name="leaseDuration"
+                  type="number"
+                  placeholder="Lease Duration (months)"
+                  value={formData.leaseDuration}
+                  onChange={handleInputChange}
+                  required
+                />
+                <InputField
+                  name="occupants"
+                  type="number"
+                  placeholder="Number of Occupants"
+                  value={formData.occupants}
+                  onChange={handleInputChange}
+                />
+                <InputField
+                  name="pets"
+                  placeholder="Pets (if any)"
+                  value={formData.pets}
+                  onChange={handleInputChange}
+                />
               </div>
             )}
 
             {step === 4 && (
               <div className="space-y-5 max-w-2xl mx-auto">
                 <div className="mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">References & Previous Landlord</h3>
-                  <p className="text-gray-600">Provide references to support your application</p>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    References & Previous Landlord
+                  </h3>
+                  <p className="text-gray-600">
+                    Provide references to support your application
+                  </p>
                 </div>
-                <InputField name="landlordName" placeholder="Previous Landlord Name" value={formData.landlordName} onChange={handleInputChange} />
-                <InputField name="landlordContact" placeholder="Previous Landlord Contact" value={formData.landlordContact} onChange={handleInputChange} />
-                <InputField name="reasonForMoving" placeholder="Reason for Moving" value={formData.reasonForMoving} onChange={handleInputChange} />
-                <InputField name="referenceName" placeholder="Reference Name" value={formData.referenceName} onChange={handleInputChange} />
-                <InputField name="referenceContact" placeholder="Reference Contact" value={formData.referenceContact} onChange={handleInputChange} />
+                <InputField
+                  name="landlordName"
+                  placeholder="Previous Landlord Name"
+                  value={formData.landlordName}
+                  onChange={handleInputChange}
+                />
+                <InputField
+                  name="landlordContact"
+                  placeholder="Previous Landlord Contact"
+                  value={formData.landlordContact}
+                  onChange={handleInputChange}
+                />
+                <InputField
+                  name="reasonForMoving"
+                  placeholder="Reason for Moving"
+                  value={formData.reasonForMoving}
+                  onChange={handleInputChange}
+                />
+                <InputField
+                  name="referenceName"
+                  placeholder="Reference Name"
+                  value={formData.referenceName}
+                  onChange={handleInputChange}
+                />
+                <InputField
+                  name="referenceContact"
+                  placeholder="Reference Contact"
+                  value={formData.referenceContact}
+                  onChange={handleInputChange}
+                />
 
                 <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mt-8">
                   <label className="flex items-start gap-4 cursor-pointer group">
@@ -367,9 +566,15 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
                       className="mt-1 w-6 h-6 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer"
                     />
                     <div className="text-sm text-gray-700 flex-1">
-                      <p className="font-semibold text-base mb-2 text-gray-900">Declaration and Consent</p>
+                      <p className="font-semibold text-base mb-2 text-gray-900">
+                        Declaration and Consent
+                      </p>
                       <p className="leading-relaxed">
-                        I certify that all information provided in this application is accurate and complete. I authorize the verification of this information and consent to a background check, credit check, and reference verification as part of the rental application process.
+                        I certify that all information provided in this
+                        application is accurate and complete. I authorize the
+                        verification of this information and consent to a
+                        background check, credit check, and reference
+                        verification as part of the rental application process.
                       </p>
                     </div>
                   </label>
@@ -391,10 +596,11 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
             <button
               onClick={prevStep}
               disabled={step === 1}
-              className={`px-6 py-3 border-2 rounded-xl font-semibold transition-all ${step === 1
-                ? "border-gray-200 text-gray-400 cursor-not-allowed"
-                : "border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400"
-                }`}
+              className={`px-6 py-3 border-2 rounded-xl font-semibold transition-all ${
+                step === 1
+                  ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400'
+              }`}
             >
               Back
             </button>
@@ -403,10 +609,11 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
                 <button
                   onClick={nextStep}
                   disabled={!isStepValid()}
-                  className={`px-8 py-3 rounded-xl font-semibold transition-all ${isStepValid()
-                    ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
+                  className={`px-8 py-3 rounded-xl font-semibold transition-all ${
+                    isStepValid()
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
                 >
                   Continue →
                 </button>
@@ -414,21 +621,34 @@ export default function ApplyModal({ open, onClose, onSubmit, listing }: ApplyMo
                 <button
                   onClick={handleSubmit}
                   disabled={loading || !formData.consent}
-                  className={`px-8 py-3 rounded-xl font-semibold transition-all ${formData.consent && !loading
-                    ? "bg-blue-700 text-white hover:bg-blue-800 shadow-lg shadow-blue-500/20"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
+                  className={`px-8 py-3 rounded-xl font-semibold transition-all ${
+                    formData.consent && !loading
+                      ? 'bg-blue-700 text-white hover:bg-blue-800 shadow-lg shadow-blue-500/20'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
                 >
                   {loading ? (
                     <span className="flex items-center gap-2">
                       <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
                       </svg>
                       Submitting...
                     </span>
                   ) : (
-                    "Submit Application"
+                    'Submit Application'
                   )}
                 </button>
               )}

@@ -94,7 +94,19 @@ export async function fetchInvoices(filters?: InvoiceFilters): Promise<GroupedIn
       throw new Error(errMsg);
     }
 
-    return await res.json();
+    const data = await res.json();
+
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data.map((group: GroupedInvoice) => ({
+      ...group,
+      leaseId: group?.leaseId ?? "",
+      date: group?.date ?? "",
+      totalAmount: Number(group?.totalAmount ?? 0),
+      invoices: Array.isArray(group?.invoices) ? group.invoices : [],
+    }));
   } catch (error: any) {
     console.error("fetchInvoices error:", error);
     throw new Error(error?.message || "Unexpected error fetching invoices");

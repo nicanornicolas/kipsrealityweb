@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import { AboutUs as AboutUsType } from "@/app/data/AboutUsData";
-import { HeroData } from "@/lib/aboutUs";
-import { motion } from "framer-motion";
+import Image from 'next/image';
+import { AboutUs as AboutUsType } from '@/app/data/AboutUsData';
+import { HeroData } from '@/lib/aboutUs';
+import { motion } from 'framer-motion';
+import heroStoryImage from '@/assets/hero-cityscape.jpg';
 
 interface AboutProps {
   aboutData: AboutUsType[];
   heroData: HeroData | null;
 }
 
-
-
 export default function AboutUsPage({ aboutData, heroData }: AboutProps) {
   // Find specific sections by ID or fallback
-  const discover = aboutData.find((s) => s.section === "company-overview") || aboutData[0];
-  const vision = aboutData.find((s) => s.section === "vision") || aboutData[2];
+  const discover =
+    aboutData.find((s) => s.section === 'company-overview') || aboutData[0];
+  const vision = aboutData.find((s) => s.section === 'vision') || aboutData[2];
 
   return (
     <main className="bg-white">
@@ -27,7 +27,7 @@ export default function AboutUsPage({ aboutData, heroData }: AboutProps) {
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
             >
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-black mb-8 tracking-tight font-heading text-neutral-900">
                 Who We Are
@@ -38,7 +38,9 @@ export default function AboutUsPage({ aboutData, heroData }: AboutProps) {
               </h2>
 
               <p className="text-lg md:text-xl text-[#4B5563] leading-relaxed max-w-2xl font-medium mb-8">
-                RentFlow360 is more than just a platform; we are a team of visionaries dedicated to making rental living seamless, automated, and rewarding for everyone involved.
+                RentFlow360 is more than just a platform; we are a team of
+                visionaries dedicated to making rental living seamless,
+                automated, and rewarding for everyone involved.
               </p>
 
               {/* Accent line */}
@@ -65,10 +67,15 @@ export default function AboutUsPage({ aboutData, heroData }: AboutProps) {
                 </h2>
                 <div className="space-y-6 text-lg text-[#4B5563] leading-relaxed font-medium">
                   <p>
-                    {discover?.description || "It all started with a simple observation: property management was stuck in the past. Landlords were overwhelmed by paperwork, and tenants felt disconnected. We knew there had to be a better way."}
+                    {discover?.description ||
+                      'It all started with a simple observation: property management was stuck in the past. Landlords were overwhelmed by paperwork, and tenants felt disconnected. We knew there had to be a better way.'}
                   </p>
                   <p>
-                    Founded with a clear mission, RentFlow360 set out to bridge this gap. By combining deep real estate expertise with cutting-edge technology, we created a platform that automates the mundane, clarifies the complex, and brings humanity back to the rental experience.
+                    Founded with a clear mission, RentFlow360 set out to bridge
+                    this gap. By combining deep real estate expertise with
+                    cutting-edge technology, we created a platform that
+                    automates the mundane, clarifies the complex, and brings
+                    humanity back to the rental experience.
                   </p>
                 </div>
               </motion.div>
@@ -84,7 +91,7 @@ export default function AboutUsPage({ aboutData, heroData }: AboutProps) {
                 className="relative w-full aspect-4/3 rounded-3xl overflow-hidden shadow-xl"
               >
                 <Image
-                  src="https://images.unsplash.com/photo-1570129477492-45c003edd2be?ixlib=rb-4.0.3&auto=format&fit=crop&q=80&w=1200"
+                  src={heroStoryImage}
                   alt="Our Story House"
                   fill
                   className="object-cover"
@@ -102,7 +109,7 @@ export default function AboutUsPage({ aboutData, heroData }: AboutProps) {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            transition={{ duration: 1, ease: 'easeOut' }}
             className="max-w-4xl mx-auto"
           >
             <div className="inline-flex items-center gap-3 text-[#003b73] text-sm md:text-base font-black tracking-[0.3em] uppercase mb-12">
@@ -110,11 +117,13 @@ export default function AboutUsPage({ aboutData, heroData }: AboutProps) {
             </div>
 
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-[#111827] leading-[1.2] tracking-tight font-heading mb-10">
-              To empower every landlord and tenant with a frictionless rental future.
+              To empower every landlord and tenant with a frictionless rental
+              future.
             </h2>
 
             <p className="text-xl text-[#4B5563] mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
-              {vision?.description || "Building a world where property management is no longer a burden, but a tool for growth and community building."}
+              {vision?.description ||
+                'Building a world where property management is no longer a burden, but a tool for growth and community building.'}
             </p>
 
             <div className="flex justify-center">

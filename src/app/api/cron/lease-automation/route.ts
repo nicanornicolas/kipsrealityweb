@@ -1,5 +1,5 @@
 // app/api/cron/lease-automation/route.ts
-import { runLeaseAutomation } from "@/lib/lease-automation";
+import { runLeaseAutomation } from "@rentflow/lease";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {

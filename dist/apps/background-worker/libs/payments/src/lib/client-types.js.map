@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../../libs/payments/src/lib/client-types.ts"],
+  "sourcesContent": ["export interface PaymentInitializationRequest {\r\n  invoiceId: string;\r\n  amount: number;\r\n  currency: string;\r\n  region: \"USA\" | \"KEN\" | \"NGA\" | \"GHA\";\r\n  paymentMethod?: \"CARD\" | \"MPESA\" | \"ACH\";\r\n  phoneNumber?: string;\r\n}\r\n\r\nexport interface PaymentInitializationResponse {\r\n  paymentId: string;\r\n  gateway: \"STRIPE\" | \"PAYSTACK\" | \"MPESA\" | \"PLAID\";\r\n  clientSecret?: string;\r\n  checkoutUrl?: string;\r\n  requiresAction?: boolean;\r\n  message?: string;\r\n}\r\n"],
+  "mappings": ";;;;;;;;;;;;;AAAA;AAAA;",
+  "names": []
+}

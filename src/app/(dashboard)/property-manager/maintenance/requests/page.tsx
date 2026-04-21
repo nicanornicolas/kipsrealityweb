@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import CreateRequestForm from "@/components/Dashboard/maintenance/CreateRequestForm";
 import MaintenanceRequestsClient from "@/components/Dashboard/maintenance/MaintenanceRequestsClient";
 
@@ -11,3 +11,4 @@ export const metadata: Metadata = {
 export default function MaintenanceRequestsPage() {
   return <MaintenanceRequestsClient />;
 }
+

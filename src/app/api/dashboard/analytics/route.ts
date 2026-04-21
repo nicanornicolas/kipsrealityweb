@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { verifyAccessToken } from "@/lib/auth";
+import { prisma } from "@rentflow/iam";
+import { verifyAccessToken } from "@rentflow/iam";
 import { cookies } from "next/headers";
 
 // Type definitions for Prisma query results to avoid 'any'
@@ -607,3 +607,4 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Failed to fetch analytics" }, { status: 500 });
     }
 }
+

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { prisma } from '@rentflow/iam';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
@@ -58,3 +58,4 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
+

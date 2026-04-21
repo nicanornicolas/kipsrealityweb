@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { verifyAccessToken } from "@/lib/auth";
+import { prisma } from "@rentflow/iam";
+import { verifyAccessToken } from "@rentflow/iam";
 import { cookies } from "next/headers";
-import { sendSms } from "@/lib/sms";
-import { createOtp } from "@/lib/auth/otp";
+import { sendSms } from "../../../../../lib/sms";
+import { createOtp } from "@rentflow/iam";
 
 export async function POST(req: Request) {
   try {
@@ -37,3 +37,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
 }
+

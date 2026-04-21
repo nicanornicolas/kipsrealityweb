@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { db } from "@/lib/db";
-import { ListingService } from "@/lib/listing-service";
-import { AuditService } from "@/lib/audit-service";
-import { ListingAction, ListingStatus } from "@/lib/listing-types";
+import { getCurrentUser } from '@rentflow/iam';
+import { db } from "@rentflow/iam";
+import { ListingService } from "@rentflow/property";
+import { AuditService } from "@rentflow/property";
+import { ListingAction, ListingStatus } from "@rentflow/property";
 
 const listingService = new ListingService();
 const auditService = new AuditService();
@@ -19,10 +19,37 @@ export async function GET(request: NextRequest) {
     const unitId = searchParams.get("unitId");
     const propertyId = searchParams.get("propertyId");
     const status = searchParams.get("status");
+    const category = searchParams.get("category");
+    const categoryId = searchParams.get("categoryId");
+    const city = searchParams.get("city");
+    const propertyTypeId = searchParams.get("propertyTypeId");
+    const isFurnishedParam = searchParams.get("isFurnished");
+    const minPriceParam = searchParams.get("minPrice");
+    const maxPriceParam = searchParams.get("maxPrice");
+    const pageParam = searchParams.get("page");
+    const limitParam = searchParams.get("limit");
     const include = searchParams.get("include")?.split(",") || [];
+
+    const page = pageParam ? Math.max(parseInt(pageParam, 10) || 1, 1) : undefined;
+    const limit = limitParam
+      ? Math.min(Math.max(parseInt(limitParam, 10) || 20, 1), 100)
+      : undefined;
+    const usePagination = page !== undefined || limit !== undefined;
+    const effectivePage = page ?? 1;
+    const effectiveLimit = limit ?? 20;
+
+    const minPrice = minPriceParam ? Number(minPriceParam) : undefined;
+    const maxPrice = maxPriceParam ? Number(maxPriceParam) : undefined;
+    const isFurnished =
+      isFurnishedParam === "true"
+        ? true
+        : isFurnishedParam === "false"
+          ? false
+          : undefined;
 
     // Build query conditions
     const where: any = {};
+    const andConditions: any[] = [];
     
     if (unitId) {
       where.unitId = unitId;
@@ -40,14 +67,80 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    if (categoryId) {
+      where.categoryId = categoryId;
+    } else if (category && category !== "all") {
+      where.category = {
+        name: category
+      };
+    }
+
+    if (Number.isFinite(minPrice)) {
+      andConditions.push({
+        price: {
+          gte: minPrice
+        }
+      });
+    }
+
+    if (Number.isFinite(maxPrice)) {
+      andConditions.push({
+        price: {
+          lte: maxPrice
+        }
+      });
+    }
+
+    if (city && city.trim().length > 0) {
+      andConditions.push({
+        unit: {
+          property: {
+            city: {
+              contains: city.trim(),
+              mode: "insensitive"
+            }
+          }
+        }
+      });
+    }
+
+    if (propertyTypeId) {
+      andConditions.push({
+        unit: {
+          property: {
+            propertyTypeId
+          }
+        }
+      });
+    }
+
+    if (isFurnished !== undefined) {
+      andConditions.push({
+        unit: {
+          property: {
+            isFurnished
+          }
+        }
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
+
     // Build include options
     const includeOptions: any = {
       unit: {
         include: {
-          property: true
+          property: {
+            include: {
+              propertyType: true
+            }
+          }
         }
       },
-      status: true
+      status: true,
+      category: true
     };
 
     if (include.includes("history")) {
@@ -70,11 +163,37 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    const listings = await db.listing.findMany({
-      where,
-      include: includeOptions,
-      orderBy: { updatedAt: "desc" }
-    });
+    const [listings, total] = await Promise.all([
+      db.listing.findMany({
+        where,
+        include: includeOptions,
+        orderBy: { updatedAt: "desc" },
+        ...(usePagination
+          ? {
+              skip: (effectivePage - 1) * effectiveLimit,
+              take: effectiveLimit
+            }
+          : {})
+      }),
+      usePagination
+        ? db.listing.count({ where })
+        : Promise.resolve(0)
+    ]);
+
+    if (usePagination) {
+      const totalPages = Math.max(Math.ceil(total / effectiveLimit), 1);
+      return NextResponse.json({
+        data: listings,
+        pagination: {
+          page: effectivePage,
+          limit: effectiveLimit,
+          total,
+          totalPages,
+          hasNext: effectivePage < totalPages,
+          hasPrev: effectivePage > 1
+        }
+      });
+    }
 
     return NextResponse.json(listings);
   } catch (error) {
@@ -321,3 +440,6 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
+
+
+

@@ -1,0 +1,9 @@
+{
+  "name": "dss",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/dss/src",
+  "projectType": "library",
+  "tags": ["scope:dss"],
+  "// targets": "to see all targets run: nx show project dss --web",
+  "targets": {}
+}

@@ -59,7 +59,7 @@ export default function RentUtilitiesChart({ myproperties, selectedProperty }: R
   }, [myproperties, selectedProperty, selectedMonth]);
 
   return (
-    <div className="w-full h-full min-h-[300px] p-4 bg-white rounded-2xl shadow-md flex flex-col">
+    <div className="w-full h-full min-h-[300px] p-4 bg-white rounded-2xl shadow-md flex flex-col overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">Rent & Utilities Overview</h2>
         <div>
@@ -75,27 +75,29 @@ export default function RentUtilitiesChart({ myproperties, selectedProperty }: R
           </select>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip
-            content={
-              <DashboardChartTooltip
-                valueFormatter={(value) => {
-                  if (typeof value === "number") return `$${value.toLocaleString()}`;
-                  return `$${value}`;
-                }}
-              />
-            }
-            wrapperStyle={DASHBOARD_TOOLTIP_WRAPPER_STYLE}
-          />
-          <Legend />
-          <Bar dataKey="rentCollected" name="Rent Collected" />
-          <Bar dataKey="utilitiesPaid" name="Utilities Paid" />
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="w-full h-[300px] min-h-[300px] overflow-hidden">
+        <ResponsiveContainer width="100%" height={300} minHeight={300}>
+          <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 14 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip
+              content={
+                <DashboardChartTooltip
+                  valueFormatter={(value) => {
+                    if (typeof value === "number") return `$${value.toLocaleString()}`;
+                    return `$${value}`;
+                  }}
+                />
+              }
+              wrapperStyle={DASHBOARD_TOOLTIP_WRAPPER_STYLE}
+            />
+            <Legend />
+            <Bar dataKey="rentCollected" name="Rent Collected" />
+            <Bar dataKey="utilitiesPaid" name="Utilities Paid" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

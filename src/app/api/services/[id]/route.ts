@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { requireSystemAdmin } from "@/lib/rbac/requireRole";
+import { prisma } from "@rentflow/iam";
+import { requireSystemAdmin } from "@rentflow/iam";
 
 type RouteContext = {
   params: Promise<{ id: string }>;

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db"; // Adjust path to your prisma client
+import { prisma } from "@rentflow/iam"; // Adjust path to your prisma client
 import { ApplicationStatus } from "@prisma/client";
 // import { getServerSession } from "next-auth"; 
-// import { authOptions } from "@/lib/auth"; // Adjust to your auth config
+// import { authOptions } from "./"; // Adjust to your auth config
 
 export async function PATCH(
   req: NextRequest,

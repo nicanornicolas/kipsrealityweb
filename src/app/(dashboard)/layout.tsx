@@ -8,6 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { Loader2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { DashboardProvider, useDashboard } from "@/context/DashboardContext";
+import { TenantMobileBottomNav } from "@/components/Dashboard/tenant-mobile-bottom-nav";
 
 export default function DashboardLayout({
   children,
@@ -97,11 +98,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="flex-1 overflow-y-auto bg-gray-50 m-0 p-0"
+          className={`flex-1 overflow-y-auto bg-gray-50 m-0 p-0 ${
+            user.role === "TENANT" ? "pb-[calc(88px+env(safe-area-inset-bottom))] md:pb-0" : ""
+          }`}
         >
           {children}
         </motion.main>
       </div>
+
+      {user.role === "TENANT" && <TenantMobileBottomNav />}
     </div>
   );
 }

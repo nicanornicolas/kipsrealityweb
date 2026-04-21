@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -18,16 +18,30 @@ export default function PdfViewer({ url }: PdfViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [loading, setLoading] = useState(true);
+  const [pageWidth, setPageWidth] = useState(600);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
     setLoading(false);
   }
 
+  useEffect(() => {
+    const updateWidth = () => {
+      const viewportWidth = window.innerWidth;
+      const containerWidth = wrapperRef.current?.clientWidth || viewportWidth;
+      setPageWidth(Math.max(280, Math.min(900, Math.floor(containerWidth - 16))));
+    };
+
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, []);
+
   return (
     <div className="flex flex-col items-center bg-gray-100 rounded-lg p-4 border border-gray-300 min-h-[500px]">
       {/* 2. PDF Render Area */}
-      <div className="relative shadow-lg mb-4 max-w-full overflow-auto">
+      <div ref={wrapperRef} className="relative shadow-lg mb-4 max-w-full overflow-auto">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white z-10 h-[600px] w-full">
             <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
@@ -45,7 +59,7 @@ export default function PdfViewer({ url }: PdfViewerProps) {
             pageNumber={pageNumber}
             renderTextLayer={false}
             renderAnnotationLayer={false}
-            width={600} // Fixed width for consistency, or use responsive logic
+            width={pageWidth}
             className="bg-white"
           />
         </Document>

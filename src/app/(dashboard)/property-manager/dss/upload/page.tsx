@@ -5,7 +5,7 @@ export default function DssUploadPage() {
         <div className="container mx-auto py-10">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900">Document Signing</h1>
-                <p className="text-gray-600">Upload a contract, define signers, and secure it on the blockchain.</p>
+                <p className="text-gray-600">Upload a new contract or select one from your vault, then define signers and prepare it for secure signing.</p>
             </div>
 
             <DocumentUploadForm />

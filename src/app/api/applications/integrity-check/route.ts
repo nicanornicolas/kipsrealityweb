@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/Getcurrentuser';
-import { applicationControlService } from '@/lib/application-control-service';
-import { prisma } from '@/lib/db';
+import { getCurrentUser } from '@rentflow/iam';
+import { applicationControlService } from "@rentflow/property";
+import { prisma } from '@rentflow/iam';
 
 export async function POST(request: Request) {
   try {
@@ -128,3 +128,5 @@ export async function GET(request: Request) {
     );
   }
 }
+
+

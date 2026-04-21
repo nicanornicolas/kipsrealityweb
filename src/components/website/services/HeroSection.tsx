@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from 'next/link';
 
 interface HeroData {
   id: number | string;
@@ -12,14 +12,14 @@ interface HeroData {
   gradient?: string;
 }
 
-import { getHeroSectionData } from "@/lib/server/website-data";
+import { getHeroSectionData } from '@/lib/server/website-data';
 
 // Import fallback image
-import fallbackHero from "@/assets/hero-cityscape.jpg";
-import Image from "next/image";
+import fallbackHero from '@/assets/hero-cityscape.jpg';
+import Image from 'next/image';
 
 export const HeroSection = async () => {
-  const hero = await getHeroSectionData("services");
+  const hero = await getHeroSectionData('services');
 
   // Define fallback logic for image
   const displayImage = hero?.imageUrl || fallbackHero;
@@ -35,18 +35,14 @@ export const HeroSection = async () => {
   }
 
   return (
-    <section
-      className="relative w-full pt-28 pb-16 lg:pt-36 lg:pb-24 bg-white"
-    >
+    <section className="relative w-full pt-28 pb-16 lg:pt-36 lg:pb-24 bg-white">
       <div className="container mx-auto px-6 lg:px-12">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-start">
-
           {/* Left Column - Content */}
           <div className="relative z-10 order-2 lg:order-2 flex flex-col justify-center pt-4 lg:pt-8">
-
             {/* Title */}
             <h1 className="text-3xl lg:text-4xl font-bold leading-[1.15] mb-4 text-[#1F2933] tracking-tight max-w-lg">
-              {(hero?.title || "Comprehensive Services")}
+              {hero?.title || 'Comprehensive Services'}
             </h1>
 
             {/* Subtitle */}
@@ -57,7 +53,9 @@ export const HeroSection = async () => {
             )}
 
             <p className="text-sm lg:text-base leading-relaxed text-[#4B5563] mb-6 max-w-md">
-              Simplify daily operations, automate repetitive tasks, and gain full visibility across all your properties, everything you need in one intuitive dashboard.
+              Simplify daily operations, automate repetitive tasks, and gain
+              full visibility across all your properties, everything you need in
+              one intuitive dashboard.
             </p>
           </div>
 
@@ -68,13 +66,13 @@ export const HeroSection = async () => {
               {typeof displayImage === 'string' ? (
                 <img
                   src={displayImage}
-                  alt={hero?.title || "Services Hero"}
+                  alt={hero?.title || 'Services Hero'}
                   className="absolute inset-0 w-full h-full object-cover transform transition duration-700 hover:scale-105"
                 />
               ) : (
                 <Image
                   src={displayImage}
-                  alt={hero?.title || "Services Hero"}
+                  alt={hero?.title || 'Services Hero'}
                   fill
                   className="object-cover transform transition duration-700 hover:scale-105"
                   placeholder="blur"
@@ -86,7 +84,6 @@ export const HeroSection = async () => {
             <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-[#003b73]/10 rounded-full blur-3xl -z-10" />
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#003b73]/10 rounded-full blur-3xl -z-10" />
           </div>
-
         </div>
       </div>
     </section>

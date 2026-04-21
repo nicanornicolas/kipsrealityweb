@@ -2,7 +2,7 @@
 // POST /api/utilities/[id]/readings - Add new reading
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { LeaseStatus } from "@prisma/client";
 
 export async function GET(

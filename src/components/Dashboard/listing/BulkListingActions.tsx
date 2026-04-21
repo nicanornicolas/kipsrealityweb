@@ -1,12 +1,12 @@
-'use client'
+'use client';
 
-import React, { useState, useCallback } from 'react'
-import { 
-  Eye, 
-  EyeOff, 
-  Pause, 
-  CheckSquare, 
-  Square, 
+import React, { useState, useCallback } from 'react';
+import {
+  Eye,
+  EyeOff,
+  Pause,
+  CheckSquare,
+  Square,
   MoreHorizontal,
   AlertTriangle,
   CheckCircle,
@@ -14,13 +14,13 @@ import {
   RefreshCw,
   Download,
   Wrench,
-  Play
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Progress } from '@/components/ui/progress'
+  Play,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,112 +30,115 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { 
-  UnitWithListingStatus, 
-  ListingStatus, 
+} from '@/components/ui/dropdown-menu';
+import {
+  UnitWithListingStatus,
+  ListingStatus,
   BulkListingActionType,
   BulkListingOperation,
-  BulkResult 
-} from '@/lib/listing-types'
+  BulkResult,
+} from '@rentflow/property/client';
 
 interface BulkListingActionsProps {
-  units: UnitWithListingStatus[]
-  onBulkAction: (operations: BulkListingOperation[]) => Promise<BulkResult>
-  className?: string
-  showUnitList?: boolean
+  units: UnitWithListingStatus[];
+  onBulkAction: (operations: BulkListingOperation[]) => Promise<BulkResult>;
+  className?: string;
+  showUnitList?: boolean;
 }
 
 interface BulkOperationProgress {
-  isRunning: boolean
-  currentOperation: number
-  totalOperations: number
-  currentUnitId?: string
-  results?: BulkResult
+  isRunning: boolean;
+  currentOperation: number;
+  totalOperations: number;
+  currentUnitId?: string;
+  results?: BulkResult;
 }
 
 interface ConfirmationDialogState {
-  isOpen: boolean
-  action?: BulkListingActionType
-  selectedUnits: string[]
-  title: string
-  description: string
+  isOpen: boolean;
+  action?: BulkListingActionType;
+  selectedUnits: string[];
+  title: string;
+  description: string;
 }
 
 export default function BulkListingActions({
   units,
   onBulkAction,
   className = '',
-  showUnitList = true
+  showUnitList = true,
 }: BulkListingActionsProps) {
-  const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set())
+  const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState<BulkOperationProgress>({
     isRunning: false,
     currentOperation: 0,
-    totalOperations: 0
-  })
+    totalOperations: 0,
+  });
   const [confirmDialog, setConfirmDialog] = useState<ConfirmationDialogState>({
     isOpen: false,
     selectedUnits: [],
     title: '',
-    description: ''
-  })
-  const [error, setError] = useState<string | null>(null)
+    description: '',
+  });
+  const [error, setError] = useState<string | null>(null);
 
   // Selection handlers
   const handleSelectAll = useCallback(() => {
     if (selectedUnits.size === units.length) {
-      setSelectedUnits(new Set())
+      setSelectedUnits(new Set());
     } else {
-      setSelectedUnits(new Set(units.map(unit => unit.id)))
+      setSelectedUnits(new Set(units.map((unit) => unit.id)));
     }
-  }, [units, selectedUnits.size])
+  }, [units, selectedUnits.size]);
 
-  const handleSelectUnit = useCallback((unitId: string) => {
-    const newSelection = new Set(selectedUnits)
-    if (newSelection.has(unitId)) {
-      newSelection.delete(unitId)
-    } else {
-      newSelection.add(unitId)
-    }
-    setSelectedUnits(newSelection)
-  }, [selectedUnits])
+  const handleSelectUnit = useCallback(
+    (unitId: string) => {
+      const newSelection = new Set(selectedUnits);
+      if (newSelection.has(unitId)) {
+        newSelection.delete(unitId);
+      } else {
+        newSelection.add(unitId);
+      }
+      setSelectedUnits(newSelection);
+    },
+    [selectedUnits],
+  );
 
   // Get available actions for selected units
   const getAvailableActions = useCallback(() => {
-    if (selectedUnits.size === 0) return []
+    if (selectedUnits.size === 0) return [];
 
-    const selectedUnitData = units.filter(unit => selectedUnits.has(unit.id))
+    const selectedUnitData = units.filter((unit) => selectedUnits.has(unit.id));
     const actions: Array<{
-      type: BulkListingActionType
-      label: string
-      icon: React.ComponentType<any>
-      description: string
-      eligibleCount: number
-    }> = []
+      type: BulkListingActionType;
+      label: string;
+      icon: React.ComponentType<any>;
+      description: string;
+      eligibleCount: number;
+    }> = [];
 
     // Count units eligible for each action
-    const privateUnits = selectedUnitData.filter(unit => 
-      !unit.listing || unit.listing.status === ListingStatus.PRIVATE
-    ).length
+    const privateUnits = selectedUnitData.filter(
+      (unit) => !unit.listing || unit.listing.status === ListingStatus.PRIVATE,
+    ).length;
 
-    const activeUnits = selectedUnitData.filter(unit => 
-      unit.listing?.status === ListingStatus.ACTIVE
-    ).length
+    const activeUnits = selectedUnitData.filter(
+      (unit) => unit.listing?.status === ListingStatus.ACTIVE,
+    ).length;
 
-    const suspendedUnits = selectedUnitData.filter(unit => 
-      unit.listing?.status === ListingStatus.SUSPENDED
-    ).length
+    const suspendedUnits = selectedUnitData.filter(
+      (unit) => unit.listing?.status === ListingStatus.SUSPENDED,
+    ).length;
 
-    const maintenanceUnits = selectedUnitData.filter(unit => 
-      unit.listing?.status === ListingStatus.MAINTENANCE
-    ).length
+    const maintenanceUnits = selectedUnitData.filter(
+      (unit) => unit.listing?.status === ListingStatus.MAINTENANCE,
+    ).length;
 
     if (privateUnits > 0) {
       actions.push({
@@ -143,8 +146,8 @@ export default function BulkListingActions({
         label: 'List on Marketplace',
         icon: Eye,
         description: `List ${privateUnits} private unit${privateUnits !== 1 ? 's' : ''} on marketplace`,
-        eligibleCount: privateUnits
-      })
+        eligibleCount: privateUnits,
+      });
     }
 
     if (activeUnits > 0 || suspendedUnits > 0) {
@@ -153,8 +156,8 @@ export default function BulkListingActions({
         label: 'Remove from Marketplace',
         icon: EyeOff,
         description: `Remove ${activeUnits + suspendedUnits} unit${activeUnits + suspendedUnits !== 1 ? 's' : ''} from marketplace`,
-        eligibleCount: activeUnits + suspendedUnits
-      })
+        eligibleCount: activeUnits + suspendedUnits,
+      });
     }
 
     if (activeUnits > 0) {
@@ -163,8 +166,8 @@ export default function BulkListingActions({
         label: 'Suspend Listings',
         icon: Pause,
         description: `Suspend ${activeUnits} active listing${activeUnits !== 1 ? 's' : ''}`,
-        eligibleCount: activeUnits
-      })
+        eligibleCount: activeUnits,
+      });
     }
 
     // Maintenance mode actions
@@ -174,8 +177,8 @@ export default function BulkListingActions({
         label: 'Start Maintenance Mode',
         icon: Wrench,
         description: `Put ${activeUnits + suspendedUnits} unit${activeUnits + suspendedUnits !== 1 ? 's' : ''} into maintenance mode`,
-        eligibleCount: activeUnits + suspendedUnits
-      })
+        eligibleCount: activeUnits + suspendedUnits,
+      });
     }
 
     if (maintenanceUnits > 0) {
@@ -184,58 +187,70 @@ export default function BulkListingActions({
         label: 'End Maintenance Mode',
         icon: Play,
         description: `End maintenance mode for ${maintenanceUnits} unit${maintenanceUnits !== 1 ? 's' : ''}`,
-        eligibleCount: maintenanceUnits
-      })
+        eligibleCount: maintenanceUnits,
+      });
     }
 
-    return actions
-  }, [selectedUnits, units])
+    return actions;
+  }, [selectedUnits, units]);
 
-  const getEligibleUnitIds = useCallback((action: BulkListingActionType) => {
-    return units
-      .filter(unit => {
-        const currentStatus = unit.listing?.status || ListingStatus.PRIVATE
-        switch (action) {
-          case BulkListingActionType.LIST:
-            return currentStatus === ListingStatus.PRIVATE
-          case BulkListingActionType.UNLIST:
-            return currentStatus === ListingStatus.ACTIVE || currentStatus === ListingStatus.SUSPENDED
-          case BulkListingActionType.SUSPEND:
-            return currentStatus === ListingStatus.ACTIVE
-          case BulkListingActionType.MAINTENANCE_START:
-            return currentStatus === ListingStatus.ACTIVE || currentStatus === ListingStatus.SUSPENDED
-          case BulkListingActionType.MAINTENANCE_END:
-            return currentStatus === ListingStatus.MAINTENANCE
-          default:
-            return false
-        }
-      })
-      .map(unit => unit.id)
-  }, [units])
+  const getEligibleUnitIds = useCallback(
+    (action: BulkListingActionType) => {
+      return units
+        .filter((unit) => {
+          const currentStatus = unit.listing?.status || ListingStatus.PRIVATE;
+          switch (action) {
+            case BulkListingActionType.LIST:
+              return currentStatus === ListingStatus.PRIVATE;
+            case BulkListingActionType.UNLIST:
+              return (
+                currentStatus === ListingStatus.ACTIVE ||
+                currentStatus === ListingStatus.SUSPENDED
+              );
+            case BulkListingActionType.SUSPEND:
+              return currentStatus === ListingStatus.ACTIVE;
+            case BulkListingActionType.MAINTENANCE_START:
+              return (
+                currentStatus === ListingStatus.ACTIVE ||
+                currentStatus === ListingStatus.SUSPENDED
+              );
+            case BulkListingActionType.MAINTENANCE_END:
+              return currentStatus === ListingStatus.MAINTENANCE;
+            default:
+              return false;
+          }
+        })
+        .map((unit) => unit.id);
+    },
+    [units],
+  );
 
   // Confirmation dialog handlers
-  const handleActionClick = useCallback((action: BulkListingActionType) => {
-    const actionConfig = getAvailableActions().find(a => a.type === action)
-    if (!actionConfig) return
+  const handleActionClick = useCallback(
+    (action: BulkListingActionType) => {
+      const actionConfig = getAvailableActions().find((a) => a.type === action);
+      if (!actionConfig) return;
 
-    setConfirmDialog({
-      isOpen: true,
-      action,
-      selectedUnits: Array.from(selectedUnits),
-      title: `Confirm ${actionConfig.label}`,
-      description: actionConfig.description
-    })
-  }, [selectedUnits, getAvailableActions])
+      setConfirmDialog({
+        isOpen: true,
+        action,
+        selectedUnits: Array.from(selectedUnits),
+        title: `Confirm ${actionConfig.label}`,
+        description: actionConfig.description,
+      });
+    },
+    [selectedUnits, getAvailableActions],
+  );
 
   const handleConfirmAction = useCallback(async () => {
-    if (!confirmDialog.action) return
+    if (!confirmDialog.action) return;
 
-    const selectedUnitData = units.filter(unit => selectedUnits.has(unit.id))
-    const operations: BulkListingOperation[] = []
+    const selectedUnitData = units.filter((unit) => selectedUnits.has(unit.id));
+    const operations: BulkListingOperation[] = [];
 
     // Build operations based on action type and unit eligibility
     for (const unit of selectedUnitData) {
-      const currentStatus = unit.listing?.status || ListingStatus.PRIVATE
+      const currentStatus = unit.listing?.status || ListingStatus.PRIVATE;
 
       switch (confirmDialog.action) {
         case BulkListingActionType.LIST:
@@ -247,58 +262,64 @@ export default function BulkListingActions({
                 unitId: unit.id,
                 title: `Unit ${unit.unitNumber}`,
                 description: `${unit.bedrooms || 'N/A'} bedroom, ${unit.bathrooms || 'N/A'} bathroom unit`,
-                price: unit.rentAmount || 0
-              }
-            })
+                price: unit.rentAmount || 0,
+              },
+            });
           }
-          break
+          break;
 
         case BulkListingActionType.UNLIST:
-          if (currentStatus === ListingStatus.ACTIVE || currentStatus === ListingStatus.SUSPENDED) {
+          if (
+            currentStatus === ListingStatus.ACTIVE ||
+            currentStatus === ListingStatus.SUSPENDED
+          ) {
             operations.push({
               unitId: unit.id,
-              action: BulkListingActionType.UNLIST
-            })
+              action: BulkListingActionType.UNLIST,
+            });
           }
-          break
+          break;
 
         case BulkListingActionType.SUSPEND:
           if (currentStatus === ListingStatus.ACTIVE) {
             operations.push({
               unitId: unit.id,
-              action: BulkListingActionType.SUSPEND
-            })
+              action: BulkListingActionType.SUSPEND,
+            });
           }
-          break
+          break;
 
         case BulkListingActionType.MAINTENANCE_START:
-          if (currentStatus === ListingStatus.ACTIVE || currentStatus === ListingStatus.SUSPENDED) {
+          if (
+            currentStatus === ListingStatus.ACTIVE ||
+            currentStatus === ListingStatus.SUSPENDED
+          ) {
             operations.push({
               unitId: unit.id,
               action: BulkListingActionType.MAINTENANCE_START,
               listingData: {
                 unitId: unit.id,
-                reason: 'Bulk maintenance operation'
-              }
-            })
+                reason: 'Bulk maintenance operation',
+              },
+            });
           }
-          break
+          break;
 
         case BulkListingActionType.MAINTENANCE_END:
           if (currentStatus === ListingStatus.MAINTENANCE) {
             operations.push({
               unitId: unit.id,
-              action: BulkListingActionType.MAINTENANCE_END
-            })
+              action: BulkListingActionType.MAINTENANCE_END,
+            });
           }
-          break
+          break;
       }
     }
 
     if (operations.length === 0) {
-      setError('No eligible units found for this action')
-      setConfirmDialog({ ...confirmDialog, isOpen: false })
-      return
+      setError('No eligible units found for this action');
+      setConfirmDialog({ ...confirmDialog, isOpen: false });
+      return;
     }
 
     // Start bulk operation
@@ -306,191 +327,209 @@ export default function BulkListingActions({
       isRunning: true,
       currentOperation: 0,
       totalOperations: operations.length,
-      results: undefined
-    })
-    setConfirmDialog({ ...confirmDialog, isOpen: false })
-    setError(null)
+      results: undefined,
+    });
+    setConfirmDialog({ ...confirmDialog, isOpen: false });
+    setError(null);
 
     try {
       // Simulate progress updates (in real implementation, this would come from the service)
       const progressInterval = setInterval(() => {
-        setProgress(prev => ({
+        setProgress((prev) => ({
           ...prev,
-          currentOperation: Math.min(prev.currentOperation + 1, prev.totalOperations)
-        }))
-      }, 100)
+          currentOperation: Math.min(
+            prev.currentOperation + 1,
+            prev.totalOperations,
+          ),
+        }));
+      }, 100);
 
-      const result = await onBulkAction(operations)
-      
-      clearInterval(progressInterval)
-      
+      const result = await onBulkAction(operations);
+
+      clearInterval(progressInterval);
+
       setProgress({
         isRunning: false,
         currentOperation: operations.length,
         totalOperations: operations.length,
-        results: result
-      })
+        results: result,
+      });
 
       // Clear selection after successful operation
       if (result.summary.succeeded > 0) {
-        setSelectedUnits(new Set())
+        setSelectedUnits(new Set());
       }
-
     } catch (err) {
       setProgress({
         isRunning: false,
         currentOperation: 0,
-        totalOperations: 0
-      })
-      setError(err instanceof Error ? err.message : 'Bulk operation failed')
+        totalOperations: 0,
+      });
+      setError(err instanceof Error ? err.message : 'Bulk operation failed');
     }
-  }, [confirmDialog, selectedUnits, units, onBulkAction])
+  }, [confirmDialog, selectedUnits, units, onBulkAction]);
 
-  const handleRunAllEligible = useCallback(async (action: BulkListingActionType) => {
-    const eligibleUnitIds = getEligibleUnitIds(action)
-    if (eligibleUnitIds.length === 0) {
-      setError('No eligible units found for this action')
-      return
-    }
-
-    const selectedUnitData = units.filter(unit => eligibleUnitIds.includes(unit.id))
-    const operations: BulkListingOperation[] = selectedUnitData.map(unit => {
-      switch (action) {
-        case BulkListingActionType.LIST:
-          return {
-            unitId: unit.id,
-            action,
-            listingData: {
-              unitId: unit.id,
-              title: `Unit ${unit.unitNumber}`,
-              description: `${unit.bedrooms || 'N/A'} bedroom, ${unit.bathrooms || 'N/A'} bathroom unit`,
-              price: unit.rentAmount || 0
-            }
-          }
-        case BulkListingActionType.MAINTENANCE_START:
-          return {
-            unitId: unit.id,
-            action,
-            listingData: {
-              unitId: unit.id,
-              reason: 'Bulk maintenance operation'
-            }
-          }
-        default:
-          return { unitId: unit.id, action }
+  const handleRunAllEligible = useCallback(
+    async (action: BulkListingActionType) => {
+      const eligibleUnitIds = getEligibleUnitIds(action);
+      if (eligibleUnitIds.length === 0) {
+        setError('No eligible units found for this action');
+        return;
       }
-    })
 
-    setProgress({
-      isRunning: true,
-      currentOperation: 0,
-      totalOperations: operations.length,
-      results: undefined
-    })
-    setError(null)
-
-    try {
-      const progressInterval = setInterval(() => {
-        setProgress(prev => ({
-          ...prev,
-          currentOperation: Math.min(prev.currentOperation + 1, prev.totalOperations)
-        }))
-      }, 100)
-
-      const result = await onBulkAction(operations)
-      clearInterval(progressInterval)
+      const selectedUnitData = units.filter((unit) =>
+        eligibleUnitIds.includes(unit.id),
+      );
+      const operations: BulkListingOperation[] = selectedUnitData.map(
+        (unit) => {
+          switch (action) {
+            case BulkListingActionType.LIST:
+              return {
+                unitId: unit.id,
+                action,
+                listingData: {
+                  unitId: unit.id,
+                  title: `Unit ${unit.unitNumber}`,
+                  description: `${unit.bedrooms || 'N/A'} bedroom, ${unit.bathrooms || 'N/A'} bathroom unit`,
+                  price: unit.rentAmount || 0,
+                },
+              };
+            case BulkListingActionType.MAINTENANCE_START:
+              return {
+                unitId: unit.id,
+                action,
+                listingData: {
+                  unitId: unit.id,
+                  reason: 'Bulk maintenance operation',
+                },
+              };
+            default:
+              return { unitId: unit.id, action };
+          }
+        },
+      );
 
       setProgress({
-        isRunning: false,
-        currentOperation: operations.length,
+        isRunning: true,
+        currentOperation: 0,
         totalOperations: operations.length,
-        results: result
-      })
-    } catch (err) {
-      setProgress({
-        isRunning: false,
-        currentOperation: 0,
-        totalOperations: 0
-      })
-      setError(err instanceof Error ? err.message : 'Bulk operation failed')
-    }
-  }, [getEligibleUnitIds, onBulkAction, units])
+        results: undefined,
+      });
+      setError(null);
+
+      try {
+        const progressInterval = setInterval(() => {
+          setProgress((prev) => ({
+            ...prev,
+            currentOperation: Math.min(
+              prev.currentOperation + 1,
+              prev.totalOperations,
+            ),
+          }));
+        }, 100);
+
+        const result = await onBulkAction(operations);
+        clearInterval(progressInterval);
+
+        setProgress({
+          isRunning: false,
+          currentOperation: operations.length,
+          totalOperations: operations.length,
+          results: result,
+        });
+      } catch (err) {
+        setProgress({
+          isRunning: false,
+          currentOperation: 0,
+          totalOperations: 0,
+        });
+        setError(err instanceof Error ? err.message : 'Bulk operation failed');
+      }
+    },
+    [getEligibleUnitIds, onBulkAction, units],
+  );
 
   // Export results
   const handleExportResults = useCallback(() => {
-    if (!progress.results) return
+    if (!progress.results) return;
 
     const csvContent = [
       'Unit ID,Unit Number,Status,Result,Error',
-      ...progress.results.successful.map(unitId => {
-        const unit = units.find(u => u.id === unitId)
-        return `${unitId},${unit?.unitNumber || 'Unknown'},Success,Completed,`
+      ...progress.results.successful.map((unitId) => {
+        const unit = units.find((u) => u.id === unitId);
+        return `${unitId},${unit?.unitNumber || 'Unknown'},Success,Completed,`;
       }),
-      ...progress.results.failed.map(failure => {
-        const unit = units.find(u => u.id === failure.unitId)
-        return `${failure.unitId},${unit?.unitNumber || 'Unknown'},Failed,Error,"${failure.error}"`
-      })
-    ].join('\n')
+      ...progress.results.failed.map((failure) => {
+        const unit = units.find((u) => u.id === failure.unitId);
+        return `${failure.unitId},${unit?.unitNumber || 'Unknown'},Failed,Error,"${failure.error}"`;
+      }),
+    ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `bulk-listing-results-${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }, [progress.results, units])
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bulk-listing-results-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [progress.results, units]);
 
   // Retry failed operations
   const handleRetryFailed = useCallback(async () => {
-    if (!progress.results?.failed.length) return
+    if (!progress.results?.failed.length) return;
 
-    const retryOperations: BulkListingOperation[] = progress.results.failed.map(failure => {
-      const unit = units.find(u => u.id === failure.unitId)
-      if (!unit) throw new Error(`Unit ${failure.unitId} not found`)
+    const retryOperations: BulkListingOperation[] = progress.results.failed.map(
+      (failure) => {
+        const unit = units.find((u) => u.id === failure.unitId);
+        if (!unit) throw new Error(`Unit ${failure.unitId} not found`);
 
-      return {
-        unitId: failure.unitId,
-        action: confirmDialog.action || BulkListingActionType.LIST,
-        listingData: confirmDialog.action === BulkListingActionType.LIST ? {
+        return {
           unitId: failure.unitId,
-          title: `Unit ${unit.unitNumber}`,
-          description: `${unit.bedrooms || 'N/A'} bedroom, ${unit.bathrooms || 'N/A'} bathroom unit`,
-          price: unit.rentAmount || 0
-        } : undefined
-      }
-    })
+          action: confirmDialog.action || BulkListingActionType.LIST,
+          listingData:
+            confirmDialog.action === BulkListingActionType.LIST
+              ? {
+                  unitId: failure.unitId,
+                  title: `Unit ${unit.unitNumber}`,
+                  description: `${unit.bedrooms || 'N/A'} bedroom, ${unit.bathrooms || 'N/A'} bathroom unit`,
+                  price: unit.rentAmount || 0,
+                }
+              : undefined,
+        };
+      },
+    );
 
     setProgress({
       isRunning: true,
       currentOperation: 0,
       totalOperations: retryOperations.length,
-      results: undefined
-    })
+      results: undefined,
+    });
 
     try {
-      const result = await onBulkAction(retryOperations)
+      const result = await onBulkAction(retryOperations);
       setProgress({
         isRunning: false,
         currentOperation: retryOperations.length,
         totalOperations: retryOperations.length,
-        results: result
-      })
+        results: result,
+      });
     } catch (err) {
       setProgress({
         isRunning: false,
         currentOperation: 0,
-        totalOperations: 0
-      })
-      setError(err instanceof Error ? err.message : 'Retry operation failed')
+        totalOperations: 0,
+      });
+      setError(err instanceof Error ? err.message : 'Retry operation failed');
     }
-  }, [progress.results, units, confirmDialog.action, onBulkAction])
+  }, [progress.results, units, confirmDialog.action, onBulkAction]);
 
-  const availableActions = getAvailableActions()
-  const isAllSelected = selectedUnits.size === units.length && units.length > 0
-  const isPartiallySelected = selectedUnits.size > 0 && selectedUnits.size < units.length
+  const availableActions = getAvailableActions();
+  const isAllSelected = selectedUnits.size === units.length && units.length > 0;
+  const isPartiallySelected =
+    selectedUnits.size > 0 && selectedUnits.size < units.length;
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -501,7 +540,13 @@ export default function BulkListingActions({
             <div className="flex items-center gap-3">
               {showUnitList && (
                 <Checkbox
-                  checked={isAllSelected ? true : isPartiallySelected ? "indeterminate" : false}
+                  checked={
+                    isAllSelected
+                      ? true
+                      : isPartiallySelected
+                        ? 'indeterminate'
+                        : false
+                  }
                   onCheckedChange={handleSelectAll}
                 />
               )}
@@ -515,25 +560,37 @@ export default function BulkListingActions({
               </CardTitle>
             </div>
 
-            {(showUnitList ? availableActions.length > 0 : units.length > 0) && (
+            {(showUnitList
+              ? availableActions.length > 0
+              : units.length > 0) && (
               <div className="flex gap-2">
                 {!showUnitList && (
                   <Button
                     variant="default"
                     size="sm"
-                    onClick={() => handleRunAllEligible(BulkListingActionType.LIST)}
-                    disabled={progress.isRunning || getEligibleUnitIds(BulkListingActionType.LIST).length === 0}
+                    onClick={() =>
+                      handleRunAllEligible(BulkListingActionType.LIST)
+                    }
+                    disabled={
+                      progress.isRunning ||
+                      getEligibleUnitIds(BulkListingActionType.LIST).length ===
+                        0
+                    }
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     List All Private
                   </Button>
                 )}
                 {availableActions.slice(0, 2).map((action) => {
-                  const ActionIcon = action.icon
+                  const ActionIcon = action.icon;
                   return (
                     <Button
                       key={action.type}
-                      variant={action.type === BulkListingActionType.LIST ? "default" : "outline"}
+                      variant={
+                        action.type === BulkListingActionType.LIST
+                          ? 'default'
+                          : 'outline'
+                      }
                       size="sm"
                       onClick={() => handleActionClick(action.type)}
                       disabled={progress.isRunning}
@@ -541,19 +598,23 @@ export default function BulkListingActions({
                       <ActionIcon className="h-4 w-4 mr-2" />
                       {action.label}
                     </Button>
-                  )
+                  );
                 })}
-                
+
                 {availableActions.length > 2 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" disabled={progress.isRunning}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={progress.isRunning}
+                      >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       {availableActions.slice(2).map((action) => {
-                        const ActionIcon = action.icon
+                        const ActionIcon = action.icon;
                         return (
                           <DropdownMenuItem
                             key={action.type}
@@ -562,7 +623,7 @@ export default function BulkListingActions({
                             <ActionIcon className="h-4 w-4 mr-2" />
                             {action.label}
                           </DropdownMenuItem>
-                        )
+                        );
                       })}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -590,14 +651,16 @@ export default function BulkListingActions({
       {showUnitList && (
         <div className="grid gap-3">
           {units.map((unit) => {
-            const isSelected = selectedUnits.has(unit.id)
-            const currentStatus = unit.listing?.status || ListingStatus.PRIVATE
-            
+            const isSelected = selectedUnits.has(unit.id);
+            const currentStatus = unit.listing?.status || ListingStatus.PRIVATE;
+
             return (
-              <Card 
-                key={unit.id} 
+              <Card
+                key={unit.id}
                 className={`cursor-pointer transition-colors ${
-                  isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+                  isSelected
+                    ? 'ring-2 ring-blue-500 bg-blue-50'
+                    : 'hover:bg-gray-50'
                 }`}
                 onClick={() => handleSelectUnit(unit.id)}
               >
@@ -607,19 +670,27 @@ export default function BulkListingActions({
                       checked={isSelected}
                       onChange={() => {}} // Handled by card click
                     />
-                    
+
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h4 className="font-medium">Unit {unit.unitNumber}</h4>
+                          <h4 className="font-medium">
+                            Unit {unit.unitNumber}
+                          </h4>
                           <p className="text-sm text-gray-600">
-                            {unit.bedrooms || 'N/A'} bed • {unit.bathrooms || 'N/A'} bath
-                            {unit.rentAmount && ` • $${unit.rentAmount.toLocaleString()}/month`}
+                            {unit.bedrooms || 'N/A'} bed •{' '}
+                            {unit.bathrooms || 'N/A'} bath
+                            {unit.rentAmount &&
+                              ` • $${unit.rentAmount.toLocaleString()}/month`}
                           </p>
                         </div>
-                        
-                        <Badge 
-                          variant={currentStatus === ListingStatus.ACTIVE ? "default" : "secondary"}
+
+                        <Badge
+                          variant={
+                            currentStatus === ListingStatus.ACTIVE
+                              ? 'default'
+                              : 'secondary'
+                          }
                         >
                           {currentStatus}
                         </Badge>
@@ -628,7 +699,7 @@ export default function BulkListingActions({
                   </div>
                 </CardContent>
               </Card>
-            )
+            );
           })}
         </div>
       )}
@@ -644,12 +715,14 @@ export default function BulkListingActions({
                   {progress.currentOperation} of {progress.totalOperations}
                 </span>
               </div>
-              
-              <Progress 
-                value={(progress.currentOperation / progress.totalOperations) * 100} 
+
+              <Progress
+                value={
+                  (progress.currentOperation / progress.totalOperations) * 100
+                }
                 className="w-full"
               />
-              
+
               {progress.currentUnitId && (
                 <p className="text-sm text-gray-600">
                   Processing unit: {progress.currentUnitId}
@@ -673,19 +746,25 @@ export default function BulkListingActions({
               Bulk Operation Results
             </CardTitle>
           </CardHeader>
-          
+
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">{progress.results.summary.total}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {progress.results.summary.total}
+                </p>
                 <p className="text-sm text-gray-600">Total</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">{progress.results.summary.succeeded}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {progress.results.summary.succeeded}
+                </p>
                 <p className="text-sm text-gray-600">Successful</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-red-600">{progress.results.summary.failed}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {progress.results.summary.failed}
+                </p>
                 <p className="text-sm text-gray-600">Failed</p>
               </div>
             </div>
@@ -695,29 +774,30 @@ export default function BulkListingActions({
                 <h5 className="font-medium text-red-700">Failed Operations:</h5>
                 <div className="space-y-1 max-h-32 overflow-y-auto">
                   {progress.results.failed.map((failure) => {
-                    const unit = units.find(u => u.id === failure.unitId)
+                    const unit = units.find((u) => u.id === failure.unitId);
                     return (
-                      <div key={failure.unitId} className="flex items-center gap-2 text-sm">
+                      <div
+                        key={failure.unitId}
+                        className="flex items-center gap-2 text-sm"
+                      >
                         <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                        <span className="font-medium">Unit {unit?.unitNumber || failure.unitId}:</span>
+                        <span className="font-medium">
+                          Unit {unit?.unitNumber || failure.unitId}:
+                        </span>
                         <span className="text-gray-600">{failure.error}</span>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </div>
             )}
 
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportResults}
-              >
+              <Button variant="outline" size="sm" onClick={handleExportResults}>
                 <Download className="h-4 w-4 mr-2" />
                 Export Results
               </Button>
-              
+
               {progress.results.failed.length > 0 && (
                 <Button
                   variant="outline"
@@ -755,17 +835,22 @@ export default function BulkListingActions({
       )}
 
       {/* Confirmation Dialog */}
-      <AlertDialog open={confirmDialog.isOpen} onOpenChange={(open) => 
-        setConfirmDialog({ ...confirmDialog, isOpen: open })
-      }>
+      <AlertDialog
+        open={confirmDialog.isOpen}
+        onOpenChange={(open) =>
+          setConfirmDialog({ ...confirmDialog, isOpen: open })
+        }
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{confirmDialog.title}</AlertDialogTitle>
             <AlertDialogDescription>
               {confirmDialog.description}
-              <br /><br />
-              This action will affect {confirmDialog.selectedUnits.length} unit{confirmDialog.selectedUnits.length !== 1 ? 's' : ''}. 
-              Are you sure you want to continue?
+              <br />
+              <br />
+              This action will affect {confirmDialog.selectedUnits.length} unit
+              {confirmDialog.selectedUnits.length !== 1 ? 's' : ''}. Are you
+              sure you want to continue?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -777,7 +862,7 @@ export default function BulkListingActions({
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
 // Named export for compatibility
-export { BulkListingActions }
+export { BulkListingActions };

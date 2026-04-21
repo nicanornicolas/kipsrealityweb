@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { generateAccessToken, generateRefreshToken } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { generateAccessToken, generateRefreshToken } from "@rentflow/iam";
+import { prisma } from '@rentflow/iam';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
@@ -134,3 +134,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

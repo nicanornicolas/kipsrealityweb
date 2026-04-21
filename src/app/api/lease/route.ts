@@ -1,108 +1,18 @@
 //app/api/lease/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { toNumber } from "@/lib/decimal-utils";
+import { getCurrentUser } from '@rentflow/iam';
+import { LeaseManagementError, leaseManagementService } from "@rentflow/lease";
 
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
-    const {
-      applicationId,
-      tenantId,
-      propertyId,
-      unitId,
-      startDate,
-      endDate,
-      rentAmount,
-      securityDeposit,
-      leaseTerm,
-      paymentDueDay,
-      paymentFrequency,
-      lateFeeFlat,
-      lateFeeDaily,
-      gracePeriodDays,
-      landlordResponsibilities,
-      tenantResponsibilities,
-      tenantPaysElectric,
-      tenantPaysWater,
-      tenantPaysTrash,
-      tenantPaysInternet,
-      usageType,
-      earlyTerminationFee
-    } = data;
-
-    if (!applicationId || !propertyId || !unitId) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Ensure the tenant application exists and is approved
-    const app = await prisma.tenantApplication.findUnique({
-      where: { id: applicationId },
-      include: { property: true, unit: true },
-    });
-
-    if (!app) {
-      return NextResponse.json({ error: "Application not found" }, { status: 404 });
-    }
-
-    if (app.status !== "APPROVED") {
-      return NextResponse.json(
-        { error: "Application must be approved before creating a lease" },
-        { status: 400 }
-      );
-    }
-
-    // Prevent duplicate lease for the same application
-    const existingLease = await prisma.lease.findUnique({
-      where: { applicationId },
-    });
-
-    if (existingLease) {
-      return NextResponse.json(
-        { error: "Lease already exists for this application" },
-        { status: 409 }
-      );
-    }
-
-    const lease = await prisma.lease.create({
-      data: {
-        applicationId,
-        tenantId: tenantId ?? null,
-        propertyId,
-        unitId,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        rentAmount,
-        securityDeposit: securityDeposit ?? null,
-        leaseTerm,
-        paymentDueDay,
-        paymentFrequency,
-        lateFeeFlat,
-        lateFeeDaily,
-        gracePeriodDays,
-        landlordResponsibilities,
-        tenantResponsibilities,
-        tenantPaysElectric,
-        tenantPaysWater,
-        tenantPaysTrash,
-        tenantPaysInternet,
-        usageType,
-        earlyTerminationFee,
-      },
-      include: {
-        tenant: true,
-        property: true,
-        unit: true,
-        application: true,
-      },
-    });
+    const lease = await leaseManagementService.createLease(data);
 
     return NextResponse.json(lease, { status: 201 });
   } catch (error: any) {
+    if (error instanceof LeaseManagementError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("Lease creation error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -110,7 +20,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(req);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -118,75 +28,16 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const propertyId = url.searchParams.get("propertyId");
 
-    const where: any = {
-      property: {
-        manager: {
-          userId: user.id,
-        },
-      },
-    };
-
-    if (propertyId) {
-      where.propertyId = propertyId;
-    }
-
-    // Final merged + fixed query
-    const leases = await prisma.lease.findMany({
-      where,
-      include: {
-        tenant: true,
-        property: {
-          include: {
-            apartmentComplexDetail: true,   
-            houseDetail: true
-          }
-        },
-         unit: true,
-        application: true,
-        invoices: {
-          include: {
-            payments: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-
-    // Add financial summary
-    const leasesWithFinancials = leases.map((lease) => {
-      const totalInvoiced =
-        lease.invoices?.reduce((sum, inv) => sum + Number(inv.totalAmount), 0) ?? 0;
-
-      const totalPaid =
-        lease.invoices?.reduce(
-          (sum, inv) =>
-            sum +
-            inv.payments.reduce((paySum, pay) => paySum + Number(pay.amount), 0),
-          0
-        ) ?? 0;
-
-      const balance = totalInvoiced - totalPaid;
-        const buildingName =
-        lease.property?.apartmentComplexDetail?.buildingName ??
-        lease.property?.name ??
-        "N/A";
-
-        const houseName =
-        lease.property?.houseDetail?.houseName ??
-        lease.property?.name ??
-        "N/A";
-      return {
-        ...lease,
-        buildingName,
-        houseName,
-        financialSummary: { totalInvoiced, totalPaid, balance },
-      };
+    const leasesWithFinancials = await leaseManagementService.listLeases({
+      userId: user.id,
+      propertyId,
     });
 
     return NextResponse.json(leasesWithFinancials);
   } catch (error) {
+    if (error instanceof LeaseManagementError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("Error fetching leases:", error);
     return NextResponse.json(
       { error: "Failed to fetch leases" },
@@ -194,3 +45,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+

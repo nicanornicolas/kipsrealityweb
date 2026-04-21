@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { prisma } from "@/lib/db";
-import { PaymentFactory } from "@/lib/payment/payment-factory";
-import { PaymentRequest } from "@/lib/payment/types";
+import { getCurrentUser } from '@rentflow/iam';
+import { prisma } from "@rentflow/iam";
+import { PaymentFactory, PaymentRequest } from "@rentflow/payments";
 import { PaymentMethod, TransactionStatus, Prisma } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
@@ -130,3 +129,4 @@ export async function POST(req: NextRequest) {
         );
     }
 }
+

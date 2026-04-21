@@ -7,6 +7,7 @@
 html {
   background: #0f172a;
   /* Or your dark background color */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 body {
@@ -15,10 +16,23 @@ body {
   min-height: 100vh;
 }
 
+:root {
+  --safe-area-bottom: env(safe-area-inset-bottom);
+  --safe-area-top: env(safe-area-inset-top);
+}
+
 @media (max-width: 768px) {
   * {
     /* Removes the blue flash when tapping buttons on iOS/Android */
     -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    min-height: 44px;
   }
 }
 

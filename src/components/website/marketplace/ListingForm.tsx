@@ -1,51 +1,61 @@
-"use client";
+'use client';
 
-import React, { useState, useCallback } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, X, Image as ImageIcon, MapPin, Tag, DollarSign } from "lucide-react";
-import { useDropzone } from "react-dropzone";
+import React, { useState, useCallback } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Upload,
+  X,
+  Image as ImageIcon,
+  MapPin,
+  Tag,
+  DollarSign,
+} from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
+import { toast } from 'sonner';
 
 export default function ListingForm() {
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    price: "",
-    location: "",
-    category: "property",
-    contactEmail: "",
-    contactPhone: "",
+    title: '',
+    description: '',
+    price: '',
+    location: '',
+    category: 'property',
+    contactEmail: '',
+    contactPhone: '',
   });
 
   const [images, setImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    setImages(prev => [...prev, ...acceptedFiles.slice(0, 6)]); // Limit to 6 images
+    setImages((prev) => [...prev, ...acceptedFiles.slice(0, 6)]); // Limit to 6 images
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
+      'image/*': ['.jpeg', '.jpg', '.png', '.webp'],
     },
     maxFiles: 6,
     maxSize: 5 * 1024 * 1024, // 5MB
   });
 
   const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+    setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,31 +64,31 @@ export default function ListingForm() {
 
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log("Listing submitted:", formData);
-      console.log("Images:", images);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      console.log('Listing submitted:', formData);
+      console.log('Images:', images);
 
       // Reset form
       setFormData({
-        title: "",
-        description: "",
-        price: "",
-        location: "",
-        category: "property",
-        contactEmail: "",
-        contactPhone: "",
+        title: '',
+        description: '',
+        price: '',
+        location: '',
+        category: 'property',
+        contactEmail: '',
+        contactPhone: '',
       });
       setImages([]);
 
-      alert("Listing published successfully!");
+      toast.success('Listing published successfully!');
     } catch (error) {
-      console.error("Error submitting listing:", error);
+      console.error('Error submitting listing:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const previewUrls = images.map(file => URL.createObjectURL(file));
+  const previewUrls = images.map((file) => URL.createObjectURL(file));
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center py-12 px-4">
@@ -167,7 +177,6 @@ export default function ListingForm() {
 
             {/* Contact Information */}
 
-
             {/* Category */}
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-slate-700">
@@ -200,18 +209,24 @@ export default function ListingForm() {
 
               <div
                 {...getRootProps()}
-                className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${isDragActive
-                  ? "border-blue-500 bg-blue-50/50"
-                  : "border-slate-300 bg-slate-50/50 hover:border-blue-400 hover:bg-blue-50/30"
-                  }`}
+                className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${
+                  isDragActive
+                    ? 'border-blue-500 bg-blue-50/50'
+                    : 'border-slate-300 bg-slate-50/50 hover:border-blue-400 hover:bg-blue-50/30'
+                }`}
               >
                 <input {...getInputProps()} />
                 <div className="space-y-3">
-                  <Upload className={`w-12 h-12 mx-auto transition-colors ${isDragActive ? "text-blue-500" : "text-slate-400"
-                    }`} />
+                  <Upload
+                    className={`w-12 h-12 mx-auto transition-colors ${
+                      isDragActive ? 'text-blue-500' : 'text-slate-400'
+                    }`}
+                  />
                   <div className="space-y-1">
                     <p className="text-slate-700 font-medium">
-                      {isDragActive ? "Drop images here" : "Drag & drop images here"}
+                      {isDragActive
+                        ? 'Drop images here'
+                        : 'Drag & drop images here'}
                     </p>
                     <p className="text-slate-500 text-sm">
                       or click to browse (max 6 images, 5MB each)
@@ -257,7 +272,7 @@ export default function ListingForm() {
                   Publishing...
                 </div>
               ) : (
-                "Publish Listing"
+                'Publish Listing'
               )}
             </Button>
           </form>

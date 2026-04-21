@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { FullInvoiceInput } from '@/app/data/FinanceData';
 // removed InvoiceStatus import because Prisma client does not export it
 
@@ -62,4 +62,5 @@ function calculateNextDueDate(lease: { paymentFrequency: string; paymentDueDay?:
 
   return nextDate;
 }
+
 

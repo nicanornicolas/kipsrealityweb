@@ -10,9 +10,9 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { prisma } from './setup';
-import { applicationControlService } from '@/lib/application-control-service';
-import { applicationListingIntegration, createListingChangeEvent } from '@/lib/application-listing-integration';
-import { ListingStatus, ListingAction } from '@/lib/listing-types';
+import { applicationControlService } from '@rentflow/property';
+import { applicationListingIntegration, createListingChangeEvent } from '@rentflow/property';
+import { ListingStatus, ListingAction } from '@rentflow/property';
 
 // Test data generators for property-based testing
 function generateApplicationData(unitId: string, propertyId: string, userId?: string) {
@@ -56,11 +56,12 @@ function generatePropertyData(managerId: string, organizationId: string) {
   };
 }
 
-function generateListingData(unitId: string, organizationId: string, userId: string) {
+function generateListingData(unitId: string, organizationId: string, userId: string, categoryId: string) {
   return {
     id: `listing-${Math.random().toString(36).substr(2, 9)}`,
     organizationId,
     createdBy: userId,
+    categoryId,
     title: `Test Listing ${Math.floor(Math.random() * 1000)}`,
     description: 'Test listing description',
     price: Math.floor(Math.random() * 3000) + 500,
@@ -73,6 +74,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
   let testUser: any;
   let testOrganization: any;
   let testManager: any;
+  let testCategoryId: string;
   let createdEntities: {
     users: string[];
     organizations: string[];
@@ -129,6 +131,16 @@ describe.skip('Property 14: Application Data Integrity', () => {
       }
     });
     createdEntities.organizationUsers.push(testManager.id);
+
+    const category = await prisma.categoryMarketplace.upsert({
+      where: { name: 'Property' },
+      update: {},
+      create: {
+        name: 'Property',
+        description: 'Property listings'
+      }
+    });
+    testCategoryId = category.id;
   });
 
   afterEach(async () => {
@@ -242,7 +254,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
       createdEntities.units.push(unit.id);
 
       // Create listing
-      const listingData = generateListingData(unit.id, testOrganization.id, testUser.id);
+      const listingData = generateListingData(unit.id, testOrganization.id, testUser.id, testCategoryId);
       const listing = await prisma.listing.create({ data: listingData });
       createdEntities.listings.push(listing.id);
 
@@ -424,7 +436,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
       const hasConsistentAssociations = Math.random() > 0.2;
 
       if (hasListing) {
-        const listingData = generateListingData(unit.id, testOrganization.id, testUser.id);
+        const listingData = generateListingData(unit.id, testOrganization.id, testUser.id, testCategoryId);
         const listing = await prisma.listing.create({ data: listingData });
         createdEntities.listings.push(listing.id);
 
@@ -500,7 +512,7 @@ describe.skip('Property 14: Application Data Integrity', () => {
       createdEntities.units.push(unit.id);
 
       // Create listing
-      const listingData = generateListingData(unit.id, testOrganization.id, testUser.id);
+      const listingData = generateListingData(unit.id, testOrganization.id, testUser.id, testCategoryId);
       const listing = await prisma.listing.create({ data: listingData });
       createdEntities.listings.push(listing.id);
 
@@ -560,3 +572,4 @@ describe.skip('Property 14: Application Data Integrity', () => {
     }
   });
 });
+

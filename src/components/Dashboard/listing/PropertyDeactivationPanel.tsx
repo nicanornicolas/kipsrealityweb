@@ -5,7 +5,13 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,15 +19,16 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  XCircle, 
-  RefreshCw, 
-  Users, 
-  Home, 
+import { toast } from 'sonner';
+import {
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
+  Users,
+  Home,
   FileText,
-  Clock
+  Clock,
 } from 'lucide-react';
 
 interface PropertyDeactivationPanelProps {
@@ -59,7 +66,7 @@ export default function PropertyDeactivationPanel({
   unitsCount = 0,
   activeListingsCount = 0,
   onDeactivationComplete,
-  onRecoveryComplete
+  onRecoveryComplete,
 }: PropertyDeactivationPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [reason, setReason] = useState('');
@@ -91,7 +98,7 @@ export default function PropertyDeactivationPanel({
 
   const handleDeactivate = async () => {
     if (!reason.trim()) {
-      alert('Please provide a reason for deactivation');
+      toast.error('Please provide a reason for deactivation');
       return;
     }
 
@@ -106,7 +113,7 @@ export default function PropertyDeactivationPanel({
           reason: reason.trim(),
           notifyPropertyManagers,
           notifyTenants,
-          gracePeriodHours
+          gracePeriodHours,
         }),
       });
 
@@ -119,9 +126,9 @@ export default function PropertyDeactivationPanel({
           listingsRemoved: data.data.listingsRemoved,
           applicationsAffected: data.data.applicationsAffected,
           notificationsSent: data.data.notificationsSent,
-          canRecover: data.data.canRecover
+          canRecover: data.data.canRecover,
         };
-        
+
         setResult(deactivationResult);
         setShowConfirmation(false);
         onDeactivationComplete?.(deactivationResult);
@@ -133,7 +140,7 @@ export default function PropertyDeactivationPanel({
           applicationsAffected: 0,
           notificationsSent: 0,
           canRecover: false,
-          error: data.message || 'Deactivation failed'
+          error: data.message || 'Deactivation failed',
         });
       }
     } catch (error) {
@@ -144,7 +151,7 @@ export default function PropertyDeactivationPanel({
         applicationsAffected: 0,
         notificationsSent: 0,
         canRecover: false,
-        error: 'Network error occurred'
+        error: 'Network error occurred',
       });
     } finally {
       setIsLoading(false);
@@ -160,7 +167,7 @@ export default function PropertyDeactivationPanel({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          reason: 'Property recovered from accidental deactivation'
+          reason: 'Property recovered from accidental deactivation',
         }),
       });
 
@@ -171,17 +178,17 @@ export default function PropertyDeactivationPanel({
           success: true,
           unitsRestored: data.data.unitsRestored,
           listingsRestored: data.data.listingsRestored,
-          notificationsSent: data.data.notificationsSent
+          notificationsSent: data.data.notificationsSent,
         };
-        
+
         setResult(null);
         setRecoveryInfo(null);
         onRecoveryComplete?.(recoveryResult);
       } else {
-        alert(data.message || 'Recovery failed');
+        toast.error(data.message || 'Recovery failed');
       }
     } catch (error) {
-      alert('Network error occurred during recovery');
+      toast.error('Network error occurred during recovery');
     } finally {
       setIsLoading(false);
     }
@@ -196,7 +203,8 @@ export default function PropertyDeactivationPanel({
             Property Deactivated
           </CardTitle>
           <CardDescription>
-            This property has been deactivated and all listings have been removed from the marketplace.
+            This property has been deactivated and all listings have been
+            removed from the marketplace.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -209,24 +217,33 @@ export default function PropertyDeactivationPanel({
                 </div>
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-gray-500" />
-                  <span>Listings to Restore: {recoveryInfo.listingsToRestore}</span>
+                  <span>
+                    Listings to Restore: {recoveryInfo.listingsToRestore}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-gray-500" />
-                  <span>Applications Affected: {recoveryInfo.applicationsAffected}</span>
+                  <span>
+                    Applications Affected: {recoveryInfo.applicationsAffected}
+                  </span>
                 </div>
                 {recoveryInfo.deactivationDate && (
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-gray-500" />
-                    <span>Deactivated: {new Date(recoveryInfo.deactivationDate).toLocaleDateString()}</span>
+                    <span>
+                      Deactivated:{' '}
+                      {new Date(
+                        recoveryInfo.deactivationDate,
+                      ).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
               </div>
-              
+
               <Separator />
-              
+
               <div className="flex gap-2">
-                <Button 
+                <Button
                   onClick={handleRecover}
                   disabled={isLoading}
                   className="bg-green-600 hover:bg-green-700"
@@ -246,12 +263,13 @@ export default function PropertyDeactivationPanel({
               </div>
             </>
           )}
-          
+
           {recoveryInfo && !recoveryInfo.canRecover && (
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Recovery is not available for this property. Recovery data may have expired or been cleared.
+                Recovery is not available for this property. Recovery data may
+                have expired or been cleared.
               </AlertDescription>
             </Alert>
           )}
@@ -268,8 +286,8 @@ export default function PropertyDeactivationPanel({
           Property Deactivation
         </CardTitle>
         <CardDescription>
-          Deactivate this property and remove all associated listings from the marketplace.
-          This action affects all units and active applications.
+          Deactivate this property and remove all associated listings from the
+          marketplace. This action affects all units and active applications.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -280,7 +298,9 @@ export default function PropertyDeactivationPanel({
             <div className="text-sm text-gray-600">Total Units</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{activeListingsCount}</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {activeListingsCount}
+            </div>
             <div className="text-sm text-gray-600">Active Listings</div>
           </div>
         </div>
@@ -302,14 +322,16 @@ export default function PropertyDeactivationPanel({
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="notify-managers">Notify Property Managers</Label>
+                <Label htmlFor="notify-managers">
+                  Notify Property Managers
+                </Label>
                 <Switch
                   id="notify-managers"
                   checked={notifyPropertyManagers}
                   onCheckedChange={setNotifyPropertyManagers}
                 />
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <Label htmlFor="notify-tenants">Notify Affected Tenants</Label>
                 <Switch
@@ -318,7 +340,7 @@ export default function PropertyDeactivationPanel({
                   onCheckedChange={setNotifyTenants}
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="grace-period">Grace Period (hours)</Label>
                 <Input
@@ -327,7 +349,9 @@ export default function PropertyDeactivationPanel({
                   min="0"
                   max="168"
                   value={gracePeriodHours}
-                  onChange={(e) => setGracePeriodHours(parseInt(e.target.value) || 0)}
+                  onChange={(e) =>
+                    setGracePeriodHours(parseInt(e.target.value) || 0)
+                  }
                   className="mt-1"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -336,7 +360,7 @@ export default function PropertyDeactivationPanel({
               </div>
             </div>
 
-            <Button 
+            <Button
               onClick={() => setShowConfirmation(true)}
               disabled={!reason.trim()}
               variant="destructive"
@@ -355,11 +379,14 @@ export default function PropertyDeactivationPanel({
               <AlertTriangle className="h-5 w-5" />
               Confirm Property Deactivation
             </div>
-            
+
             <div className="text-sm text-red-700">
               <p className="font-medium mb-2">This action will:</p>
               <ul className="list-disc list-inside space-y-1">
-                <li>Remove all {activeListingsCount} active listings from the marketplace</li>
+                <li>
+                  Remove all {activeListingsCount} active listings from the
+                  marketplace
+                </li>
                 <li>Disable tenant applications for all {unitsCount} units</li>
                 <li>Cancel any pending applications</li>
                 <li>Send notifications to affected parties</li>
@@ -367,11 +394,13 @@ export default function PropertyDeactivationPanel({
             </div>
 
             <div className="bg-white p-3 rounded border">
-              <p className="text-sm"><strong>Reason:</strong> {reason}</p>
+              <p className="text-sm">
+                <strong>Reason:</strong> {reason}
+              </p>
             </div>
 
             <div className="flex gap-2">
-              <Button 
+              <Button
                 onClick={handleDeactivate}
                 disabled={isLoading}
                 variant="destructive"
@@ -386,7 +415,7 @@ export default function PropertyDeactivationPanel({
                   'Confirm Deactivation'
                 )}
               </Button>
-              <Button 
+              <Button
                 onClick={() => setShowConfirmation(false)}
                 variant="outline"
                 disabled={isLoading}
@@ -399,36 +428,59 @@ export default function PropertyDeactivationPanel({
 
         {/* Results Display */}
         {result && (
-          <div className={`p-4 rounded-lg border-2 ${
-            result.success 
-              ? 'border-green-200 bg-green-50' 
-              : 'border-red-200 bg-red-50'
-          }`}>
-            <div className={`flex items-center gap-2 font-semibold mb-3 ${
-              result.success ? 'text-green-800' : 'text-red-800'
-            }`}>
+          <div
+            className={`p-4 rounded-lg border-2 ${
+              result.success
+                ? 'border-green-200 bg-green-50'
+                : 'border-red-200 bg-red-50'
+            }`}
+          >
+            <div
+              className={`flex items-center gap-2 font-semibold mb-3 ${
+                result.success ? 'text-green-800' : 'text-red-800'
+              }`}
+            >
               {result.success ? (
                 <CheckCircle className="h-5 w-5" />
               ) : (
                 <XCircle className="h-5 w-5" />
               )}
-              {result.success ? 'Property Deactivated Successfully' : 'Deactivation Failed'}
+              {result.success
+                ? 'Property Deactivated Successfully'
+                : 'Deactivation Failed'}
             </div>
 
             {result.success ? (
               <div className="space-y-2 text-sm text-green-700">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>Units Affected: <Badge variant="secondary">{result.unitsAffected}</Badge></div>
-                  <div>Listings Removed: <Badge variant="secondary">{result.listingsRemoved}</Badge></div>
-                  <div>Applications Affected: <Badge variant="secondary">{result.applicationsAffected}</Badge></div>
-                  <div>Notifications Sent: <Badge variant="secondary">{result.notificationsSent}</Badge></div>
+                  <div>
+                    Units Affected:{' '}
+                    <Badge variant="secondary">{result.unitsAffected}</Badge>
+                  </div>
+                  <div>
+                    Listings Removed:{' '}
+                    <Badge variant="secondary">{result.listingsRemoved}</Badge>
+                  </div>
+                  <div>
+                    Applications Affected:{' '}
+                    <Badge variant="secondary">
+                      {result.applicationsAffected}
+                    </Badge>
+                  </div>
+                  <div>
+                    Notifications Sent:{' '}
+                    <Badge variant="secondary">
+                      {result.notificationsSent}
+                    </Badge>
+                  </div>
                 </div>
-                
+
                 {result.canRecover && (
                   <Alert className="mt-3">
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
-                      Recovery data has been saved. You can restore this property if the deactivation was accidental.
+                      Recovery data has been saved. You can restore this
+                      property if the deactivation was accidental.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -445,4 +497,4 @@ export default function PropertyDeactivationPanel({
   );
 }
 // Named export for compatibility
-export { PropertyDeactivationPanel }
+export { PropertyDeactivationPanel };

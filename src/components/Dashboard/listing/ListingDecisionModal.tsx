@@ -1,24 +1,24 @@
-'use client'
+'use client';
 
-import React, { useState } from 'react'
-import { Building2, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react'
+import React, { useState } from 'react';
+import { Building2, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { UnitWithListingStatus } from '@/lib/listing-types'
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { UnitWithListingStatus } from '@rentflow/property/client';
 
 interface ListingDecisionModalProps {
-  isOpen: boolean
-  onClose: () => void
-  unit: UnitWithListingStatus
-  onDecision: (unitId: string, decision: 'list' | 'private') => Promise<void>
+  isOpen: boolean;
+  onClose: () => void;
+  unit: UnitWithListingStatus;
+  onDecision: (unitId: string, decision: 'list' | 'private') => Promise<void>;
 }
 
 export default function ListingDecisionModal({
@@ -27,30 +27,34 @@ export default function ListingDecisionModal({
   unit,
   onDecision,
 }: ListingDecisionModalProps) {
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDecision = async (decision: 'list' | 'private') => {
-    setIsProcessing(true)
-    setError(null)
-    
+    setIsProcessing(true);
+    setError(null);
+
     try {
-      await onDecision(unit.id, decision)
-      onClose()
+      await onDecision(unit.id, decision);
+      onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while processing your decision')
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'An error occurred while processing your decision',
+      );
     } finally {
-      setIsProcessing(false)
+      setIsProcessing(false);
     }
-  }
+  };
 
   const formatCurrency = (amount?: number) => {
-    if (!amount) return 'Not set'
+    if (!amount) return 'Not set';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount)
-  }
+    }).format(amount);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -73,28 +77,40 @@ export default function ListingDecisionModal({
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="text-sm font-medium text-slate-600">Unit Number:</span>
+                <span className="text-sm font-medium text-slate-600">
+                  Unit Number:
+                </span>
                 <p className="text-slate-900">{unit.unitNumber}</p>
               </div>
               <div>
-                <span className="text-sm font-medium text-slate-600">Rent Amount:</span>
-                <p className="text-slate-900">{formatCurrency(unit.rentAmount)}</p>
+                <span className="text-sm font-medium text-slate-600">
+                  Rent Amount:
+                </span>
+                <p className="text-slate-900">
+                  {formatCurrency(unit.rentAmount)}
+                </p>
               </div>
               {unit.bedrooms && (
                 <div>
-                  <span className="text-sm font-medium text-slate-600">Bedrooms:</span>
+                  <span className="text-sm font-medium text-slate-600">
+                    Bedrooms:
+                  </span>
                   <p className="text-slate-900">{unit.bedrooms}</p>
                 </div>
               )}
               {unit.bathrooms && (
                 <div>
-                  <span className="text-sm font-medium text-slate-600">Bathrooms:</span>
+                  <span className="text-sm font-medium text-slate-600">
+                    Bathrooms:
+                  </span>
                   <p className="text-slate-900">{unit.bathrooms}</p>
                 </div>
               )}
               {unit.squareFootage && (
                 <div>
-                  <span className="text-sm font-medium text-slate-600">Square Footage:</span>
+                  <span className="text-sm font-medium text-slate-600">
+                    Square Footage:
+                  </span>
                   <p className="text-slate-900">{unit.squareFootage} sq ft</p>
                 </div>
               )}
@@ -104,8 +120,10 @@ export default function ListingDecisionModal({
 
         {/* Decision Options */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-slate-900">Choose an Option</h3>
-          
+          <h3 className="text-lg font-semibold text-slate-900">
+            Choose an Option
+          </h3>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* List on Marketplace Option */}
             <Card className="border-2 border-green-200 hover:border-green-300 transition-colors cursor-pointer group">
@@ -115,9 +133,12 @@ export default function ListingDecisionModal({
                     <Eye className="h-5 w-5 text-green-600" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-slate-900 mb-2">List on Marketplace</h4>
+                    <h4 className="font-semibold text-slate-900 mb-2">
+                      List on Marketplace
+                    </h4>
                     <p className="text-sm text-slate-600 mb-3">
-                      Make this unit publicly visible to potential tenants. They can view details and submit applications.
+                      Make this unit publicly visible to potential tenants. They
+                      can view details and submit applications.
                     </p>
                     <div className="space-y-1 text-xs text-slate-500">
                       <p>✓ Unit appears in marketplace searches</p>
@@ -144,9 +165,12 @@ export default function ListingDecisionModal({
                     <EyeOff className="h-5 w-5 text-slate-600" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-slate-900 mb-2">Keep Private</h4>
+                    <h4 className="font-semibold text-slate-900 mb-2">
+                      Keep Private
+                    </h4>
                     <p className="text-sm text-slate-600 mb-3">
-                      Keep this unit private for now. You can list it on the marketplace later when ready.
+                      Keep this unit private for now. You can list it on the
+                      marketplace later when ready.
                     </p>
                     <div className="space-y-1 text-xs text-slate-500">
                       <p>✓ Unit remains in your dashboard</p>
@@ -179,14 +203,15 @@ export default function ListingDecisionModal({
         {/* Footer Note */}
         <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
           <p>
-            <strong>Note:</strong> You can change this decision at any time from your unit management dashboard. 
-            Private units can be listed later, and listed units can be removed from the marketplace.
+            <strong>Note:</strong> You can change this decision at any time from
+            your unit management dashboard. Private units can be listed later,
+            and listed units can be removed from the marketplace.
           </p>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 // Named export for compatibility
-export { ListingDecisionModal }
+export { ListingDecisionModal };

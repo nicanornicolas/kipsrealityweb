@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { verifyAccessToken } from "@/lib/auth";
+import { prisma } from "@rentflow/iam";
+import { verifyAccessToken } from "@rentflow/iam";
 import { cookies } from "next/headers";
 import crypto from "crypto";
 
@@ -62,3 +62,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to reject document" }, { status: 500 });
   }
 }
+

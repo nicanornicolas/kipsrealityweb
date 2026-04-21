@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import {
   processMpesaWebhook,
   processPaystackWebhook,
   processStripeWebhook,
-} from "@/lib/webhooks/processors";
+} from "@rentflow/utilities";
 
 const RETRY_DELAYS_SECONDS = [60, 300, 900, 3600, 14400];
 
@@ -169,3 +169,4 @@ export async function GET() {
     timestamp: now.toISOString(),
   });
 }
+

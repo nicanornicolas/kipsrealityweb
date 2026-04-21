@@ -1,0 +1,335 @@
+import { prisma } from '@rentflow/iam';
+import { computeDocumentHash, verifyDocumentIntegrity } from './hashing';
+import { getNextSigner } from './workflow';
+import {
+  DssParticipantRole,
+  DssDocumentStatus,
+  DssSigningMode,
+  DssParticipant,
+} from '@prisma/client';
+import { StorageService } from './storage-service';
+
+interface CreateDocumentParams {
+  title: string;
+  organizationId: string;
+  fileBuffer: Buffer;
+  participants: {
+    email: string;
+    role: DssParticipantRole;
+    name?: string;
+  }[];
+  signingMode?: DssSigningMode;
+}
+
+interface AddParticipantInput {
+  email: string;
+  fullName: string;
+  role: DssParticipantRole;
+  stepOrder: number;
+}
+
+export class DocumentService {
+  /**
+   * Lists DSS documents for an organization.
+   */
+  async listDocuments(organizationId: string) {
+    return prisma.dssDocument.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        participants: true,
+      },
+    });
+  }
+
+  /**
+   * Fetches a document and returns a temporary signed URL for browser viewing.
+   */
+  async getDocumentForViewing(documentId: string, organizationId: string) {
+    const doc = await prisma.dssDocument.findFirst({
+      where: { id: documentId, organizationId },
+      include: {
+        fields: true,
+        participants: {
+          orderBy: { stepOrder: 'asc' },
+        },
+        organization: {
+          select: { name: true },
+        },
+      },
+    });
+
+    if (!doc) {
+      throw new Error('Document not found');
+    }
+
+    const storageKey = doc.originalFileKey || doc.originalFileUrl;
+    if (!storageKey) {
+      throw new Error('Document file not found');
+    }
+
+    const secureUrl = await StorageService.getSignedUrl(storageKey);
+
+    return {
+      ...doc,
+      viewUrl: secureUrl,
+    };
+  }
+
+  /**
+   * Adds a participant to a DRAFT document only.
+   */
+  async addParticipant(
+    documentId: string,
+    organizationId: string,
+    data: AddParticipantInput,
+  ) {
+    const document = await prisma.dssDocument.findFirst({
+      where: { id: documentId, organizationId },
+    });
+
+    if (!document) {
+      throw new Error('Document not found');
+    }
+
+    if (document.status !== DssDocumentStatus.DRAFT) {
+      throw new Error(
+        `Cannot add participants to a document in ${document.status} state.`,
+      );
+    }
+
+    return prisma.dssParticipant.create({
+      data: {
+        documentId,
+        organizationId,
+        email: data.email,
+        fullName: data.fullName,
+        role: data.role,
+        stepOrder: data.stepOrder,
+      },
+    });
+  }
+
+  /**
+   * Removes a participant from a DRAFT document only.
+   */
+  async removeParticipant(
+    participantId: string,
+    documentId: string,
+    organizationId: string,
+  ) {
+    const document = await prisma.dssDocument.findFirst({
+      where: { id: documentId, organizationId },
+    });
+
+    if (!document || document.status !== DssDocumentStatus.DRAFT) {
+      throw new Error('Cannot remove participants from a non-DRAFT document.');
+    }
+
+    await prisma.dssParticipant.delete({
+      where: { id: participantId },
+    });
+
+    return { success: true };
+  }
+}
+
+/**
+ * Creates a new DSS Document.
+ * Strategy: Hash -> Upload -> Save DB
+ */
+export async function createDocument({
+  title,
+  organizationId,
+  fileBuffer,
+  participants,
+  signingMode = DssSigningMode.SEQUENTIAL,
+}: CreateDocumentParams) {
+  // 1. Compute Hash immediately (Integrity Baseline)
+  const sha256Hex = computeDocumentHash(fileBuffer);
+
+  // 2. Upload to Storage
+  // We do this AFTER hashing to ensure we know exactly what is being stored
+  const { key } = await StorageService.uploadPdf(fileBuffer, organizationId);
+
+  // 3. Create Document & Participants in Transaction
+  // We enforce basic sequential order logic here:
+  const participantsWithOrder = participants.map((p, index) => ({
+    ...p,
+    stepOrder: index + 1, // Simple 1-based sequence based on input array order
+  }));
+
+  const doc = await prisma.dssDocument.create({
+    data: {
+      organizationId,
+      title,
+      originalPdfSha256Hex: sha256Hex,
+      originalFileUrl: key, // Stored as S3 object key
+      originalFileKey: key,
+      signingMode,
+      participants: {
+        create: participantsWithOrder.map((p) => ({
+          organizationId,
+          email: p.email,
+          role: p.role,
+          fullName: p.name,
+          stepOrder: p.stepOrder,
+        })),
+      },
+    },
+    include: {
+      participants: true,
+    },
+  });
+
+  return doc;
+}
+
+export async function getDocumentForViewing(documentId: string) {
+  const document = await prisma.dssDocument.findUnique({
+    where: { id: documentId },
+    include: {
+      participants: {
+        orderBy: { stepOrder: 'asc' },
+      },
+      organization: {
+        select: { name: true },
+      },
+    },
+  });
+
+  if (!document) {
+    return null;
+  }
+
+  const storageKey =
+    document.originalFileKey || document.originalFileUrl || undefined;
+  const originalFileUrl = storageKey
+    ? await StorageService.getSignedUrl(storageKey)
+    : null;
+
+  return {
+    document,
+    originalFileUrl,
+  };
+}
+
+/**
+ * Executes a signing action for a participant.
+ */
+interface SignDocumentResult {
+  success: boolean;
+  result: { status: string };
+}
+
+export async function signDocument(
+  documentId: string,
+  userEmail: string,
+  signatureData: string,
+  onBehalfOf?: string,
+): Promise<SignDocumentResult> {
+  // 1. Get Security Baseline & Permissions
+  const workflowStatus = await getNextSigner(documentId);
+
+  // We need to fetch participants to find the specific user record
+  const doc = await prisma.dssDocument.findUnique({
+    where: { id: documentId },
+    include: { participants: true },
+  });
+
+  if (!doc) throw new Error('Document not found');
+
+  // 2. Validate it is THIS user's turn
+  const participant = doc.participants.find(
+    (p: DssParticipant) => p.email === userEmail,
+  );
+  if (!participant)
+    throw new Error('User is not a participant of this document');
+
+  if (doc.signingMode === DssSigningMode.SEQUENTIAL) {
+    if (workflowStatus.nextStep !== participant.stepOrder) {
+      throw new Error('It is not your turn to sign this document.');
+    }
+  }
+
+  if (participant.hasSigned) {
+    throw new Error('You have already signed this document.');
+  }
+
+  // 2.5 Validate proxy signing requirements
+  const isProxy = participant.role === 'CUSTODIAN';
+  if (isProxy && !onBehalfOf) {
+    throw new Error(
+      'Custodian must specify who they are signing on behalf of (onBehalfOf).',
+    );
+  }
+  if (!isProxy && onBehalfOf) {
+    throw new Error('Only custodians can sign on behalf of others.');
+  }
+
+  // 3. Apply Signature (Atomic Transaction)
+  // We compute a "Server-Proof" of the signature.
+  const signatureProof = computeDocumentHash(
+    Buffer.from(signatureData + doc.originalPdfSha256Hex),
+  );
+
+  const result = await prisma.$transaction(async (tx) => {
+    // A. Update Participant
+    await tx.dssParticipant.update({
+      where: { id: participant.id },
+      data: {
+        hasSigned: true,
+        signedAt: new Date(),
+      },
+    });
+
+    // B. Create Signature Record
+    await tx.dssSignature.create({
+      data: {
+        documentId,
+        participantId: participant.id,
+        signatureHash: signatureProof,
+        isProxy,
+        onBehalfOf,
+      },
+    });
+
+    // C. Check Workflow Completion (Database Source of Truth)
+    // Count how many participants for this doc have NOT signed yet.
+    const remainingSigners = await tx.dssParticipant.count({
+      where: {
+        documentId,
+        hasSigned: false,
+      },
+    });
+
+    if (remainingSigners === 0) {
+      // Everyone has signed!
+      await tx.dssDocument.update({
+        where: { id: documentId },
+        data: {
+          status: DssDocumentStatus.COMPLETED,
+          completedAt: new Date(),
+          // In a real PDF engine, we would generate the final PDF bytes here
+          // and hash them. For now, we reuse original hash as placeholder.
+          finalPdfSha256Hex: doc.originalPdfSha256Hex,
+        },
+      });
+      return { status: 'COMPLETED' };
+    } else {
+      // Update status to IN_SIGNING if it wasn't already
+      if (
+        doc.status === DssDocumentStatus.DRAFT ||
+        doc.status === DssDocumentStatus.SENT
+      ) {
+        await tx.dssDocument.update({
+          where: { id: documentId },
+          data: { status: DssDocumentStatus.IN_SIGNING },
+        });
+      }
+      return { status: 'IN_PROGRESS' };
+    }
+  });
+
+  return { success: true, result };
+}

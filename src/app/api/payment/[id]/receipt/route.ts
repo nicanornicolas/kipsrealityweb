@@ -1,6 +1,6 @@
 // /app/api/payment/[id]/receipt/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 function generateReceiptNo(count: number) {
   const year = new Date().getFullYear();

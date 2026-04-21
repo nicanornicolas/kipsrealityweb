@@ -1,9 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { FileText, Upload, Trash2 } from "lucide-react";
-import { LeaseDocumentType } from "@prisma/client";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { FileText, Upload, Trash2 } from 'lucide-react';
+import { LeaseDocumentType } from '@prisma/client';
+import { useParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface LeaseDocument {
   id: string;
@@ -24,8 +25,8 @@ export default function DocumentsManager() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [documentType, setDocumentType] = useState<LeaseDocumentType>("OTHER");
-  const [description, setDescription] = useState("");
+  const [documentType, setDocumentType] = useState<LeaseDocumentType>('OTHER');
+  const [description, setDescription] = useState('');
 
   useEffect(() => {
     if (leaseId) fetchDocuments();
@@ -35,11 +36,11 @@ export default function DocumentsManager() {
     try {
       setLoading(true);
       const res = await fetch(`/api/lease/${leaseId}/document`);
-      if (!res.ok) throw new Error("Failed to fetch documents");
+      if (!res.ok) throw new Error('Failed to fetch documents');
       const data: LeaseDocument[] = await res.json();
       setDocuments(data);
     } catch (err) {
-      console.error("Fetch documents error:", err);
+      console.error('Fetch documents error:', err);
       setDocuments([]);
     } finally {
       setLoading(false);
@@ -51,44 +52,47 @@ export default function DocumentsManager() {
     try {
       setUploading(true);
       const formData = new FormData();
-      formData.append("file", file);
-      formData.append("documentType", documentType);
-      formData.append("description", description);
+      formData.append('file', file);
+      formData.append('documentType', documentType);
+      formData.append('description', description);
 
       const res = await fetch(`/api/lease/${leaseId}/document`, {
-        method: "POST",
+        method: 'POST',
         body: formData,
       });
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: "Upload failed" }));
+        const errorData = await res
+          .json()
+          .catch(() => ({ error: 'Upload failed' }));
         throw new Error(errorData.error);
       }
 
       const newDoc: LeaseDocument = await res.json();
       setDocuments([newDoc, ...documents]);
       setFile(null);
-      setDescription("");
-      setDocumentType("OTHER");
+      setDescription('');
+      setDocumentType('OTHER');
     } catch (err: any) {
-      console.error("Document upload error:", err);
-      alert(err.message || "Upload failed");
+      console.error('Document upload error:', err);
+      toast.error(err.message || 'Upload failed');
     } finally {
       setUploading(false);
     }
   }
 
   async function deleteDocument(docId: string) {
-    if (!leaseId || !confirm("Are you sure you want to delete this document?")) return;
+    if (!leaseId || !confirm('Are you sure you want to delete this document?'))
+      return;
     try {
       const res = await fetch(`/api/lease/${leaseId}/document/${docId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
-      if (!res.ok) throw new Error("Failed to delete document");
+      if (!res.ok) throw new Error('Failed to delete document');
       setDocuments(documents.filter((d) => d.id !== docId));
     } catch (err) {
-      console.error("Delete document error:", err);
-      alert("Failed to delete document");
+      console.error('Delete document error:', err);
+      toast.error('Failed to delete document');
     }
   }
 
@@ -109,7 +113,11 @@ export default function DocumentsManager() {
 
       {/* Upload Form */}
       <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
-        <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="block w-full" />
+        <input
+          type="file"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          className="block w-full"
+        />
         <select
           className="w-full border border-gray-300 rounded px-3 py-2"
           value={documentType}
@@ -117,7 +125,7 @@ export default function DocumentsManager() {
         >
           {Object.keys(LeaseDocumentType).map((type) => (
             <option key={type} value={type}>
-              {type.replace(/_/g, " ")}
+              {type.replace(/_/g, ' ')}
             </option>
           ))}
         </select>
@@ -133,26 +141,37 @@ export default function DocumentsManager() {
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
         >
           <Upload className="w-4 h-4" />
-          {uploading ? "Uploading..." : "Upload Document"}
+          {uploading ? 'Uploading...' : 'Upload Document'}
         </button>
       </div>
 
       {/* Documents List */}
       {documents.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">No documents uploaded yet</div>
+        <div className="text-center py-12 text-gray-500">
+          No documents uploaded yet
+        </div>
       ) : (
         <div className="space-y-3">
           {documents.map((doc) => (
-            <div key={doc.id} className="border border-gray-200 rounded p-4 flex justify-between items-center">
+            <div
+              key={doc.id}
+              className="border border-gray-200 rounded p-4 flex justify-between items-center"
+            >
               <div>
                 <p className="font-medium">{doc.fileName}</p>
                 <p className="text-xs text-gray-500">
-                  {doc.documentType.replace(/_/g, " ")} &middot; {(doc.fileSize / 1024).toFixed(2)} KB &middot; Uploaded on{" "}
+                  {doc.documentType.replace(/_/g, ' ')} &middot;{' '}
+                  {(doc.fileSize / 1024).toFixed(2)} KB &middot; Uploaded on{' '}
                   {new Date(doc.createdAt).toLocaleDateString()}
                 </p>
               </div>
               <div className="flex gap-2">
-                <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                <a
+                  href={doc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline text-sm"
+                >
                   View
                 </a>
                 <button

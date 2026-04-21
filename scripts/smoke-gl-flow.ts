@@ -1,6 +1,5 @@
-import { prisma } from "../src/lib/db";
-import { financeActions } from "../src/lib/finance/actions";
-import { journalService } from "../src/lib/finance/journal-service";
+import { prisma } from "@rentflow/iam";
+import { financeActions, journalService } from "@rentflow/finance";
 import type { AccountType } from "@prisma/client";
 
 type AssertOpts = { label: string };
@@ -115,8 +114,8 @@ async function cleanupSmokeData() {
       await prisma.paymentReversal.deleteMany({
         where: {
           OR: [
-            ...(invoiceIds.length ? [{ invoice_id: { in: invoiceIds } }] : []),
-            ...(paymentIds.length ? [{ payment_id: { in: paymentIds } }] : []),
+            ...(invoiceIds.length ? [{ invoiceId: { in: invoiceIds } }] : []),
+            ...(paymentIds.length ? [{ paymentId: { in: paymentIds } }] : []),
           ],
         },
       });
@@ -139,7 +138,7 @@ async function cleanupSmokeData() {
     }
 
     if (applicationIds.length) {
-      await (prisma.tenantapplication as any).deleteMany({ where: { id: { in: applicationIds } } });
+      await prisma.tenantApplication.deleteMany({ where: { id: { in: applicationIds } } });
     }
 
     if (unitIds.length) {
@@ -210,7 +209,17 @@ async function runDirect() {
     },
   });
 
-  const application = await (prisma.tenantapplication as any).create({
+  const tenant = await prisma.user.create({
+    data: {
+      email: `smoke-tenant-${runId}@example.com`,
+      passwordHash: "dummy-hash",
+      firstName: "Smoke",
+      lastName: "Tenant",
+      status: "ACTIVE",
+    },
+  });
+
+  const application = await prisma.tenantApplication.create({
     data: {
       fullName: `Smoke Tenant ${runId}`,
       email: `smoke+${runId}@example.com`,
@@ -224,12 +233,14 @@ async function runDirect() {
       moveInDate: new Date(),
       leaseDuration: "12 Months",
       consent: true,
+      userId: tenant.id,
     },
   });
 
   const lease = await prisma.lease.create({
     data: {
       applicationId: application.id,
+      tenantId: tenant.id,
       propertyId: property.id,
       unitId: unit.id,
       startDate: new Date(),
@@ -330,7 +341,7 @@ async function runDirect() {
   // 5) Manual journal input (directly via journalService.post)
   const manualAmount = 123.45;
   console.log("🚀 Posting manual journal entry (journal input test)...");
-  const manualEntry = await journalService.post({
+  const manualEntry = await journalService.postJournalEntry({
     organizationId: org.id,
     date: new Date(),
     reference: `${prefix}-MANUAL`,
@@ -342,7 +353,7 @@ async function runDirect() {
   });
 
   const loadedManualEntry = await prisma.journalEntry.findUnique({
-    where: { id: manualEntry.id },
+    where: { id: manualEntry.journalEntryId },
     include: { lines: { include: { account: true } } },
   });
 
@@ -358,7 +369,7 @@ async function runDirect() {
   const journalEntryIds = [
     postedInvoice.journalEntry!.id,
     postedPayment.journalEntry!.id,
-    manualEntry.id,
+    manualEntry.journalEntryId,
   ];
 
   const entries = await prisma.journalEntry.findMany({
@@ -457,6 +468,16 @@ async function runHttp() {
     },
   });
 
+  const tenant = await prisma.user.create({
+    data: {
+      email: `smoke-tenant-${runId}@example.com`,
+      passwordHash: "dummy-hash",
+      firstName: "Smoke",
+      lastName: "Tenant",
+      status: "ACTIVE",
+    },
+  });
+
   // 1) Tenant application (HTTP) + approve (HTTP)
   const applicationResp = await httpJson<any>(baseUrl, "/api/tenant-application", {
     method: "POST",
@@ -487,7 +508,7 @@ async function runHttp() {
     method: "POST",
     body: JSON.stringify({
       applicationId: application.id,
-      tenantId: null,
+      tenantId: tenant.id,
       propertyId: property.id,
       unitId: unit.id,
       startDate: new Date().toISOString(),

@@ -7,14 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Clock, 
-  CheckCircle, 
-  AlertTriangle, 
-  Home, 
+import {
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  Home,
   Calendar,
   Bell,
-  ExternalLink
+  ExternalLink,
 } from 'lucide-react';
 import { api } from '@/lib/api-client';
 
@@ -36,10 +36,10 @@ interface LeaseIntegrationPanelProps {
   className?: string;
 }
 
-export function LeaseIntegrationPanel({ 
-  propertyId, 
-  unitId, 
-  className 
+export function LeaseIntegrationPanel({
+  propertyId,
+  unitId,
+  className,
 }: LeaseIntegrationPanelProps) {
   const [statusChanges, setStatusChanges] = useState<LeaseStatusChange[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,14 +53,16 @@ export function LeaseIntegrationPanel({
     try {
       setLoading(true);
       setError(null);
-      
+
       const params = new URLSearchParams();
       if (propertyId) params.append('propertyId', propertyId);
       if (unitId) params.append('unitId', unitId);
 
-      const result = await api.get<{ success: boolean; changes: LeaseStatusChange[]; total: number }>(
-        `/api/lease/status-changes?${params}`
-      );
+      const result = await api.get<{
+        success: boolean;
+        changes: LeaseStatusChange[];
+        total: number;
+      }>(`/api/lease/status-changes?${params}`);
 
       if (result.error) {
         // Handle API client errors (including 401 redirects)
@@ -121,7 +123,7 @@ export function LeaseIntegrationPanel({
       case 'PROMPT_SENT':
         return 'Listing decision prompt sent to property manager';
       case 'NOTIFICATION_SENT':
-        return status === 'SIGNED' 
+        return status === 'SIGNED'
           ? 'Notification sent about upcoming listing removal'
           : 'Notification sent about listing change';
       default:
@@ -196,9 +198,7 @@ export function LeaseIntegrationPanel({
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">
-                        Unit {change.unitNumber}
-                      </Badge>
+                      <Badge variant="outline">Unit {change.unitNumber}</Badge>
                       <span className="text-sm text-muted-foreground">
                         {change.propertyName}
                       </span>
@@ -213,7 +213,9 @@ export function LeaseIntegrationPanel({
                 <div className="flex items-center gap-4 mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Status:</span>
-                    <Badge variant={getStatusBadgeVariant(change.previousStatus)}>
+                    <Badge
+                      variant={getStatusBadgeVariant(change.previousStatus)}
+                    >
                       {change.previousStatus}
                     </Badge>
                     <span className="text-muted-foreground">→</span>
@@ -227,7 +229,10 @@ export function LeaseIntegrationPanel({
                   {getActionIcon(change.listingAction)}
                   <div className="flex-1">
                     <p className="text-sm font-medium">
-                      {getActionDescription(change.listingAction, change.newStatus)}
+                      {getActionDescription(
+                        change.listingAction,
+                        change.newStatus,
+                      )}
                     </p>
                     {change.reason && (
                       <p className="text-sm text-muted-foreground mt-1">
@@ -242,7 +247,9 @@ export function LeaseIntegrationPanel({
                     <Alert>
                       <Bell className="h-4 w-4" />
                       <AlertDescription>
-                        A listing decision is required for this unit. Check your email or visit the unit management page to make your decision.
+                        A listing decision is required for this unit. Check your
+                        email or visit the unit management page to make your
+                        decision.
                       </AlertDescription>
                     </Alert>
                   </div>
@@ -263,14 +270,14 @@ export function LeaseIntegrationPanel({
           >
             Refresh Activity
           </Button>
-          
+
           {(propertyId || unitId) && (
             <Button
               variant="ghost"
               size="sm"
               className="flex items-center gap-2"
               onClick={() => {
-                const url = unitId 
+                const url = unitId
                   ? `/property-manager/units/${unitId}`
                   : `/property-manager/view-property/${propertyId}`;
                 window.open(url, '_blank');

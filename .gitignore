@@ -82,4 +82,21 @@ test-run-output.txt
 financial_testing_guide.md
 RENTFLOW360_PAYMENT_INFRASTRUCTURE_ANALYSIS.md
 DEPLOYMENT_GUIDE.md
+# Sentry Config File
+.env.sentry-build-plugin
+
+
+
+.nx/cache
+.nx/workspace-data
+
+# Next.js
+.next
+out
+
+vite.config.*.timestamp*
+vitest.config.*.timestamp*
+.nx/polygraph
+.claude/worktrees
+.claude/settings.local.json
 .env*.local

@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import Stripe from 'stripe';
 
 dotenv.config({ path: '.env.local' });
 
@@ -138,9 +139,160 @@ async function seedTestimonialsIfMissing() {
     console.log('✅ Default testimonials seeded.');
 }
 
+async function seedMarketplaceCategories() {
+  console.log('🌱 Seeding marketplace categories...');
+
+  const categories = ['Property', 'Vehicle', 'Service'];
+
+  for (const name of categories) {
+    await prisma.categoryMarketplace.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+
+  console.log('✅ Marketplace categories seeded.');
+}
+
+// Feature Keys for Usage Tracking
+const FEATURE_KEYS = {
+  PROPERTY_CREATE: 'property.create',
+  UNIT_CREATE: 'unit.create',
+  DSS_DOCUMENTS: 'dss.documents.monthly',
+  TEAM_MEMBERS: 'team.members.max',
+  LEASE_ACTIVE: 'lease.active.max',
+};
+
+// Plan-specific limits (0 = unlimited)
+const PLAN_LIMITS: Record<string, Record<string, number>> = {
+  FREE: {
+    'property.create': 3,
+    'unit.create': 10,
+    'dss.documents.monthly': 5,
+    'team.members.max': 1,
+    'lease.active.max': 10,
+  },
+  BUSINESS: {
+    'property.create': 25,
+    'unit.create': 100,
+    'dss.documents.monthly': 50,
+    'team.members.max': 10,
+    'lease.active.max': 100,
+  },
+  ENTERPRISE: {
+    'property.create': 0,
+    'unit.create': 0,
+    'dss.documents.monthly': 0,
+    'team.members.max': 0,
+    'lease.active.max': 0,
+  },
+};
+
+async function seedMonetizationFeatures() {
+  console.log('🌱 Seeding monetization features and limits...');
+
+  // Create Features
+  const featureDescriptions: Record<string, string> = {
+    [FEATURE_KEYS.PROPERTY_CREATE]: 'Maximum number of properties that can be created',
+    [FEATURE_KEYS.UNIT_CREATE]: 'Maximum number of units that can be created',
+    [FEATURE_KEYS.DSS_DOCUMENTS]: 'Maximum number of DSS documents per month',
+    [FEATURE_KEYS.TEAM_MEMBERS]: 'Maximum number of team members',
+    [FEATURE_KEYS.LEASE_ACTIVE]: 'Maximum number of active leases',
+  };
+
+  for (const [key, description] of Object.entries(featureDescriptions)) {
+    await prisma.feature.upsert({
+      where: { key },
+      update: {},
+      create: {
+        key,
+        title: key.split('.').pop()?.toUpperCase() || key,
+        description,
+        category: key.split('.')[0].toUpperCase(),
+      },
+    });
+  }
+
+  // Create FeatureLimits for each plan
+  const plans = await prisma.plan.findMany();
+
+  for (const plan of plans) {
+    const limits = PLAN_LIMITS[plan.name.toUpperCase()];
+    if (!limits) continue;
+
+    for (const [featureKey, limit] of Object.entries(limits)) {
+      const feature = await prisma.feature.findUnique({ where: { key: featureKey } });
+      if (!feature) continue;
+
+      await prisma.featureLimit.upsert({
+        where: {
+          featureId_planId: {
+            featureId: feature.id,
+            planId: plan.id,
+          },
+        },
+        update: { limit },
+        create: {
+          featureId: feature.id,
+          planId: plan.id,
+          limit,
+          period: 'monthly',
+        },
+      });
+    }
+  }
+
+  console.log('✅ Monetization features and limits seeded.');
+}
+
+async function seedStripePriceIds() {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
+    console.log('⚠️ STRIPE_SECRET_KEY not set. Skipping Stripe price ID seeding.');
+    return;
+  }
+
+  const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: '2026-01-28.clover',
+  });
+
+  const plansToSeed = [
+    { name: 'BUSINESS', amount: 4900, currency: 'usd' }, // $49/month
+    { name: 'ENTERPRISE', amount: 14900, currency: 'usd' }, // $149/month
+  ];
+
+  for (const planConfig of plansToSeed) {
+    const plan = await prisma.plan.findFirst({ where: { name: planConfig.name } });
+    if (!plan || plan.stripePriceIdMonthly) continue;
+
+    // Create Stripe Product & Price
+    const product = await stripe.products.create({
+      name: `RentFlow360 ${planConfig.name}`,
+      metadata: { planId: plan.id.toString() },
+    });
+
+    const price = await stripe.prices.create({
+      product: product.id,
+      unit_amount: planConfig.amount,
+      currency: planConfig.currency,
+      recurring: { interval: 'month' },
+    });
+
+    await prisma.plan.update({
+      where: { id: plan.id },
+      data: { stripePriceIdMonthly: price.id },
+    });
+
+    console.log(`✅ Created Stripe price ${price.id} for ${planConfig.name}`);
+  }
+}
+
 async function main() {
     // Run this seed when setting up a new database or environment.
     // Uses upsert to prevent duplicates - safe to run multiple times.
+  await seedMarketplaceCategories();
+
     const propertyTypes = [
         { id: "1", name: "House", description: "Single family home" },
         { id: "2", name: "Apartment", description: "Apartment unit" },
@@ -270,6 +422,12 @@ async function main() {
 
         // Ensure the marketing testimonials section has content
         await seedTestimonialsIfMissing();
+
+        // Seed Features and FeatureLimits for B2B Monetization
+        await seedMonetizationFeatures();
+
+        // Seed Stripe Price IDs for Plans
+        await seedStripePriceIds();
     } catch (e) {
     } finally {
         if (hasBackupDir) {

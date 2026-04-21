@@ -86,16 +86,16 @@ const OccupancyLineChart: React.FC<OccupancyLineChartProps> = ({ selectedPropert
 
 	return (
 		<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 min-h-[350px]">
-			<CardContent className="p-0 flex flex-col min-h-[300px] h-full w-full relative">
+			<CardContent className="p-0 flex flex-col min-h-[300px] h-full w-full relative overflow-hidden">
 				<div className="mb-4">
 					<h3 className="text-lg font-semibold text-gray-900">Occupancy Rate</h3>
 				</div>
-				<div className="flex-1 w-full overflow-x-auto custom-scrollbar pb-2">
-					<div style={{ minWidth: "100%", width: Math.max(600, chartData.length * 60), height: "100%" }}>
-						<ResponsiveContainer width="100%" height="100%">
+				<div className="flex-1 w-full overflow-x-auto custom-scrollbar pb-2 overflow-y-hidden">
+					<div style={{ minWidth: "100%", width: Math.max(600, chartData.length * 60), height: 300 }}>
+						<ResponsiveContainer width="100%" height={300} minHeight={300}>
 							<LineChart
 								data={chartData}
-								margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
+								margin={{ left: 10, right: 10, top: 10, bottom: 14 }}
 							>
 								<CartesianGrid strokeDasharray="3 3" vertical={false} />
 								<XAxis
@@ -148,7 +148,7 @@ const OccupancyLineChart: React.FC<OccupancyLineChartProps> = ({ selectedPropert
 					</div>
 				</div>
 			</CardContent>
-			<div className="h-full min-h-[300px] w-full relative">
+			<div className="h-full min-h-[300px] w-full relative overflow-hidden">
 				<RentUtilitiesChart selectedProperty={selectedProperty} myproperties={safeMyProperties} />
 			</div>
 		</div>

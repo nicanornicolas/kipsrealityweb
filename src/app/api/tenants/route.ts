@@ -1,7 +1,7 @@
 // src/app/api/tenants/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db"; // your existing prisma helper
-import { toNumber } from "@/lib/decimal-utils";
+import { prisma } from "@rentflow/iam"; // your existing prisma helper
+import { toNumber } from "../../../lib/decimal-utils";
 
 // GET /api/tenants
 export async function GET(req: Request) {
@@ -59,3 +59,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: false, error: "Failed to fetch tenants" }, { status: 500 });
   }
 }
+

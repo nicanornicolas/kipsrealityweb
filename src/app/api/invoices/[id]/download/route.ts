@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { toNumber } from "@/lib/decimal-utils";
+import { prisma } from "@rentflow/iam";
+import { toNumber } from "../../../../../lib/decimal-utils";
 import type { Prisma } from "@prisma/client";
 
 type InvoiceWithRelations = Prisma.InvoiceGetPayload<{

@@ -1,36 +1,46 @@
-'use client'
+'use client';
 
-import React, { useState, useEffect } from 'react'
-import { Building2, DollarSign, FileText, Calendar, AlertCircle, CheckCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { UnitWithListingStatus, CreateListingData } from '@/lib/listing-types'
+import React, { useState, useEffect } from 'react';
+import {
+  Building2,
+  DollarSign,
+  FileText,
+  Calendar,
+  AlertCircle,
+  CheckCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  UnitWithListingStatus,
+  CreateListingData,
+} from '@rentflow/property/client';
 
 interface ListingDetailsFormProps {
-  unit: UnitWithListingStatus
-  initialData?: Partial<CreateListingData>
-  onSubmit: (listingData: CreateListingData) => Promise<void>
-  onCancel: () => void
-  isLoading?: boolean
+  unit: UnitWithListingStatus;
+  initialData?: Partial<CreateListingData>;
+  onSubmit: (listingData: CreateListingData) => Promise<void>;
+  onCancel: () => void;
+  isLoading?: boolean;
 }
 
 interface FormData {
-  title: string
-  description: string
-  price: string
-  availabilityDate: string
-  expirationDate: string
+  title: string;
+  description: string;
+  price: string;
+  availabilityDate: string;
+  expirationDate: string;
 }
 
 interface ValidationErrors {
-  title?: string
-  description?: string
-  price?: string
-  availabilityDate?: string
-  expirationDate?: string
+  title?: string;
+  description?: string;
+  price?: string;
+  availabilityDate?: string;
+  expirationDate?: string;
 }
 
 export default function ListingDetailsForm({
@@ -46,73 +56,79 @@ export default function ListingDetailsForm({
     price: '',
     availabilityDate: '',
     expirationDate: '',
-  })
-  
-  const [errors, setErrors] = useState<ValidationErrors>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  });
+
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Populate smart defaults from unit data
   useEffect(() => {
     const generateDefaultTitle = () => {
-      if (initialData?.title) return initialData.title
-      
+      if (initialData?.title) return initialData.title;
+
       // Generate smart default from unit and property data
-      const unitNumber = unit.unitNumber || 'Unit'
-      const bedrooms = unit.bedrooms ? `${unit.bedrooms}BR` : ''
-      const bathrooms = unit.bathrooms ? `${unit.bathrooms}BA` : ''
-      
-      const details = [bedrooms, bathrooms].filter(Boolean).join('/')
-      return details ? `${unitNumber} - ${details}` : unitNumber
-    }
+      const unitNumber = unit.unitNumber || 'Unit';
+      const bedrooms = unit.bedrooms ? `${unit.bedrooms}BR` : '';
+      const bathrooms = unit.bathrooms ? `${unit.bathrooms}BA` : '';
+
+      const details = [bedrooms, bathrooms].filter(Boolean).join('/');
+      return details ? `${unitNumber} - ${details}` : unitNumber;
+    };
 
     const generateDefaultDescription = () => {
-      if (initialData?.description) return initialData.description
-      
+      if (initialData?.description) return initialData.description;
+
       // Generate smart default description
-      const parts = []
-      
+      const parts = [];
+
       if (unit.bedrooms) {
-        parts.push(`${unit.bedrooms} bedroom${unit.bedrooms > 1 ? 's' : ''}`)
+        parts.push(`${unit.bedrooms} bedroom${unit.bedrooms > 1 ? 's' : ''}`);
       }
-      
+
       if (unit.bathrooms) {
-        parts.push(`${unit.bathrooms} bathroom${unit.bathrooms > 1 ? 's' : ''}`)
+        parts.push(
+          `${unit.bathrooms} bathroom${unit.bathrooms > 1 ? 's' : ''}`,
+        );
       }
-      
+
       if (unit.squareFootage) {
-        parts.push(`${unit.squareFootage} sq ft`)
+        parts.push(`${unit.squareFootage} sq ft`);
       }
-      
-      const baseDescription = parts.length > 0 
-        ? `Spacious ${parts.join(', ')} unit available for rent.`
-        : 'Quality rental unit available.'
-      
-      return baseDescription + ' Contact us for more details and to schedule a viewing.'
-    }
+
+      const baseDescription =
+        parts.length > 0
+          ? `Spacious ${parts.join(', ')} unit available for rent.`
+          : 'Quality rental unit available.';
+
+      return (
+        baseDescription +
+        ' Contact us for more details and to schedule a viewing.'
+      );
+    };
 
     const generateDefaultPrice = () => {
-      if (initialData?.price) return initialData.price.toString()
-      if (unit.rentAmount) return unit.rentAmount.toString()
-      return ''
-    }
+      if (initialData?.price) return initialData.price.toString();
+      if (unit.rentAmount) return unit.rentAmount.toString();
+      return '';
+    };
 
     const generateDefaultAvailabilityDate = () => {
       if (initialData?.availabilityDate) {
-        return initialData.availabilityDate.toISOString().split('T')[0]
+        return initialData.availabilityDate.toISOString().split('T')[0];
       }
       // Default to today
-      return new Date().toISOString().split('T')[0]
-    }
+      return new Date().toISOString().split('T')[0];
+    };
 
     const generateDefaultExpirationDate = () => {
       if (initialData?.expirationDate) {
-        return initialData.expirationDate.toISOString().split('T')[0]
+        return initialData.expirationDate.toISOString().split('T')[0];
       }
       // Default to 90 days from now
-      const futureDate = new Date()
-      futureDate.setDate(futureDate.getDate() + 90)
-      return futureDate.toISOString().split('T')[0]
-    }
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 90);
+      return futureDate.toISOString().split('T')[0];
+    };
 
     setFormData({
       title: generateDefaultTitle(),
@@ -120,87 +136,88 @@ export default function ListingDetailsForm({
       price: generateDefaultPrice(),
       availabilityDate: generateDefaultAvailabilityDate(),
       expirationDate: generateDefaultExpirationDate(),
-    })
-  }, [unit, initialData])
+    });
+  }, [unit, initialData]);
 
   const validateForm = (): boolean => {
-    const newErrors: ValidationErrors = {}
+    const newErrors: ValidationErrors = {};
 
     // Title validation
     if (!formData.title.trim()) {
-      newErrors.title = 'Title is required'
+      newErrors.title = 'Title is required';
     } else if (formData.title.trim().length < 3) {
-      newErrors.title = 'Title must be at least 3 characters long'
+      newErrors.title = 'Title must be at least 3 characters long';
     } else if (formData.title.trim().length > 100) {
-      newErrors.title = 'Title must be less than 100 characters'
+      newErrors.title = 'Title must be less than 100 characters';
     }
 
     // Description validation
     if (!formData.description.trim()) {
-      newErrors.description = 'Description is required'
+      newErrors.description = 'Description is required';
     } else if (formData.description.trim().length < 10) {
-      newErrors.description = 'Description must be at least 10 characters long'
+      newErrors.description = 'Description must be at least 10 characters long';
     } else if (formData.description.trim().length > 1000) {
-      newErrors.description = 'Description must be less than 1000 characters'
+      newErrors.description = 'Description must be less than 1000 characters';
     }
 
     // Price validation
     if (!formData.price.trim()) {
-      newErrors.price = 'Price is required'
+      newErrors.price = 'Price is required';
     } else {
-      const priceNum = parseFloat(formData.price)
+      const priceNum = parseFloat(formData.price);
       if (isNaN(priceNum) || priceNum <= 0) {
-        newErrors.price = 'Price must be a valid positive number'
+        newErrors.price = 'Price must be a valid positive number';
       } else if (priceNum > 50000) {
-        newErrors.price = 'Price seems unusually high. Please verify.'
+        newErrors.price = 'Price seems unusually high. Please verify.';
       }
     }
 
     // Availability date validation
     if (!formData.availabilityDate) {
-      newErrors.availabilityDate = 'Availability date is required'
+      newErrors.availabilityDate = 'Availability date is required';
     } else {
-      const availDate = new Date(formData.availabilityDate)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      
+      const availDate = new Date(formData.availabilityDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
       if (availDate < today) {
-        newErrors.availabilityDate = 'Availability date cannot be in the past'
+        newErrors.availabilityDate = 'Availability date cannot be in the past';
       }
     }
 
     // Expiration date validation (optional)
     if (formData.expirationDate) {
-      const expDate = new Date(formData.expirationDate)
-      const availDate = new Date(formData.availabilityDate)
-      
+      const expDate = new Date(formData.expirationDate);
+      const availDate = new Date(formData.availabilityDate);
+
       if (expDate <= availDate) {
-        newErrors.expirationDate = 'Expiration date must be after availability date'
+        newErrors.expirationDate =
+          'Expiration date must be after availability date';
       }
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-    
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
     // Clear error for this field when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }))
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!validateForm()) {
-      return
+      return;
     }
 
-    setIsSubmitting(true)
-    
+    setIsSubmitting(true);
+
     try {
       const listingData: CreateListingData = {
         unitId: unit.id,
@@ -208,25 +225,27 @@ export default function ListingDetailsForm({
         description: formData.description.trim(),
         price: parseFloat(formData.price),
         availabilityDate: new Date(formData.availabilityDate),
-        expirationDate: formData.expirationDate ? new Date(formData.expirationDate) : undefined,
-      }
+        expirationDate: formData.expirationDate
+          ? new Date(formData.expirationDate)
+          : undefined,
+      };
 
-      await onSubmit(listingData)
+      await onSubmit(listingData);
     } catch (error) {
-      console.error('Error submitting listing details:', error)
+      console.error('Error submitting listing details:', error);
       // Error handling is managed by parent component
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const formatCurrency = (amount?: number) => {
-    if (!amount) return 'Not set'
+    if (!amount) return 'Not set';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount)
-  }
+    }).format(amount);
+  };
 
   return (
     <div className="space-y-6">
@@ -246,7 +265,9 @@ export default function ListingDetailsForm({
             </div>
             <div>
               <span className="font-medium text-slate-600">Current Rent:</span>
-              <p className="text-slate-900">{formatCurrency(unit.rentAmount)}</p>
+              <p className="text-slate-900">
+                {formatCurrency(unit.rentAmount)}
+              </p>
             </div>
             {unit.bedrooms && (
               <div>
@@ -294,7 +315,8 @@ export default function ListingDetailsForm({
                 </div>
               )}
               <p className="text-xs text-slate-500">
-                This will be the main headline tenants see when browsing listings
+                This will be the main headline tenants see when browsing
+                listings
               </p>
             </div>
 
@@ -306,7 +328,9 @@ export default function ListingDetailsForm({
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange('description', e.target.value)
+                }
                 placeholder="Describe the unit's features, amenities, and what makes it special..."
                 rows={4}
                 className={errors.description ? 'border-red-500' : ''}
@@ -354,7 +378,10 @@ export default function ListingDetailsForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Availability Date */}
               <div className="space-y-2">
-                <Label htmlFor="availabilityDate" className="text-sm font-medium">
+                <Label
+                  htmlFor="availabilityDate"
+                  className="text-sm font-medium"
+                >
                   Available From *
                 </Label>
                 <div className="relative">
@@ -363,7 +390,9 @@ export default function ListingDetailsForm({
                     id="availabilityDate"
                     type="date"
                     value={formData.availabilityDate}
-                    onChange={(e) => handleInputChange('availabilityDate', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange('availabilityDate', e.target.value)
+                    }
                     className={`pl-10 ${errors.availabilityDate ? 'border-red-500' : ''}`}
                     disabled={isLoading || isSubmitting}
                   />
@@ -387,7 +416,9 @@ export default function ListingDetailsForm({
                     id="expirationDate"
                     type="date"
                     value={formData.expirationDate}
-                    onChange={(e) => handleInputChange('expirationDate', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange('expirationDate', e.target.value)
+                    }
                     className={`pl-10 ${errors.expirationDate ? 'border-red-500' : ''}`}
                     disabled={isLoading || isSubmitting}
                   />
@@ -440,13 +471,15 @@ export default function ListingDetailsForm({
       {/* Help Text */}
       <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
         <p>
-          <strong>Tip:</strong> The form has been pre-filled with smart defaults based on your unit information. 
-          You can modify any field to better describe your property. Required fields are marked with an asterisk (*).
+          <strong>Tip:</strong> The form has been pre-filled with smart defaults
+          based on your unit information. You can modify any field to better
+          describe your property. Required fields are marked with an asterisk
+          (*).
         </p>
       </div>
     </div>
-  )
+  );
 }
 
 // Named export for compatibility
-export { ListingDetailsForm }
+export { ListingDetailsForm };

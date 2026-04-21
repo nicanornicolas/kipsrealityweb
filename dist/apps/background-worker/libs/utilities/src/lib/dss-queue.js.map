@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../../libs/utilities/src/lib/dss-queue.ts"],
+  "sourcesContent": ["import { Queue, type DefaultJobOptions } from 'bullmq';\r\nimport { connection, defaultJobOptions } from './queue';\r\n\r\nconst isBuildPhase =\r\n  process.env.NEXT_PHASE === 'phase-production-build' ||\r\n  process.env.npm_lifecycle_event === 'build';\r\n\r\nexport const dssPdfQueue = isBuildPhase\r\n  ? (null as unknown as Queue)\r\n  : new Queue('dss-pdf-generation', {\r\n      connection,\r\n      defaultJobOptions,\r\n    });\r\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,oBAA8C;AAC9C,mBAA8C;AAE9C,MAAM,eACJ,QAAQ,IAAI,eAAe,4BAC3B,QAAQ,IAAI,wBAAwB;AAE/B,MAAM,cAAc,eACtB,OACD,IAAI,oBAAM,sBAAsB;AAAA,EAC9B;AAAA,EACA;AACF,CAAC;",
+  "names": []
+}

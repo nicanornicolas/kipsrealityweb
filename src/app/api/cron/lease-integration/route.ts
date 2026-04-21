@@ -1,7 +1,7 @@
 // Cron job endpoint for automated lease integration processing
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { leaseListingIntegration } from "@/lib/lease-listing-integration";
+import { prisma } from "@rentflow/iam";
+import { leaseListingIntegration } from "@rentflow/lease";
 import { LeaseStatus } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
@@ -234,3 +234,4 @@ export async function GET(req: NextRequest) {
         );
     }
 }
+

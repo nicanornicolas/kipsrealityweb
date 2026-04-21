@@ -3,7 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { PROPERTY_MANAGER_LINKS, SidebarCategory } from './SidebarLinks';
+import {
+  PROPERTY_MANAGER_LINKS,
+  TENANT_LINKS,
+  VENDOR_LINKS,
+  AGENT_LINKS,
+  SidebarCategory,
+} from './SidebarLinks';
 import { cn } from '@/lib/utils';
 import { ChevronDown, Building2 } from 'lucide-react';
 
@@ -13,16 +19,41 @@ interface SidebarProps {
 
 export default function Sidebar({ role = 'PROPERTY_MANAGER' }: SidebarProps) {
   const pathname = usePathname();
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(
+    {},
+  );
 
   // Get the appropriate links based on role
   const getLinksForRole = (): SidebarCategory[] => {
     switch (role) {
       case 'PROPERTY_MANAGER':
         return PROPERTY_MANAGER_LINKS;
+      case 'TENANT':
+        return TENANT_LINKS;
+      case 'VENDOR':
+        return VENDOR_LINKS;
+      case 'AGENT':
+        return AGENT_LINKS;
       default:
-        // Fallback to property manager links for other roles
         return PROPERTY_MANAGER_LINKS;
+    }
+  };
+
+  // Get display title based on role
+  const getRoleDisplayTitle = (): string => {
+    switch (role) {
+      case 'PROPERTY_MANAGER':
+        return 'Property Manager';
+      case 'TENANT':
+        return 'Tenant';
+      case 'VENDOR':
+        return 'Vendor';
+      case 'AGENT':
+        return 'Agent';
+      case 'SYSTEM_ADMIN':
+        return 'Administrator';
+      default:
+        return role;
     }
   };
 
@@ -31,14 +62,16 @@ export default function Sidebar({ role = 'PROPERTY_MANAGER' }: SidebarProps) {
   // Initialize: open the category containing the active link
   useEffect(() => {
     const initialState: Record<string, boolean> = {};
-    
+
     sidebarLinks.forEach((category) => {
       const hasActiveLink = category.items.some(
-        (link) => pathname === link.href || pathname?.startsWith(`${link.href}/`)
+        (link) =>
+          pathname === link.href || pathname?.startsWith(`${link.href}/`),
       );
-      
+
       // Open "Overview" by default, or the category with the active link
-      initialState[category.title] = hasActiveLink || category.title === 'Overview';
+      initialState[category.title] =
+        hasActiveLink || category.title === 'Overview';
     });
 
     setOpenCategories(initialState);
@@ -61,7 +94,9 @@ export default function Sidebar({ role = 'PROPERTY_MANAGER' }: SidebarProps) {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">RentFlow360</h1>
-            <p className="text-xs text-blue-300 mt-1 uppercase tracking-wider">Property Manager</p>
+            <p className="text-xs text-blue-300 mt-1 uppercase tracking-wider">
+              {getRoleDisplayTitle()}
+            </p>
           </div>
         </div>
       </div>
@@ -81,8 +116,8 @@ export default function Sidebar({ role = 'PROPERTY_MANAGER' }: SidebarProps) {
                 <span>{category.title}</span>
                 <ChevronDown
                   className={cn(
-                    "w-4 h-4 transition-transform duration-300 ease-in-out text-blue-300/50 group-hover:text-white",
-                    isOpen ? "rotate-0" : "-rotate-90"
+                    'w-4 h-4 transition-transform duration-300 ease-in-out text-blue-300/50 group-hover:text-white',
+                    isOpen ? 'rotate-0' : '-rotate-90',
                   )}
                 />
               </button>
@@ -90,30 +125,36 @@ export default function Sidebar({ role = 'PROPERTY_MANAGER' }: SidebarProps) {
               {/* Accordion Content (Smooth height transition via CSS Grid) */}
               <div
                 className={cn(
-                  "grid transition-all duration-300 ease-in-out",
-                  isOpen ? "grid-rows-[1fr] opacity-100 mt-1" : "grid-rows-[0fr] opacity-0 mt-0"
+                  'grid transition-all duration-300 ease-in-out',
+                  isOpen
+                    ? 'grid-rows-[1fr] opacity-100 mt-1'
+                    : 'grid-rows-[0fr] opacity-0 mt-0',
                 )}
               >
                 <div className="overflow-hidden flex flex-col space-y-1">
                   {category.items.map((link) => {
                     const Icon = link.icon;
-                    const isActive = pathname === link.href || pathname?.startsWith(`${link.href}/`);
+                    const isActive =
+                      pathname === link.href ||
+                      pathname?.startsWith(`${link.href}/`);
 
                     return (
                       <Link
                         key={link.name}
                         href={link.href}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group",
+                          'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group',
                           isActive
-                            ? "bg-blue-600/20 text-blue-300 border border-blue-500/30 shadow-sm ml-2"
-                            : "text-slate-300 hover:text-white hover:bg-blue-800/50 hover:ml-1"
+                            ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30 shadow-sm ml-2'
+                            : 'text-slate-300 hover:text-white hover:bg-blue-800/50 hover:ml-1',
                         )}
                       >
                         <Icon
                           className={cn(
-                            "w-4 h-4 flex-shrink-0 transition-colors",
-                            isActive ? "text-blue-400" : "text-slate-400 group-hover:text-white"
+                            'w-4 h-4 flex-shrink-0 transition-colors',
+                            isActive
+                              ? 'text-blue-400'
+                              : 'text-slate-400 group-hover:text-white',
                           )}
                         />
                         {link.name}
@@ -134,8 +175,12 @@ export default function Sidebar({ role = 'PROPERTY_MANAGER' }: SidebarProps) {
             PM
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">Property Manager</p>
-            <p className="text-xs text-blue-300 truncate">admin@rentflow360.com</p>
+            <p className="text-sm font-medium text-white truncate">
+              Property Manager
+            </p>
+            <p className="text-xs text-blue-300 truncate">
+              admin@rentflow360.com
+            </p>
           </div>
         </div>
       </div>

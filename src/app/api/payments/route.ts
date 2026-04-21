@@ -1,7 +1,7 @@
 // /app/api/payments/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
+import { prisma } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
 
 export async function GET(req: Request) {
   try {
@@ -63,3 +63,4 @@ export async function GET(req: Request) {
     }, { status: 500 });
   }
 }
+

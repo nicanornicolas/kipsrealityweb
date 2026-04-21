@@ -1,6 +1,6 @@
 export const theme = {
-  primary: "#016B61",
-  secondary: "#70B2B2",
-  tertiary: "#9ECFD4",
-  accent: "#E5E9C5",
+  primary: '#003B73',
+  secondary: '#004a94',
+  tertiary: '#005cb8',
+  accent: '#006cd9',
 };

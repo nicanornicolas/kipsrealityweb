@@ -1,133 +1,86 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+// src/app/api/utilities/allocations/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+import { requireRole } from '@rentflow/iam';
+import { UtilityService } from '@rentflow/utilities';
+import { IFinanceModule } from '@rentflow/finance';
+import { prisma } from '@rentflow/iam';
 
 /**
- * GET /api/utilities/allocations
- * Fetches all utility allocations with related bill, unit, property, and utility data
+ * FinanceFacade - The concrete implementation of IFinanceModule.
+ * 
+ * This is the "adapter" that connects our Next.js app's existing
+ * finance logic to the IFinanceModule interface expected by
+ * @rentflow/utilities.
+ * 
+ * In a future refactor, the actual finance logic will move into
+ * libs/finance, and this adapter will be removed.
  */
-export async function GET(request: NextRequest) {
-    try {
-        const allocations = await prisma.utilityAllocation.findMany({
-            select: {
-                id: true,
-                amount: true,
-                percentage: true,
-                utilityBill: {
-                    select: {
-                        id: true,
-                        propertyId: true,
-                        utilityId: true,
-                        providerName: true,
-                        periodStart: true,
-                        periodEnd: true,
-                        billDate: true,
-                        splitMethod: true,
-                        property: {
-                            select: {
-                                name: true,
-                                address: true,
-                            },
-                        },
-                    },
-                },
-                unit: {
-                    select: {
-                        unitNumber: true,
-                        leases: {
-                            where: { leaseStatus: "ACTIVE" },
-                            select: {
-                                tenant: {
-                                    select: {
-                                        id: true,
-                                        firstName: true,
-                                        lastName: true,
-                                    },
-                                },
-                            },
-                            take: 1,
-                        },
-                    },
-                },
-            },
-            orderBy: [
-                { utilityBill: { billDate: "desc" } },
-                { unit: { unitNumber: "asc" } },
-            ],
-        });
+class FinanceFacade implements IFinanceModule {
+  async postInvoiceToGL(params: {
+    tenantId: string;
+    amount: number;
+    type: string;
+    referenceId: string;
+    description: string;
+  }): Promise<{ invoiceId: string }> {
+    // TODO: Replace with actual invoice generation logic
+    // For now, we create a basic invoice record via Prisma
+    const invoice = await prisma.invoice.create({
+      data: {
+        tenantId: params.tenantId,
+        amount: params.amount,
+        type: params.type as any, // Cast to match InvoiceType enum
+        description: params.description,
+        status: 'PENDING',
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      },
+    });
 
-        // Get utility names separately
-        const utilities = await prisma.utility.findMany();
-        const utilityMap = new Map(utilities.map(u => [u.id, u.name]));
-
-        // Transform to frontend-friendly shape
-        const rows = allocations.map((alloc) => {
-            const bill = alloc.utilityBill;
-            const unit = alloc.unit;
-            const lease = unit.leases[0];
-            const tenant = lease?.tenant;
-
-            // Format period string
-            const periodStart = bill.periodStart
-                ? new Date(bill.periodStart).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "2-digit",
-                })
-                : "";
-            const periodEnd = bill.periodEnd
-                ? new Date(bill.periodEnd).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "2-digit",
-                })
-                : "";
-            const period = periodStart && periodEnd ? `${periodStart} – ${periodEnd}` : "";
-
-            return {
-                id: alloc.id,
-                unit: unit.unitNumber,
-                tenant: tenant ? `${tenant.firstName || ""} ${tenant.lastName || ""}`.trim() || "N/A" : "Vacant",
-                utility: bill.utilityId ? utilityMap.get(bill.utilityId) || "Unknown" : "Unknown",
-                provider: bill.providerName,
-                period,
-                periodRaw: bill.periodEnd?.toISOString() || bill.billDate.toISOString(),
-                amount: Number(alloc.amount),
-                basis: getBasisDescription(bill.splitMethod, alloc.percentage),
-                property: bill.property.name || bill.property.address,
-                propertyId: bill.propertyId,
-            };
-        });
-
-        return NextResponse.json({ allocations: rows });
-    } catch (error) {
-        console.error("Error fetching allocations:", error);
-        return NextResponse.json(
-            { error: "Failed to fetch allocations" },
-            { status: 500 }
-        );
-    }
+    return { invoiceId: invoice.id };
+  }
 }
+
+// Instantiate our modular service with the finance adapter
+const utilityService = new UtilityService(new FinanceFacade());
 
 /**
- * Generates a human-readable basis description based on split method
+ * POST /api/utilities/allocations
+ * 
+ * Stages a new utility bill allocation for review.
+ * 
+ * Accepts a UtilityAllocationPayload from either:
+ * 1. The Next.js UI (manual entry)
+ * 2. The Python AI Sidecar (automated OCR)
+ * 
+ * Both sources produce the same JSON structure.
  */
-function getBasisDescription(splitMethod: string, percentage: unknown): string {
-    const pct = percentage ? `${Number(percentage).toFixed(1)}%` : "";
+export async function POST(req: NextRequest) {
+  // 1. Enforce RBAC (Only Managers and Admins)
+  const authError = await requireRole(['PROPERTY_MANAGER', 'SYSTEM_ADMIN']);
+  if (authError) return authError;
 
-    switch (splitMethod) {
-        case "EQUAL":
-            return `Equal split${pct ? ` (${pct})` : ""}`;
-        case "SUB_METERED":
-            return "Sub-metered usage";
-        case "SQ_FOOTAGE":
-            return `Square footage${pct ? ` (${pct})` : ""}`;
-        case "OCCUPANCY_BASED":
-            return `Occupancy based${pct ? ` (${pct})` : ""}`;
-        case "CUSTOM_RATIO":
-            return `Custom ratio${pct ? ` (${pct})` : ""}`;
-        case "AI_OPTIMIZED":
-            return `AI optimized${pct ? ` (${pct})` : ""}`;
-        default:
-            return pct || "Allocated";
+  try {
+    const payload = await req.json();
+
+    // 2. Validate required fields
+    if (!payload.propertyId || !payload.splitMethod || !payload.allocations) {
+      return NextResponse.json(
+        { error: 'Missing required fields: propertyId, splitMethod, allocations' },
+        { status: 400 }
+      );
     }
+
+    // 3. Call our isolated domain logic
+    const stagedBill = await utilityService.stageAllocation(payload);
+
+    return NextResponse.json({ success: true, bill: stagedBill });
+  } catch (error) {
+    console.error('[API] Failed to stage allocation:', error);
+    return NextResponse.json(
+      { error: 'Failed to stage allocation' },
+      { status: 500 }
+    );
+  }
 }
+

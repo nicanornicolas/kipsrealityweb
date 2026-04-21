@@ -28,7 +28,7 @@ services:
     env_file:
       - .env.docker
     ports:
-      - "3307:3306"
+      - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -56,5 +56,32 @@ services:
       - "8025:8025"
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: rentflow360_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: rentflow_storage
+    environment:
+      # Squad 2 will use these credentials in the .env file for the AWS SDK
+      - MINIO_ROOT_USER=${MINIO_USER:-rentflow_admin}
+      - MINIO_ROOT_PASSWORD=${MINIO_PASSWORD:-SuperSecretStorageKey2026!}
+    ports:
+      - "9000:9000" # The S3 API Port (Next.js/Node talks to this)
+      - "9001:9001" # The Admin UI Console (You log into this via browser)
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+
 volumes:
   db_data:
+  redis_data:
+  minio_data: # Persistent storage so PDFs survive container restarts

@@ -2,8 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, FileCheck, Calculator, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { UtilityBillState, UtilityAllocationPayload } from '@/lib/utilities/utility-types';
+import {
+  Loader2,
+  FileCheck,
+  Calculator,
+  AlertTriangle,
+  ShieldCheck,
+} from 'lucide-react';
+import {
+  UtilityBillState,
+  UtilityAllocationPayload,
+} from '@rentflow/utilities/client';
 import { toast } from 'sonner';
 
 interface Props {
@@ -12,11 +21,20 @@ interface Props {
   initialBillId?: string;
 }
 
-export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillId }: Props) {
+export function UtilityAllocationProcessor({
+  utilityId,
+  propertyId,
+  initialBillId,
+}: Props) {
   const [step, setStep] = useState<UtilityBillState>('DRAFT');
-  const [allocationData, setAllocationData] = useState<UtilityAllocationPayload | null>(null);
-  const [activeBillId, setActiveBillId] = useState<string | null>(initialBillId ?? null);
-  const [resolvedPropertyId, setResolvedPropertyId] = useState<string | null>(propertyId ?? null);
+  const [allocationData, setAllocationData] =
+    useState<UtilityAllocationPayload | null>(null);
+  const [activeBillId, setActiveBillId] = useState<string | null>(
+    initialBillId ?? null,
+  );
+  const [resolvedPropertyId, setResolvedPropertyId] = useState<string | null>(
+    propertyId ?? null,
+  );
   const [activeBill, setActiveBill] = useState<{
     id: string;
     propertyId: string;
@@ -30,7 +48,9 @@ export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillI
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
-  const [flags, setFlags] = useState<Array<{ type: 'WARNING' | 'INFO'; message: string }>>([]);
+  const [flags, setFlags] = useState<
+    Array<{ type: 'WARNING' | 'INFO'; message: string }>
+  >([]);
 
   const pollingRef = useRef<number | null>(null);
   const pollAttemptsRef = useRef(0);
@@ -129,7 +149,9 @@ export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillI
         if (data?.status === 'PENDING_REVIEW' && data?.payload) {
           setAllocationData(data.payload);
           setResolvedPropertyId(data.payload.propertyId ?? resolvedPropertyId);
-          setConfidenceScore(data.confidenceScore ?? data.payload.confidenceScore ?? null);
+          setConfidenceScore(
+            data.confidenceScore ?? data.payload.confidenceScore ?? null,
+          );
           setFlags(data.flags ?? []);
           setJobId(data.jobId ?? jobId);
           setStep('PENDING_REVIEW');
@@ -208,7 +230,10 @@ export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillI
 
       const data = await res.json();
       setJobId(data?.data?.jobId ?? null);
-      startPolling(data?.data?.statusUrl ?? `/api/utilities/allocations/status?jobId=${data?.data?.jobId}`);
+      startPolling(
+        data?.data?.statusUrl ??
+          `/api/utilities/allocations/status?jobId=${data?.data?.jobId}`,
+      );
     };
 
     upload().catch(() => {
@@ -218,28 +243,72 @@ export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillI
   };
 
   const handleApproveAndPost = async () => {
-    toast.success('Allocations Approved! Invoices generated and posted to GL.');
-    setStep('POSTED');
+    if (!activeBillId) {
+      toast.error('No bill ID found to approve.');
+      return;
+    }
+
+    try {
+      setStep('PROCESSING_AI'); // Reuse loading state while approving
+
+      const res = await fetch(
+        `/api/utilities/allocations/${activeBillId}/approve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || 'Failed to approve allocation');
+      }
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success(
+          `Allocations Approved! ${data.result.invoicesGenerated} invoice(s) generated and posted to GL.`,
+        );
+        setStep('POSTED');
+      } else {
+        throw new Error('Approval response was not successful');
+      }
+    } catch (error) {
+      console.error('Approval error:', error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to approve allocations. Please try again.',
+      );
+      setStep('PENDING_REVIEW'); // Return to review state on error
+    }
   };
 
   return (
     <div className="border rounded-lg p-6 bg-white shadow-sm">
-      <h3 className="text-lg font-semibold mb-4 border-b pb-2">Allocation Engine</h3>
+      <h3 className="text-lg font-semibold mb-4 border-b pb-2">
+        Allocation Engine
+      </h3>
       {isResolvingBill && (
-        <p className="text-sm text-slate-500 mb-4">Resolving active billing cycle...</p>
+        <p className="text-sm text-slate-500 mb-4">
+          Resolving active billing cycle...
+        </p>
       )}
-      {billError && (
-        <p className="text-sm text-amber-600 mb-4">{billError}</p>
-      )}
+      {billError && <p className="text-sm text-amber-600 mb-4">{billError}</p>}
 
       {step === 'DRAFT' && (
         <div className="flex flex-col items-center justify-center py-12 text-slate-500">
           <Calculator className="h-12 w-12 mb-4 text-slate-300" />
           <p className="mb-4 text-center max-w-sm">
-            Enter the master utility bill details to calculate tenant splits based on occupancy (RUBS) or square footage.
+            Enter the master utility bill details to calculate tenant splits
+            based on occupancy (RUBS) or square footage.
           </p>
           <div className="flex flex-wrap items-center gap-3 justify-center">
-            <Button onClick={handleCalculateSplit} disabled={!activeBillId || isResolvingBill}>
+            <Button
+              onClick={handleCalculateSplit}
+              disabled={!activeBillId || isResolvingBill}
+            >
               Calculate Tenant Allocations
             </Button>
             <Button
@@ -258,7 +327,9 @@ export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillI
             />
           </div>
           {selectedFileName && (
-            <p className="text-xs text-slate-400 mt-3">Queued: {selectedFileName}</p>
+            <p className="text-xs text-slate-400 mt-3">
+              Queued: {selectedFileName}
+            </p>
           )}
         </div>
       )}
@@ -266,8 +337,12 @@ export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillI
       {step === 'PROCESSING_AI' && (
         <div className="flex flex-col items-center justify-center py-12 text-blue-600">
           <Loader2 className="h-12 w-12 mb-4 animate-spin" />
-          <p className="font-medium">Calculating splits and checking for anomalies...</p>
-          {jobId && <p className="text-xs text-blue-500 mt-2">Job ID: {jobId}</p>}
+          <p className="font-medium">
+            Calculating splits and checking for anomalies...
+          </p>
+          {jobId && (
+            <p className="text-xs text-blue-500 mt-2">Job ID: {jobId}</p>
+          )}
         </div>
       )}
 
@@ -277,16 +352,24 @@ export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillI
             <div className="mb-4 grid gap-3 md:grid-cols-3 text-sm">
               <div className="rounded-md border bg-slate-50 p-3">
                 <p className="text-xs uppercase text-slate-500">Job ID</p>
-                <p className="font-medium text-slate-900 truncate">{jobId ?? 'Manual run'}</p>
-              </div>
-              <div className="rounded-md border bg-slate-50 p-3">
-                <p className="text-xs uppercase text-slate-500">AI Confidence</p>
-                <p className="font-medium text-slate-900">
-                  {confidenceScore !== null ? `${Math.round(confidenceScore * 100)}%` : 'N/A'}
+                <p className="font-medium text-slate-900 truncate">
+                  {jobId ?? 'Manual run'}
                 </p>
               </div>
               <div className="rounded-md border bg-slate-50 p-3">
-                <p className="text-xs uppercase text-slate-500">Review Status</p>
+                <p className="text-xs uppercase text-slate-500">
+                  AI Confidence
+                </p>
+                <p className="font-medium text-slate-900">
+                  {confidenceScore !== null
+                    ? `${Math.round(confidenceScore * 100)}%`
+                    : 'N/A'}
+                </p>
+              </div>
+              <div className="rounded-md border bg-slate-50 p-3">
+                <p className="text-xs uppercase text-slate-500">
+                  Review Status
+                </p>
                 <p className="font-medium text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-green-600" />
                   Human approval required
@@ -311,12 +394,18 @@ export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillI
 
           <div className="flex justify-between items-center bg-blue-50 p-4 rounded-md mb-6">
             <div>
-              <p className="text-sm text-blue-800 font-medium">Total Master Bill</p>
-              <p className="text-2xl font-bold text-blue-900">KES {allocationData.totalAmount.toLocaleString()}</p>
+              <p className="text-sm text-blue-800 font-medium">
+                Total Master Bill
+              </p>
+              <p className="text-2xl font-bold text-blue-900">
+                KES {allocationData.totalAmount.toLocaleString()}
+              </p>
             </div>
             <div className="text-right">
               <p className="text-sm text-blue-800 font-medium">Split Method</p>
-              <p className="text-lg font-semibold text-blue-900">{allocationData.splitMethod.replace('_', ' ')}</p>
+              <p className="text-lg font-semibold text-blue-900">
+                {allocationData.splitMethod.replace('_', ' ')}
+              </p>
             </div>
           </div>
 
@@ -333,9 +422,13 @@ export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillI
               {allocationData.allocations.map((alloc) => (
                 <tr key={alloc.unitId} className="hover:bg-slate-50">
                   <td className="p-3 font-medium">{alloc.unitId}</td>
-                  <td className="p-3 font-semibold">{alloc.amount.toLocaleString()}</td>
+                  <td className="p-3 font-semibold">
+                    {alloc.amount.toLocaleString()}
+                  </td>
                   <td className="p-3 text-slate-600">{alloc.percentage}%</td>
-                  <td className="p-3 text-sm text-slate-500">{alloc.explanation}</td>
+                  <td className="p-3 text-sm text-slate-500">
+                    {alloc.explanation}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -345,7 +438,10 @@ export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillI
             <Button variant="outline" onClick={() => setStep('DRAFT')}>
               Discard & Recalculate
             </Button>
-            <Button onClick={handleApproveAndPost} className="bg-green-600 hover:bg-green-700">
+            <Button
+              onClick={handleApproveAndPost}
+              className="bg-green-600 hover:bg-green-700"
+            >
               <FileCheck className="mr-2 h-4 w-4" /> Approve & Generate Invoices
             </Button>
           </div>
@@ -357,7 +453,8 @@ export function UtilityAllocationProcessor({ utilityId, propertyId, initialBillI
           <FileCheck className="h-16 w-16 mb-4" />
           <h4 className="text-xl font-bold mb-2">Allocations Posted</h4>
           <p className="text-slate-600 text-center max-w-md">
-            Tenant invoices have been generated and the General Ledger has been updated. The blockchain hash has been secured.
+            Tenant invoices have been generated and the General Ledger has been
+            updated. The blockchain hash has been secured.
           </p>
         </div>
       )}

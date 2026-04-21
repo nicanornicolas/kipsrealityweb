@@ -1,41 +1,41 @@
-import React from "react";
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { cn } from '@/lib/utils';
+import { LucideLoader2 } from 'lucide-react';
 
 interface LoadingSpinnerProps {
-  size?: "sm" | "md" | "lg";
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
   text?: string;
 }
 
-export function LoadingSpinner({ 
-  size = "md", 
-  className,
-  text 
-}: LoadingSpinnerProps) {
-  const sizeClasses = {
-    sm: "w-4 h-4",
-    md: "w-6 h-6", 
-    lg: "w-8 h-8"
-  };
+const sizeClasses = {
+  sm: 'h-4 w-4',
+  md: 'h-6 w-6',
+  lg: 'h-8 w-8',
+};
 
+export function LoadingSpinner({
+  size = 'md',
+  className,
+  text,
+}: LoadingSpinnerProps) {
   return (
-    <div className={cn("flex items-center justify-center gap-2", className)}>
-      <div 
+    <div className={cn('flex items-center gap-2', className)}>
+      <LucideLoader2
         className={cn(
-          "border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin",
-          sizeClasses[size]
+          sizeClasses[size],
+          'animate-spin text-navy-700',
+          className,
         )}
       />
-      {text && (
-        <span className="text-sm text-gray-600 animate-pulse">{text}</span>
-      )}
+      {text && <span className="text-sm text-muted-foreground">{text}</span>}
     </div>
   );
 }
 
 export function LoadingCard({ className }: { className?: string }) {
   return (
-    <div className={cn("animate-pulse", className)}>
+    <div className={cn('animate-pulse', className)}>
       <div className="bg-gray-200 rounded-lg p-6 space-y-4">
         <div className="h-4 bg-gray-300 rounded w-3/4"></div>
         <div className="space-y-2">
@@ -51,20 +51,33 @@ export function LoadingCard({ className }: { className?: string }) {
   );
 }
 
-export function LoadingTable({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
+export function LoadingTable({
+  rows = 5,
+  cols = 4,
+}: {
+  rows?: number;
+  cols?: number;
+}) {
   return (
     <div className="animate-pulse">
       <div className="space-y-3">
         {/* Header */}
-        <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+        <div
+          className="grid gap-4"
+          style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+        >
           {Array.from({ length: cols }).map((_, i) => (
             <div key={i} className="h-4 bg-gray-300 rounded"></div>
           ))}
         </div>
-        
+
         {/* Rows */}
         {Array.from({ length: rows }).map((_, rowIndex) => (
-          <div key={rowIndex} className="grid gap-4" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+          <div
+            key={rowIndex}
+            className="grid gap-4"
+            style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+          >
             {Array.from({ length: cols }).map((_, colIndex) => (
               <div key={colIndex} className="h-3 bg-gray-200 rounded"></div>
             ))}

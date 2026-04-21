@@ -8,14 +8,14 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ListingService } from '@/lib/listing-service'
+import { ListingService } from '@rentflow/property'
 import { 
   BulkListingOperation, 
   BulkListingActionType, 
   ListingStatus,
   CreateListingData,
   BulkResult
-} from '@/lib/listing-types'
+} from '@rentflow/property'
 
 // Mock Prisma
 const mockPrisma = {
@@ -31,7 +31,7 @@ const mockPrisma = {
   $transaction: vi.fn()
 }
 
-vi.mock('@/lib/db', () => ({
+vi.mock('@rentflow/iam', () => ({
   prisma: mockPrisma
 }))
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 /**
  * GET /api/utilities/readings
@@ -95,4 +95,5 @@ export async function GET(request: NextRequest) {
         );
     }
 }
+
 

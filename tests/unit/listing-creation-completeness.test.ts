@@ -4,7 +4,7 @@ import {
     CreateListingData, 
     ListingStatus, 
     CreateListingError 
-} from '../../src/lib/listing-types';
+} from '@rentflow/property';
 
 /**
  * Property-Based Test for Listing Creation Completeness

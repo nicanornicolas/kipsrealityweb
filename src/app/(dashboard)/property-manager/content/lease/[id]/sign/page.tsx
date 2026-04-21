@@ -1,8 +1,9 @@
 //app/(dashboard)/property-manager/content/lease/[id]/sign/page.tsx
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface Lease {
   id: string;
@@ -14,7 +15,7 @@ interface Lease {
   landlordSignedAt: string | null;
   tenantSignedAt: string | null;
   leaseStatus: string;
-  userRole?: "landlord" | "tenant" | null;
+  userRole?: 'landlord' | 'tenant' | null;
   tenant?: {
     id: string;
     email: string;
@@ -36,7 +37,7 @@ export default function LeaseSignPage() {
 
   const [lease, setLease] = useState<Lease | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<"landlord" | "tenant" | null>(null);
+  const [userRole, setUserRole] = useState<'landlord' | 'tenant' | null>(null);
   const [signing, setSigning] = useState(false);
 
   useEffect(() => {
@@ -49,10 +50,10 @@ export default function LeaseSignPage() {
           setLease(data);
           setUserRole(data.userRole);
         } else {
-          console.error("Failed to fetch lease:", data.error);
+          console.error('Failed to fetch lease:', data.error);
         }
       } catch (error) {
-        console.error("Failed to fetch lease:", error);
+        console.error('Failed to fetch lease:', error);
       } finally {
         setLoading(false);
       }
@@ -63,7 +64,7 @@ export default function LeaseSignPage() {
 
   async function handleSign() {
     if (!userRole) {
-      alert("Unable to determine your role");
+      toast.error('Unable to determine your role');
       return;
     }
 
@@ -71,22 +72,22 @@ export default function LeaseSignPage() {
 
     try {
       const res = await fetch(`/api/lease/${leaseId}/sign/${userRole}`, {
-        method: "POST",
+        method: 'POST',
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        alert(`Lease signed successfully as ${userRole}!`);
+        toast.success(`Lease signed successfully as ${userRole}!`);
         setLease(data.lease);
         // Refresh to get updated data with userRole
         window.location.reload();
       } else {
-        alert(data.error || "Failed to sign lease");
+        toast.error(data.error || 'Failed to sign lease');
       }
     } catch (error) {
-      console.error("Sign error:", error);
-      alert("An error occurred while signing");
+      console.error('Sign error:', error);
+      toast.error('An error occurred while signing');
     } finally {
       setSigning(false);
     }
@@ -121,7 +122,7 @@ export default function LeaseSignPage() {
 
   const canSign =
     userRole &&
-    (userRole === "landlord" ? !lease.landlordSignedAt : !lease.tenantSignedAt);
+    (userRole === 'landlord' ? !lease.landlordSignedAt : !lease.tenantSignedAt);
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -132,12 +133,12 @@ export default function LeaseSignPage() {
         <div className="mb-4">
           <span
             className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-              userRole === "landlord"
-                ? "bg-purple-100 text-purple-800"
-                : "bg-blue-100 text-blue-800"
+              userRole === 'landlord'
+                ? 'bg-purple-100 text-purple-800'
+                : 'bg-blue-100 text-blue-800'
             }`}
           >
-            Viewing as: {userRole === "landlord" ? "Landlord" : "Tenant"}
+            Viewing as: {userRole === 'landlord' ? 'Landlord' : 'Tenant'}
           </span>
         </div>
       )}
@@ -148,21 +149,21 @@ export default function LeaseSignPage() {
 
         <div className="space-y-3">
           <p>
-            <strong>Property:</strong> {lease.property?.name || "N/A"}
+            <strong>Property:</strong> {lease.property?.name || 'N/A'}
           </p>
           <p>
-            <strong>Unit:</strong> {lease.unit?.unitNumber || "N/A"}
+            <strong>Unit:</strong> {lease.unit?.unitNumber || 'N/A'}
           </p>
           <p>
-            <strong>Tenant Email:</strong> {lease.tenant?.email || "N/A"}
+            <strong>Tenant Email:</strong> {lease.tenant?.email || 'N/A'}
           </p>
           <p>
-            <strong>Lease Period:</strong>{" "}
-            {new Date(lease.startDate).toLocaleDateString()} to{" "}
+            <strong>Lease Period:</strong>{' '}
+            {new Date(lease.startDate).toLocaleDateString()} to{' '}
             {new Date(lease.endDate).toLocaleDateString()}
           </p>
           <p>
-            <strong>Lease Term:</strong> {lease.leaseTerm || "N/A"}
+            <strong>Lease Term:</strong> {lease.leaseTerm || 'N/A'}
           </p>
           <p>
             <strong>Monthly Rent:</strong> ${lease.rentAmount?.toLocaleString()}
@@ -218,18 +219,18 @@ export default function LeaseSignPage() {
             disabled={signing}
             className={`mt-6 px-6 py-3 rounded-lg font-semibold ${
               signing
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700 text-white"
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
             }`}
           >
             {signing
-              ? "Signing..."
-              : `Sign as ${userRole === "landlord" ? "Landlord" : "Tenant"}`}
+              ? 'Signing...'
+              : `Sign as ${userRole === 'landlord' ? 'Landlord' : 'Tenant'}`}
           </button>
         )}
 
         {/* Already Signed Message */}
-        {userRole && !canSign && lease.leaseStatus !== "SIGNED" && (
+        {userRole && !canSign && lease.leaseStatus !== 'SIGNED' && (
           <div className="mt-6 bg-blue-50 border border-blue-200 rounded p-4">
             <p className="text-blue-800">
               ✓ You have already signed this lease. Waiting for the other party
@@ -239,7 +240,7 @@ export default function LeaseSignPage() {
         )}
 
         {/* Fully Executed Message */}
-        {lease.leaseStatus === "SIGNED" && (
+        {lease.leaseStatus === 'SIGNED' && (
           <div className="mt-6 bg-navy-50 border border-navy-200 rounded p-4">
             <p className="text-green-800 font-semibold">
               ✓ This lease has been fully executed by both parties

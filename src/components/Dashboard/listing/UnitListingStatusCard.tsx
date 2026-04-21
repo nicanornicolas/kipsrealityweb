@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import {
   Eye,
   EyeOff,
@@ -9,92 +9,101 @@ import {
   MoreHorizontal,
   Building2,
   CheckCircle,
-  Clock
-} from 'lucide-react'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+  Clock,
+} from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { UnitWithListingStatus, ListingStatus } from '@/lib/listing-types'
-import { cn } from '@/lib/utils'
+} from '@/components/ui/dropdown-menu';
+import {
+  UnitWithListingStatus,
+  ListingStatus,
+} from '@rentflow/property/client';
+import { cn } from '@/lib/utils';
 
 interface UnitListingStatusCardProps {
-  unit: UnitWithListingStatus
-  selected?: boolean
-  onSelect?: (selected: boolean) => void
-  onStatusChange: (unitId: string, newStatus: string) => Promise<void>
-  onEdit?: () => void
-  loading?: boolean
-  showPerformanceMetrics?: boolean
-  className?: string
+  unit: UnitWithListingStatus;
+  selected?: boolean;
+  onSelect?: (selected: boolean) => void;
+  onStatusChange: (unitId: string, newStatus: string) => Promise<void>;
+  onEdit?: () => void;
+  loading?: boolean;
+  showPerformanceMetrics?: boolean;
+  className?: string;
 }
 
 export default function UnitListingStatusCard({
   unit,
   onStatusChange,
   loading = false,
-  className = ''
+  className = '',
 }: UnitListingStatusCardProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleStatusChange = async (newStatus: string) => {
-    if (loading || isLoading) return
-    setIsLoading(true)
+    if (loading || isLoading) return;
+    setIsLoading(true);
     try {
-      await onStatusChange(unit.id, newStatus)
+      await onStatusChange(unit.id, newStatus);
     } catch (err) {
-      console.error(err)
+      console.error(err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const formatCurrency = (amount?: number) => {
-    if (amount === undefined || amount === null) return 'Not set'
+    if (amount === undefined || amount === null) return 'Not set';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount)
-  }
+    }).format(amount);
+  };
 
   const formatDate = (date?: Date) => {
-    if (!date) return 'Not set'
+    if (!date) return 'Not set';
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
-    }).format(new Date(date))
-  }
+      year: 'numeric',
+    }).format(new Date(date));
+  };
 
-  const currentStatus = unit.listing?.status || ListingStatus.PRIVATE
-  const isPrivate = currentStatus === ListingStatus.PRIVATE
-  const displayRent = unit.rentAmount ?? unit.listing?.price
+  const currentStatus = unit.listing?.status || ListingStatus.PRIVATE;
+  const isPrivate = currentStatus === ListingStatus.PRIVATE;
+  const displayRent = unit.rentAmount ?? unit.listing?.price;
 
   return (
-    <div className={cn(
-      "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[20px] p-5 shadow-sm transition-all duration-200",
-      isPrivate && "opacity-90",
-      className
-    )}>
+    <div
+      className={cn(
+        'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[20px] p-5 shadow-sm transition-all duration-200',
+        isPrivate && 'opacity-90',
+        className,
+      )}
+    >
       {/* Header Section */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className={cn(
-            "w-12 h-12 rounded-xl flex items-center justify-center",
-            isPrivate
-              ? "bg-slate-100 dark:bg-slate-700/50"
-              : "bg-blue-50 dark:bg-blue-900/30"
-          )}>
-            <Building2 className={cn(
-              "w-6 h-6",
+          <div
+            className={cn(
+              'w-12 h-12 rounded-xl flex items-center justify-center',
               isPrivate
-                ? "text-slate-400 dark:text-slate-500"
-                : "text-blue-600 dark:text-blue-400"
-            )} />
+                ? 'bg-slate-100 dark:bg-slate-700/50'
+                : 'bg-blue-50 dark:bg-blue-900/30',
+            )}
+          >
+            <Building2
+              className={cn(
+                'w-6 h-6',
+                isPrivate
+                  ? 'text-slate-400 dark:text-slate-500'
+                  : 'text-blue-600 dark:text-blue-400',
+              )}
+            />
           </div>
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
@@ -113,7 +122,7 @@ export default function UnitListingStatusCard({
                 </span>
               )}
               <span className="text-xs text-slate-400 dark:text-slate-500 ml-2">
-                {isPrivate ? "Not in marketplace" : "Visible in marketplace"}
+                {isPrivate ? 'Not in marketplace' : 'Visible in marketplace'}
               </span>
             </div>
           </div>
@@ -126,10 +135,8 @@ export default function UnitListingStatusCard({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { }}>
-              Edit Details
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600" onClick={() => { }}>
+            <DropdownMenuItem onClick={() => {}}>Edit Details</DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600" onClick={() => {}}>
               Delete Unit
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -139,7 +146,9 @@ export default function UnitListingStatusCard({
       {isPrivate ? (
         /* Private State Content */
         <div className="py-8 flex flex-col items-center justify-center bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-          <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">Unit is currently private</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
+            Unit is currently private
+          </p>
           <button
             onClick={() => handleStatusChange(ListingStatus.ACTIVE)}
             disabled={isLoading}
@@ -158,36 +167,56 @@ export default function UnitListingStatusCard({
         <>
           <div className="grid grid-cols-3 gap-4 py-4 border-y border-slate-50 dark:border-slate-700/50">
             <div>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Rent</p>
-              <p className="text-sm font-bold text-slate-900 dark:text-white">{formatCurrency(displayRent)}</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase font-semibold">
+                Rent
+              </p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">
+                {formatCurrency(displayRent)}
+              </p>
             </div>
             <div>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Bedrooms</p>
-              <p className="text-sm font-bold text-slate-900 dark:text-white">{unit.bedrooms || '-'}</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase font-semibold">
+                Bedrooms
+              </p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">
+                {unit.bedrooms || '-'}
+              </p>
             </div>
             <div>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Bathrooms</p>
-              <p className="text-sm font-bold text-slate-900 dark:text-white">{unit.bathrooms || '-'}</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase font-semibold">
+                Bathrooms
+              </p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">
+                {unit.bathrooms || '-'}
+              </p>
             </div>
           </div>
 
           <div className="py-4 space-y-3">
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Listing Details</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+              Listing Details
+            </p>
             <div>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">Title</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                Title
+              </p>
               <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
                 {unit.listing?.title || `Unit ${unit.unitNumber} Listing`}
               </p>
             </div>
             <div className="flex justify-between">
               <div>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">Listed Price</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  Listed Price
+                </p>
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                   {formatCurrency(unit.listing?.price)}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">Listed Since</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  Listed Since
+                </p>
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                   {formatDate(unit.listing?.createdAt)}
                 </p>
@@ -216,8 +245,8 @@ export default function UnitListingStatusCard({
         </>
       )}
     </div>
-  )
+  );
 }
 
 // Named export for compatibility
-export { UnitListingStatusCard }
+export { UnitListingStatusCard };

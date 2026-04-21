@@ -2,7 +2,7 @@
 // Processes automatic status transitions based on availability and expiration dates
 
 import { NextRequest, NextResponse } from 'next/server';
-import { listingService } from '@/lib/listing-service';
+import { listingService } from "@rentflow/property";
 
 /**
  * POST /api/cron/time-based-listings
@@ -118,3 +118,4 @@ export async function GET(request: NextRequest) {
         );
     }
 }
+

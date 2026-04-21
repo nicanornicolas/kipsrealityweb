@@ -35,7 +35,9 @@ export interface BlogPost {
   views?: number;
 }
 
-export const categories = [
+const demoEnabled = process.env.NEXT_PUBLIC_ENABLE_DEMO_CONTENT === 'true';
+
+export const categories = demoEnabled ? [
     "All",
     "Property Management",
     "Legal Guides",
@@ -44,9 +46,9 @@ export const categories = [
     "Marketing",
     "Maintenance",
     "Tenant Relations"
-];
+] : ["All"];
 
-export const blogPosts: BlogPost[] = [
+export const blogPosts: BlogPost[] = demoEnabled ? [
     {
         id: 1,
         title: "The Complete Guide to Property Management Software in 2025",
@@ -531,4 +533,4 @@ export const blogPosts: BlogPost[] = [
             tags: ["software-selection", "accounting-workflow", "tech-evaluation"]
         }
     }
-];
+] : [];

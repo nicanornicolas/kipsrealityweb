@@ -1,7 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface Lease {
   id: string;
@@ -13,7 +14,7 @@ interface Lease {
   landlordSignedAt: string | null;
   tenantSignedAt: string | null;
   leaseStatus: string;
-  userRole?: "landlord" | "tenant" | null;
+  userRole?: 'landlord' | 'tenant' | null;
   tenant?: { id: string; email: string };
   property?: { id: string; name: string; managerId: string };
   unit?: { id: string; unitNumber: string };
@@ -23,14 +24,14 @@ export default function LeaseSignPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const leaseId = params.id as string;
-  const inviteToken = searchParams.get("token") || "";
+  const inviteToken = searchParams.get('token') || '';
 
   const [lease, setLease] = useState<Lease | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<"landlord" | "tenant" | null>(null);
+  const [userRole, setUserRole] = useState<'landlord' | 'tenant' | null>(null);
   const [signing, setSigning] = useState(false);
 
-  console.log("Page loaded with:", { leaseId, inviteToken }); // Debug
+  console.log('Page loaded with:', { leaseId, inviteToken }); // Debug
 
   // Fetch lease and determine role
   useEffect(() => {
@@ -41,22 +42,22 @@ export default function LeaseSignPage() {
           ? `/api/lease/${leaseId}?token=${inviteToken}`
           : `/api/lease/${leaseId}`;
 
-        console.log("Fetching lease from:", url); // Debug
+        console.log('Fetching lease from:', url); // Debug
 
         const res = await fetch(url);
         const data = await res.json();
 
-        console.log("Lease response:", data); // Debug
+        console.log('Lease response:', data); // Debug
 
         if (res.ok) {
           setLease(data);
           setUserRole(data.userRole || null);
-          console.log("User role determined:", data.userRole); // Debug
+          console.log('User role determined:', data.userRole); // Debug
         } else {
-          console.error("Failed to fetch lease:", data.error);
+          console.error('Failed to fetch lease:', data.error);
         }
       } catch (err) {
-        console.error("Error fetching lease:", err);
+        console.error('Error fetching lease:', err);
       } finally {
         setLoading(false);
       }
@@ -66,18 +67,20 @@ export default function LeaseSignPage() {
   }, [leaseId, inviteToken]);
 
   const canSign =
-    (userRole === "landlord" && !lease?.landlordSignedAt) ||
-    (userRole === "tenant" && !lease?.tenantSignedAt);
+    (userRole === 'landlord' && !lease?.landlordSignedAt) ||
+    (userRole === 'tenant' && !lease?.tenantSignedAt);
 
   // Signing function
   async function handleSign() {
     if (!userRole) {
-      alert("Unable to determine your role. Please check your invite link.");
+      toast.error(
+        'Unable to determine your role. Please check your invite link.',
+      );
       return;
     }
 
-    if (userRole === "tenant" && !inviteToken) {
-      alert("Missing invite token. Please use the link from your email.");
+    if (userRole === 'tenant' && !inviteToken) {
+      toast.error('Missing invite token. Please use the link from your email.');
       return;
     }
 
@@ -86,39 +89,39 @@ export default function LeaseSignPage() {
     try {
       const url = `/api/lease/${leaseId}/sign/${userRole}`;
       const body =
-        userRole === "tenant" && inviteToken
+        userRole === 'tenant' && inviteToken
           ? { token: inviteToken }
           : undefined;
 
-      console.log("Signing lease:", { url, body }); // Debug
+      console.log('Signing lease:', { url, body }); // Debug
 
       const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: body ? JSON.stringify(body) : undefined,
       });
 
       const data = await res.json();
-      console.log("Sign response:", data); // Debug
+      console.log('Sign response:', data); // Debug
 
       if (res.ok) {
-        if (userRole === "tenant") {
+        if (userRole === 'tenant') {
           // Redirect tenant after signing with token preserved
           const redirectUrl = `/invite/tenant/accept?email=${encodeURIComponent(data.lease.tenant.email)}&token=${inviteToken}&leaseId=${data.lease.id}`;
-          console.log("Redirecting to:", redirectUrl);
+          console.log('Redirecting to:', redirectUrl);
           window.location.href = redirectUrl;
           return;
         }
 
         // Landlord signed — refresh data
-        alert(`Lease signed successfully as ${userRole}!`);
+        toast.success(`Lease signed successfully as ${userRole}!`);
         setLease(data.lease);
         setUserRole(data.lease.userRole || userRole);
       } else {
-        alert(data.error || "Failed to sign lease");
+        toast.error(data.error || 'Failed to sign lease');
       }
     } catch (err) {
-      alert(`Lease signed successfully as ${userRole}!`);
+      toast.success(`Lease signed successfully as ${userRole}!`);
     } finally {
       setSigning(false);
     }
@@ -158,11 +161,13 @@ export default function LeaseSignPage() {
       {/* Debug info - remove in production */}
       {process.env.NODE_ENV === 'development' && (
         <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
-          <p><strong>Debug:</strong></p>
-          <p>User Role: {userRole || "none"}</p>
-          <p>Has Token: {inviteToken ? "yes" : "no"}</p>
-          <p>Tenant Signed: {lease.tenantSignedAt ? "yes" : "no"}</p>
-          <p>Landlord Signed: {lease.landlordSignedAt ? "yes" : "no"}</p>
+          <p>
+            <strong>Debug:</strong>
+          </p>
+          <p>User Role: {userRole || 'none'}</p>
+          <p>Has Token: {inviteToken ? 'yes' : 'no'}</p>
+          <p>Tenant Signed: {lease.tenantSignedAt ? 'yes' : 'no'}</p>
+          <p>Landlord Signed: {lease.landlordSignedAt ? 'yes' : 'no'}</p>
         </div>
       )}
 
@@ -170,12 +175,13 @@ export default function LeaseSignPage() {
       {userRole && (
         <div className="mb-4">
           <span
-            className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${userRole === "landlord"
-                ? "bg-purple-100 text-purple-800"
-                : "bg-blue-100 text-blue-800"
-              }`}
+            className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
+              userRole === 'landlord'
+                ? 'bg-purple-100 text-purple-800'
+                : 'bg-blue-100 text-blue-800'
+            }`}
           >
-            Viewing as: {userRole === "landlord" ? "Landlord" : "Tenant"}
+            Viewing as: {userRole === 'landlord' ? 'Landlord' : 'Tenant'}
           </span>
         </div>
       )}
@@ -184,18 +190,32 @@ export default function LeaseSignPage() {
       <div className="bg-white rounded-xl shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Lease Information</h2>
         <div className="space-y-3">
-          <p><strong>Property:</strong> {lease.property?.name || "N/A"}</p>
-          <p><strong>Unit:</strong> {lease.unit?.unitNumber || "N/A"}</p>
-          <p><strong>Tenant Email:</strong> {lease.tenant?.email || "N/A"}</p>
           <p>
-            <strong>Lease Period:</strong>{" "}
-            {new Date(lease.startDate).toLocaleDateString()} to{" "}
+            <strong>Property:</strong> {lease.property?.name || 'N/A'}
+          </p>
+          <p>
+            <strong>Unit:</strong> {lease.unit?.unitNumber || 'N/A'}
+          </p>
+          <p>
+            <strong>Tenant Email:</strong> {lease.tenant?.email || 'N/A'}
+          </p>
+          <p>
+            <strong>Lease Period:</strong>{' '}
+            {new Date(lease.startDate).toLocaleDateString()} to{' '}
             {new Date(lease.endDate).toLocaleDateString()}
           </p>
-          <p><strong>Lease Term:</strong> {lease.leaseTerm || "N/A"}</p>
-          <p><strong>Monthly Rent:</strong> $ {lease.rentAmount?.toLocaleString()}</p>
+          <p>
+            <strong>Lease Term:</strong> {lease.leaseTerm || 'N/A'}
+          </p>
+          <p>
+            <strong>Monthly Rent:</strong> ${' '}
+            {lease.rentAmount?.toLocaleString()}
+          </p>
           {lease.securityDeposit && (
-            <p><strong>Security Deposit:</strong> $ {lease.securityDeposit?.toLocaleString()}</p>
+            <p>
+              <strong>Security Deposit:</strong> ${' '}
+              {lease.securityDeposit?.toLocaleString()}
+            </p>
           )}
         </div>
 
@@ -205,14 +225,18 @@ export default function LeaseSignPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               {lease.landlordSignedAt ? (
-                <span className="text-navy-700 font-semibold">✓ Landlord Signed</span>
+                <span className="text-navy-700 font-semibold">
+                  ✓ Landlord Signed
+                </span>
               ) : (
                 <span className="text-gray-400">○ Landlord Pending</span>
               )}
             </div>
             <div className="flex items-center gap-2">
               {lease.tenantSignedAt ? (
-                <span className="text-navy-700 font-semibold">✓ Tenant Signed</span>
+                <span className="text-navy-700 font-semibold">
+                  ✓ Tenant Signed
+                </span>
               ) : (
                 <span className="text-gray-400">○ Tenant Pending</span>
               )}
@@ -225,24 +249,28 @@ export default function LeaseSignPage() {
           <button
             onClick={handleSign}
             disabled={signing}
-            className={`mt-6 px-6 py-3 rounded-lg font-semibold ${signing ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 text-white"
-              }`}
+            className={`mt-6 px-6 py-3 rounded-lg font-semibold ${
+              signing
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
           >
             {signing
-              ? "Signing..."
-              : `Sign as ${userRole === "landlord" ? "Landlord" : "Tenant"}`}
+              ? 'Signing...'
+              : `Sign as ${userRole === 'landlord' ? 'Landlord' : 'Tenant'}`}
           </button>
         )}
 
         {/* Messages */}
-        {!canSign && userRole && lease.leaseStatus !== "SIGNED" && (
+        {!canSign && userRole && lease.leaseStatus !== 'SIGNED' && (
           <div className="mt-6 bg-blue-50 border border-blue-200 rounded p-4">
             <p className="text-blue-800">
-              ✓ You have already signed this lease. Waiting for the other party to sign.
+              ✓ You have already signed this lease. Waiting for the other party
+              to sign.
             </p>
           </div>
         )}
-        {lease.leaseStatus === "SIGNED" && (
+        {lease.leaseStatus === 'SIGNED' && (
           <div className="mt-6 bg-navy-50 border border-navy-200 rounded p-4">
             <p className="text-green-800 font-semibold">
               ✓ This lease has been fully executed by both parties
@@ -253,7 +281,7 @@ export default function LeaseSignPage() {
           <div className="mt-6 bg-red-50 border border-red-200 rounded p-4">
             <p className="text-red-800">
               You do not have permission to sign this lease.
-              {!inviteToken && " Please use the invite link from your email."}
+              {!inviteToken && ' Please use the invite link from your email.'}
             </p>
           </div>
         )}

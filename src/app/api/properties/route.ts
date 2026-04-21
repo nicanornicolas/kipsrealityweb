@@ -1,15 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
-import { getCurrentUser } from '@/lib/Getcurrentuser'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@rentflow/iam';
+import { getCurrentUser } from '@rentflow/iam';
 
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     const url = new URL(req.url);
-    const organizationId = user?.organizationId || url.searchParams.get('organizationId');
+    const organizationId =
+      user?.organizationId || url.searchParams.get('organizationId');
 
     if (!organizationId) {
-      return NextResponse.json({ error: 'organizationId is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'organizationId is required' },
+        { status: 400 },
+      );
     }
 
     const properties = await prisma.property.findMany({
@@ -21,28 +25,31 @@ export async function GET(req: NextRequest) {
         city: true,
         apartmentComplexDetail: {
           select: {
-            buildingName: true
-          }
+            buildingName: true,
+          },
         },
         houseDetail: {
           select: {
-            houseName: true
-          }
+            houseName: true,
+          },
         },
         units: {
           select: {
             id: true,
             unitNumber: true,
-            unitName: true
-          }
-        }
+            unitName: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
 
     return NextResponse.json(properties);
   } catch (error) {
     console.error('Fetch properties error', error);
-    return NextResponse.json({ error: 'Failed to fetch properties' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch properties' },
+      { status: 500 },
+    );
   }
 }

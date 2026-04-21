@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { db } from "@/lib/db";
-import { ListingService } from "@/lib/listing-service";
-import { AuditService } from "@/lib/audit-service";
-import { ListingStatus } from "@/lib/listing-types";
+import { db } from "@rentflow/iam";
+import { ListingService } from "@rentflow/property";
+import { AuditService } from "@rentflow/property";
+import { ListingStatus } from "@rentflow/property";
 
 // TODO(TECH-DEBT): Fix pre-existing Prisma validation errors in integration tests
 describe.skip("Concurrent User Scenarios Integration Tests", () => {
@@ -450,3 +450,4 @@ describe.skip("Concurrent User Scenarios Integration Tests", () => {
     });
   });
 });
+

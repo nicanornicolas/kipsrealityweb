@@ -1,0 +1,9 @@
+{
+  "name": "lease",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/lease/src",
+  "projectType": "library",
+  "tags": ["scope:lease"],
+  "// targets": "to see all targets run: nx show project lease --web",
+  "targets": {}
+}

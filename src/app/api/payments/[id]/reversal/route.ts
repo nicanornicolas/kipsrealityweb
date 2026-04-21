@@ -1,90 +1,132 @@
-import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/Getcurrentuser";
-import { NextResponse } from "next/server";
-import { InvoiceStatus } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from '@rentflow/iam';
+import { prisma } from "@rentflow/iam";
+import { PaymentFactory, PaymentRequest } from "@rentflow/payments";
+import { PaymentMethod, TransactionStatus, Prisma } from "@prisma/client";
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export async function POST(req: NextRequest) {
+    try {
+        const user = await getCurrentUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
-  let body: any;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+        const body = await req.json();
+        const { invoiceId } = body;
 
-  const { reason } = body || {};
-  if (!reason) return NextResponse.json({ error: "Missing reversal reason" }, { status: 400 });
+        if (!invoiceId) {
+            return NextResponse.json({ error: "Invoice ID is required" }, { status: 400 });
+        }
 
-  try {
-    const currentUser = await getCurrentUser();
-    if (!currentUser) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-
-    const payment = await prisma.payment.findUnique({
-      where: { id },
-      include: { invoice: true },
-    });
-
-    if (!payment) return NextResponse.json({ error: "Payment not found" }, { status: 404 });
-    if (payment.isReversed) return NextResponse.json({ error: "Payment already reversed" }, { status: 400 });
-
-    // Transaction with timeout increased
-    const result = await prisma.$transaction(
-      async (tx) => {
-        // 1️⃣ Mark the payment as reversed
-        const reversedPayment = await tx.payment.update({
-          where: { id },
-          data: {
-            isReversed: true,
-            reversedAt: new Date(),
-            reversalReason: reason,
-            reversedBy: currentUser.id,
-          },
+        // 1. Fetch Invoice and related data
+        const invoice = await prisma.invoice.findUnique({
+            where: { id: invoiceId },
+            include: {
+                Lease: {
+                    include: {
+                        property: {
+                            include: {
+                                organization: true,
+                            },
+                        },
+                    },
+                },
+            },
         });
 
-        // 2️⃣ Aggregate total paid for the invoice excluding reversed payments
-        const totalPaidAgg = await tx.payment.aggregate({
-          _sum: { amount: true },
-          where: { invoiceId: payment.invoiceId, isReversed: false },
-        });
-        const totalPaid = Number(totalPaidAgg._sum?.amount ?? 0);
+        if (!invoice) {
+            return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+        }
 
-        // 3️⃣ Calculate remaining balance
-        const remaining = (payment.invoice?.totalAmount ?? 0) - totalPaid;
+        const organization = invoice.Lease.property.organization;
+        if (!organization) {
+            return NextResponse.json({ error: "Organization not found for this invoice" }, { status: 404 });
+        }
 
-        // 4️⃣ Determine new invoice status (use enum)
-        let newStatus: InvoiceStatus;
-        const now = new Date();
-        const invoiceDueDate = payment.invoice?.dueDate ? new Date(payment.invoice.dueDate) : new Date();
+        // 2. Determine Strategy
+        // Default to 'KEN' if region is null
+        const region = organization.region || "KEN";
+        const strategy = PaymentFactory.getStrategy(region);
 
-        if (totalPaid >= (payment.invoice?.totalAmount ?? 0) - 0.01) newStatus = InvoiceStatus.PAID;
-        else if (now > invoiceDueDate) newStatus = InvoiceStatus.OVERDUE;
-        else newStatus = InvoiceStatus.PENDING;
-
-        // 5️⃣ Update invoice with new status
-        const updatedInvoice = await tx.invoice.update({
-          where: { id: payment.invoiceId },
-          data: { status: newStatus },
+        // 3. Prepare Payment Request
+        // We need a full User object for the PaymentRequest interface, 
+        // but getCurrentUser returns a subset. We should fetch the full user or cast/map it.
+        // Let's fetch the full user to be safe and get all required fields.
+        const fullUser = await prisma.user.findUnique({
+            where: { id: user.id }
         });
 
-        return {
-          reversedPayment,
-          totalPaid,
-          remaining,
-          status: newStatus,
-          invoiceAmount: updatedInvoice.totalAmount,
+        if (!fullUser) {
+            return NextResponse.json({ error: "User record not found" }, { status: 404 });
+        }
+
+        const paymentRequest: PaymentRequest = {
+            user: fullUser,
+            organization: organization,
+            amount: invoice.totalAmount, // or invoice.balance? Using totalAmount for now as per "Pay Now" logic usually implies paying the bill.
+            currency: "KES", // This should probably be dynamic based on region or invoice currency.
+            invoiceId: invoice.id,
+            metadata: {
+                source: "web_app",
+            },
         };
-      },
-      { timeout: 15000 } // 15s transaction timeout
-    );
 
-    return NextResponse.json({
-      success: true,
-      ...result,
-      message: `Payment reversed. Invoice status: ${result.status}. Remaining balance: USD ${result.remaining.toFixed(2)}`,
-    });
-  } catch (err: any) {
-    console.error("Payment reversal error:", err);
-    return NextResponse.json({ error: err.message || "Failed to reverse payment" }, { status: 500 });
-  }
+        // Override currency if region is USA
+        if (region === 'USA') {
+            paymentRequest.currency = 'USD';
+        }
+
+
+        // 4. Initialize Payment via Strategy
+        const result = await strategy.initializePayment(paymentRequest);
+
+        // 5. Log Intent to DB (Create Payment Record)
+        // We create a payment record with status PENDING.
+        const paymentMethod =
+            region === "KEN" && result.gateway === "MPESA_DIRECT"
+                ? PaymentMethod.MPESA
+                : PaymentMethod.CREDIT_CARD;
+        
+        const paymentData: Prisma.PaymentCreateInput = {
+            invoice: { connect: { id: invoice.id } },
+            amount: invoice.totalAmount, // Assuming full payment
+            currency: paymentRequest.currency,
+            gateway: result.gateway,
+            gatewayReference: result.transactionId,
+            status: TransactionStatus.PENDING,
+            amountSubunits: Math.round(invoice.totalAmount * 100), // Approximate
+            method: paymentMethod,
+        };
+
+        // Add metadata for M-Pesa payments
+        if (result.gateway === "MPESA_DIRECT" && result.rawResponse?.mpesaCheckoutId) {
+            const metadata: Record<string, Prisma.InputJsonValue> = {
+                checkoutRequestId: result.rawResponse.mpesaCheckoutId,
+                customerMessage: result.rawResponse.customerMessage,
+                initiatedAt: new Date().toISOString(),
+            };
+            
+            // Only add phone number if it exists
+            if (paymentRequest.user.phone) {
+                metadata.phoneNumber = paymentRequest.user.phone;
+            }
+            
+            paymentData.metadata = metadata;
+        }
+
+        await prisma.payment.create({
+            data: paymentData,
+        });
+
+        return NextResponse.json(result);
+
+    } catch (error: unknown) {
+        console.error("Payment Initialization Error:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to initialize payment";
+        return NextResponse.json(
+            { error: errorMessage },
+            { status: 500 }
+        );
+    }
 }
+

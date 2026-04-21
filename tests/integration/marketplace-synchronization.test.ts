@@ -10,8 +10,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import fc from 'fast-check'
 import { prisma } from './setup'
-import { ListingService } from '@/lib/listing-service'
-import { ListingStatus, CreateListingData, BulkListingActionType } from '@/lib/listing-types'
+import { ListingService } from '@rentflow/property'
+import { ListingStatus, CreateListingData, BulkListingActionType } from '@rentflow/property'
 
 // Test data generators
 function generateUserData() {
@@ -54,11 +54,12 @@ function generateUnitData(propertyId: string) {
   };
 }
 
-function generateListingData(unitId: string, organizationId: string, userId: string) {
+function generateListingData(unitId: string, organizationId: string, userId: string, categoryId: string) {
   return {
     id: `listing-${Math.random().toString(36).substr(2, 9)}`,
     organizationId,
     createdBy: userId,
+    categoryId,
     title: `Test Listing ${Math.floor(Math.random() * 1000)}`,
     description: 'Test listing description',
     price: Math.floor(Math.random() * 3000) + 500,
@@ -85,6 +86,7 @@ describe.skip('Property 3: Marketplace Visibility Synchronization', () => {
   let testUser: any
   let testOrganization: any
   let testManager: any
+  let testCategoryId: string
   let createdEntities: {
     users: string[];
     organizations: string[];
@@ -129,6 +131,16 @@ describe.skip('Property 3: Marketplace Visibility Synchronization', () => {
       }
     });
     createdEntities.organizationUsers.push(testManager.id);
+
+    const category = await prisma.categoryMarketplace.upsert({
+      where: { name: 'Property' },
+      update: {},
+      create: {
+        name: 'Property',
+        description: 'Property listings'
+      }
+    });
+    testCategoryId = category.id;
   })
 
   afterEach(async () => {
@@ -239,7 +251,7 @@ describe.skip('Property 3: Marketplace Visibility Synchronization', () => {
       createdEntities.units.push(unit.id);
 
       // Create listing
-      const listingData = generateListingData(unit.id, testOrganization.id, testUser.id);
+      const listingData = generateListingData(unit.id, testOrganization.id, testUser.id, testCategoryId);
       const listing = await prisma.listing.create({ data: listingData });
       createdEntities.listings.push(listing.id);
 
@@ -287,7 +299,7 @@ describe.skip('Property 3: Marketplace Visibility Synchronization', () => {
       createdEntities.units.push(unit.id);
 
       // Create listing with ACTIVE status
-      const listingData = generateListingData(unit.id, testOrganization.id, testUser.id);
+      const listingData = generateListingData(unit.id, testOrganization.id, testUser.id, testCategoryId);
       const listing = await prisma.listing.create({ 
         data: { 
           ...listingData, 
@@ -342,7 +354,7 @@ describe.skip('Property 3: Marketplace Visibility Synchronization', () => {
       const listingIds: string[] = [];
       for (let j = 0; j < units.length; j++) {
         if (Math.random() > 0.3) {
-          const listingData = generateListingData(units[j], testOrganization.id, testUser.id);
+          const listingData = generateListingData(units[j], testOrganization.id, testUser.id, testCategoryId);
           const listing = await prisma.listing.create({ data: listingData });
           createdEntities.listings.push(listing.id);
           listingIds.push(listing.id);
@@ -436,3 +448,4 @@ describe.skip('Property 3: Marketplace Visibility Synchronization', () => {
     }
   })
 })
+

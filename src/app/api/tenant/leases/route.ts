@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { getCurrentUser } from '@/lib/Getcurrentuser';
+import { prisma } from '@rentflow/iam';
+import { getCurrentUser } from '@rentflow/iam';
 
 export async function GET(request: Request) {
   try {
@@ -43,6 +43,7 @@ export async function GET(request: Request) {
     const transformedLeases = leases.map(lease => ({
       id: lease.id,
       property: {
+        propertyName: lease.property?.name || 'Unnamed Property',
         name: lease.property?.name || 'Unnamed Property',
         address: lease.property?.address || ''
       },
@@ -71,3 +72,4 @@ export async function GET(request: Request) {
     );
   }
 }
+

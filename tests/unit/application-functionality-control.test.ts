@@ -64,8 +64,8 @@ vi.mock('@prisma/client', () => {
 });
 
 // Now import after mock is set up - the db module will use the mocked PrismaClient
-const { applicationControlService } = await import('@/lib/application-control-service');
-const { prisma } = await import('@/lib/db');
+const { applicationControlService } = await import('@rentflow/property');
+const { prisma } = await import('@rentflow/iam');
 
 describe('Property 13: Application Functionality Control', () => {
   beforeEach(() => {

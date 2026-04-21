@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
-import { utilityAiJobStore } from "@/lib/utilities/utility-ai-job-store";
-import { AllocationMethod } from "@/lib/utilities/utility-types";
+import { utilityAiJobStore } from "@rentflow/utilities";
+import { AllocationMethod } from "@rentflow/utilities";
 
 const UPLOAD_DIR = path.join(process.cwd(), "local_backups", "utility_ai_uploads");
 

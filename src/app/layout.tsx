@@ -8,6 +8,7 @@ import { QueryProvider } from "@/context/QueryProvider";
 import { LoadingBar } from "@/components/ui/loading-bar";
 import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
 import { Inter, Plus_Jakarta_Sans, Sen } from "next/font/google";
 
@@ -29,6 +30,7 @@ const sen = Sen({
 export const metadata: Metadata = {
   title: "RentFlow360 - Property Management",
   description: "Transform how you manage properties with our all-in-one platform",
+  manifest: "/manifest.json",
   icons: {
     icon: [
       { url: "/favicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },
@@ -49,6 +51,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
@@ -79,9 +82,8 @@ export default function RootLayout({
               }
             >
               <LoadingBar />
-              <main>
-                {children}
-              </main>
+              {children}
+              <ServiceWorkerRegister />
               <Toaster
                 position="top-center"
                 expand={false}

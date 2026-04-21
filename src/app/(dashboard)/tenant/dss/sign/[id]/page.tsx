@@ -1,25 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useParams } from "next/navigation";
 import dynamic from "next/dynamic"; // 1. Dynamic Import for PDF to avoid SSR issues
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, PenTool, CheckCircle, Clock } from "lucide-react";
+import { Loader2, PenTool, CheckCircle, Clock, ShieldCheck } from "lucide-react";
 
 // Dynamically import PDF Viewer
 const PdfViewer = dynamic(() => import("@/components/dss/PdfViewer"), { ssr: false });
 
 export default function SigningRoomPage() {
   const params = useParams(); // Next.js 15: params might be a Promise in server components, but this is "use client"
-  const router = useRouter();
   // Safe cast: In Client Components, params is unwrapped or accessible directly depending on version,
   // but to be safe for Next 15 types, treat as unknown then string.
   const documentId = params?.id as string;
 
   const [docData, setDocData] = useState<any>(null);
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState(false);
+  const [signatureMode, setSignatureMode] = useState<"draw" | "tap">("draw");
+  const [signatureData, setSignatureData] = useState<string>("");
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawingRef = useRef(false);
 
   // 2. Fetch Data
   useEffect(() => {
@@ -33,6 +37,12 @@ export default function SigningRoomPage() {
         if (!res.ok) throw new Error(data.error || "Failed to load");
 
         setDocData(data);
+
+        const viewRes = await fetch(`/api/dss/documents/${documentId}/view`);
+        const viewData = await viewRes.json();
+        if (viewRes.ok) {
+          setViewUrl(viewData.document?.viewUrl || null);
+        }
       } catch (error: any) {
         toast.error(error.message);
       } finally {
@@ -43,16 +53,42 @@ export default function SigningRoomPage() {
   }, [documentId]);
 
   // 3. Handle Sign Action
+  const getDeviceFingerprint = () => {
+    const rawFingerprint = [
+      navigator.userAgent,
+      navigator.language,
+      navigator.platform,
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+      window.screen.width,
+      window.screen.height,
+      window.devicePixelRatio,
+    ].join("|");
+
+    return btoa(unescape(encodeURIComponent(rawFingerprint))).slice(0, 120);
+  };
+
   const handleSign = async () => {
     setSigning(true);
     try {
+      const payload =
+        signatureMode === "draw"
+          ? {
+              documentId,
+              signatureData: signatureData || "Signed via RentFlow360 Canvas",
+            }
+          : {
+              documentId,
+              signatureMode: "tap_to_agree",
+              agreementMetadata: {
+                timestamp: new Date().toISOString(),
+                deviceFingerprint: getDeviceFingerprint(),
+              },
+            };
+
       const res = await fetch("/api/dss/sign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          documentId,
-          signatureData: "Signed via RentFlow360 Web UI (Timestamped)", // In future, use a canvas signature pad here
-        }),
+        body: JSON.stringify(payload),
       });
 
       const result = await res.json();
@@ -85,7 +121,54 @@ export default function SigningRoomPage() {
   if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-blue-600 w-8 h-8" /></div>;
   if (!docData) return <div className="p-10 text-center">Document not found</div>;
 
-  const { document, canSign } = docData;
+  const { document: signingDocument, canSign } = docData;
+
+  const beginStroke = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
+    const context = canvasRef.current.getContext("2d");
+    if (!context) return;
+
+    event.preventDefault();
+    canvasRef.current.setPointerCapture(event.pointerId);
+    drawingRef.current = true;
+    window.document.body.style.overflow = "hidden";
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    context.beginPath();
+    context.moveTo(event.clientX - rect.left, event.clientY - rect.top);
+  };
+
+  const drawStroke = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!drawingRef.current || !canvasRef.current) return;
+    const context = canvasRef.current.getContext("2d");
+    if (!context) return;
+
+    event.preventDefault();
+    const rect = canvasRef.current.getBoundingClientRect();
+    context.lineTo(event.clientX - rect.left, event.clientY - rect.top);
+    context.strokeStyle = "#0f172a";
+    context.lineWidth = 2.2;
+    context.lineCap = "round";
+    context.stroke();
+    setSignatureData(canvasRef.current.toDataURL("image/png"));
+  };
+
+  const endStroke = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
+    event.preventDefault();
+    drawingRef.current = false;
+    window.document.body.style.overflow = "";
+    setSignatureData(canvasRef.current.toDataURL("image/png"));
+  };
+
+  const clearCanvas = () => {
+    if (!canvasRef.current) return;
+    const context = canvasRef.current.getContext("2d");
+    if (!context) return;
+
+    context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    setSignatureData("");
+  };
 
   return (
     <div className="container mx-auto py-8 max-w-5xl px-4">
@@ -93,26 +176,31 @@ export default function SigningRoomPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-white p-6 rounded-xl border shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{document.title}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{signingDocument.title}</h1>
           <div className="flex items-center gap-2 mt-1">
              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                 document.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                 signingDocument.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
              }`}>
-                {document.status}
+                {signingDocument.status}
              </span>
-             <span className="text-gray-500 text-sm">• Step {document.currentStep}</span>
+             <span className="text-gray-500 text-sm">• Step {signingDocument.currentStep}</span>
           </div>
         </div>
 
         {/* Dynamic Action Button */}
         {canSign ? (
-          <Button onClick={handleSign} disabled={signing} size="lg" className="bg-green-600 hover:bg-green-700 w-full md:w-auto">
+          <Button
+            onClick={handleSign}
+            disabled={signing || (signatureMode === "draw" && !signatureData)}
+            size="lg"
+            className="bg-green-600 hover:bg-green-700 w-full md:w-auto"
+          >
             {signing ? <Loader2 className="animate-spin mr-2" /> : <PenTool className="mr-2 w-5 h-5" />}
-            Sign Now
+            {signatureMode === "tap" ? "Tap to Agree" : "Sign Now"}
           </Button>
         ) : (
           <Button disabled variant="outline" size="lg" className="w-full md:w-auto">
-            {document.status === 'COMPLETED' ?
+            {signingDocument.status === 'COMPLETED' ?
                <><CheckCircle className="mr-2 w-5 h-5 text-green-500"/> Document Completed</> :
                <><Clock className="mr-2 w-5 h-5"/> Waiting for others</>
             }
@@ -120,12 +208,78 @@ export default function SigningRoomPage() {
         )}
       </div>
 
+      {canSign && (
+        <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSignatureMode("draw")}
+              className={`rounded-md px-3 py-2 text-sm font-medium ${
+                signatureMode === "draw"
+                  ? "bg-blue-600 text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              Draw Signature
+            </button>
+            <button
+              type="button"
+              onClick={() => setSignatureMode("tap")}
+              className={`rounded-md px-3 py-2 text-sm font-medium ${
+                signatureMode === "tap"
+                  ? "bg-blue-600 text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              Tap to Agree
+            </button>
+          </div>
+
+          {signatureMode === "draw" ? (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-600">
+                Draw with your finger or stylus. Page scrolling is locked while drawing.
+              </p>
+              <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                <canvas
+                  ref={canvasRef}
+                  width={900}
+                  height={220}
+                  className="h-[220px] w-full touch-none"
+                  onPointerDown={beginStroke}
+                  onPointerMove={drawStroke}
+                  onPointerUp={endStroke}
+                  onPointerCancel={endStroke}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={clearCanvas}
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Clear Signature
+              </button>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              <div className="flex items-center gap-2 font-semibold">
+                <ShieldCheck className="h-4 w-4" />
+                Legally Binding Tap-to-Agree Enabled
+              </div>
+              <p className="mt-1 text-xs">
+                We capture your timestamp, IP address, and device fingerprint as audit metadata.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
         {/* Main Content: PDF */}
         <div className="lg:col-span-2">
-           {document.originalFileUrl ? (
-             <PdfViewer url={document.originalFileUrl} />
+           {viewUrl || signingDocument.originalFileUrl ? (
+             <PdfViewer url={viewUrl || signingDocument.originalFileUrl} />
            ) : (
              <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
                No document file available
@@ -137,7 +291,7 @@ export default function SigningRoomPage() {
         <div className="bg-white p-6 rounded-xl border shadow-sm h-fit">
           <h3 className="font-semibold text-gray-900 mb-4">Signers</h3>
           <div className="space-y-4">
-             {document.participants.map((p: any, idx: number) => (
+             {signingDocument.participants.map((p: any, idx: number) => (
                <div key={idx} className="flex items-center justify-between">
                  <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${

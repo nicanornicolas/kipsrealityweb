@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import { MarketplaceClientPage } from "@/components/website/marketplace/ListingClientPage";
 import Navbar from "@/components/website/Navbar";
 
@@ -158,3 +158,4 @@ export default async function MarketplacePage() {
     </>
   );
 }
+

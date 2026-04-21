@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { SmsFactory } from "../../src/lib/notifications/sms-factory";
+import { SmsFactory } from "@rentflow/utilities";
 
 describe("SmsFactory.getProvider", () => {
   beforeEach(() => {

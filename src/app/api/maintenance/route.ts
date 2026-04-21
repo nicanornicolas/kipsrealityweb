@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 
 
 // http://localhost:3000/api/maintenance?organizationId=1&status=OPEN&unassigned=true&propertyId=1&vendorId=1
@@ -113,3 +113,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to create maintenance request" }, { status: 500 });
   }
 }
+

@@ -1,174 +1,293 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { NextResponse } from 'next/server';
+import { prisma } from '@rentflow/iam';
+import { getCurrentUser } from '@rentflow/iam';
+import { 
+  sendTenantApplicationNotification, 
+  sendApplicationConfirmation 
+} from "@/lib/mail-service";
+import { APP_NAME } from "@/lib/constants";
+import { encryptSSN } from "@/lib/encryption";
 
-export async function GET(req: Request, { params }: { params: Promise<{ tenantId: string }> }) {
+export async function POST(request: Request) {
   try {
-    const { tenantId } = await params;
+    const data = await request.json();
 
-    // Fetch all leases for this tenant
-    const leases = await prisma.lease.findMany({
-      where: { tenantId },
-      select: { id: true },
-    });
+    const {
+      fullName,
+      email,
+      phone,
+      dob,
+      ssn,
+      address,
+      employerName,
+      jobTitle,
+      monthlyIncome,
+      employmentDuration,
+      leaseType,
+      occupancyType,
+      moveInDate,
+      leaseDuration,
+      occupants,
+      pets,
+      landlordName,
+      landlordContact,
+      reasonForMoving,
+      referenceName,
+      referenceContact,
+      consent,
+      unitId,   // now required
+      userId,
+    } = data;
 
-    if (!leases.length) {
-      return NextResponse.json({ success: true, data: [] });
+    // Validate required fields
+    const missingFields: string[] = [];
+    if (!fullName) missingFields.push('fullName');
+    if (!email) missingFields.push('email');
+    if (!phone) missingFields.push('phone');
+    if (!dob) missingFields.push('dob');
+    if (!leaseType) missingFields.push('leaseType');
+    if (!occupancyType) missingFields.push('occupancyType');
+    if (!moveInDate) missingFields.push('moveInDate');
+    if (!leaseDuration) missingFields.push('leaseDuration');
+    if (!unitId) missingFields.push('unitId');
+
+    if (missingFields.length > 0) {
+      return NextResponse.json(
+        { error: `Missing required fields: ${missingFields.join(', ')}` },
+        { status: 400 }
+      );
     }
 
-    const leaseIds = leases.map((l) => l.id);
-
-    // Fetch invoices for those leases
-    const invoices = await prisma.invoice.findMany({
-      where: { leaseId: { in: leaseIds } },
-      include: {
-        InvoiceItem: true,
-        payments: true,
-        Lease: {
+    // Fetch unit and include its property with manager details and listing status
+    const unit = await prisma.unit.findUnique({
+      where: { id: String(unitId).trim() },
+      include: { 
+        listing: {
           include: {
-            tenant: {
-              select: {
-                firstName: true,
-                lastName: true,
-                email: true,
-              }
-            },
-            property: {
-              select: {
-                id: true,
-                name: true,
-                address: true,
-                apartmentComplexDetail: {
+            status: true
+          }
+        }, // Include listing to check if unit is publicly available
+        property: {
+          include: {
+            manager: {
+              include: {
+                user: {
                   select: {
-                    buildingName: true
-                  }
-                },
-                houseDetail: {
-                  select: {
-                    houseName: true
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true
                   }
                 }
-              },
-            },
-            unit: {
-              select: {
-                id: true,
-                unitNumber: true,
-              },
-            },
-            leaseUtilities: {
-              include: {
-                utility: true,
-                utilityReadings: { orderBy: { readingDate: "desc" }, take: 1 },
-              },
-            },
-          },
-        },
+              }
+            }
+          }
+        }
       },
-      orderBy: { dueDate: "desc" },
     });
+    if (!unit) {
+      return NextResponse.json({ error: 'Unit not found', unitId }, { status: 400 });
+    }
+    if (!unit.property) {
+      return NextResponse.json({ error: 'Property for this unit not found', unitId }, { status: 400 });
+    }
 
-    // Map invoices to safe format
-    const safeInvoices = invoices.map((inv: any) => ({
-      id: inv.id,
-      leaseId: inv.leaseId,
-      type: inv.type,
-      amount: Number(inv.totalAmount),
-      dueDate: inv.dueDate ? inv.dueDate.toISOString() : null,
-      status: inv.status,
-      createdAt: inv.createdAt ? inv.createdAt.toISOString() : null,
-      updatedAt: inv.updatedAt ? inv.updatedAt.toISOString() : null,
-      invoiceItems: (inv.InvoiceItem || []).map((it: any) => ({
-        id: it.id,
-        description: it.description,
-        amount: Number(it.amount),
-      })),
-      payments: (inv.payments || []).map((p: any) => ({
-        id: p.id,
-        amount: Number(p.amount),
-        paidOn: p.paidOn ? p.paidOn.toISOString() : null,
-        method: p.method,
-        reference: p.reference,
-      })),
-      lease: inv.Lease ? {
-        tenant: inv.Lease.tenant
-          ? {
-            firstName: inv.Lease.tenant.firstName ?? undefined,
-            lastName: inv.Lease.tenant.lastName ?? undefined,
-            email: inv.Lease.tenant.email ?? undefined,
-          }
-          : undefined,
-        property: inv.Lease.property
-          ? {
-            id: inv.Lease.property.id,
-            name: inv.Lease.property.name,
-            address: inv.Lease.property.address,
-            apartmentComplexDetail: inv.Lease.property.apartmentComplexDetail
-              ? {
-                buildingName: inv.Lease.property.apartmentComplexDetail.buildingName,
-              }
-              : undefined,
-            houseDetail: inv.Lease.property.houseDetail
-              ? {
-                houseName: inv.Lease.property.houseDetail.houseName,
-              }
-              : undefined,
-          }
-          : undefined,
-        unit: inv.Lease.unit
-          ? {
-            id: inv.Lease.unit.id,
-            unitNumber: inv.Lease.unit.unitNumber,
-          }
-          : undefined,
-      } : undefined,
-      utilities: inv.Lease?.leaseUtilities?.map((lu: any) => ({
-        id: lu.utility.id,
-        name: lu.utility.name,
-        type: lu.utility.type || lu.utility.name,
-        fixedAmount: lu.utility.fixedAmount ?? 0,
-        unitPrice: lu.utility.unitPrice ?? 0,
-        isTenantResponsible: lu.isTenantResponsible,
-        lastReading: lu.utilityReadings?.[0]?.readingValue ?? null,
-      })),
-    }));
-
-    // Group by leaseId + dueDate
-    const grouped: { [key: string]: any } = {};
-    safeInvoices.forEach((invoice: any) => {
-      const dateKey = invoice.dueDate ? invoice.dueDate.split("T")[0] : "no-date";
-      const groupKey = `${invoice.leaseId}-${dateKey}`;
-
-      if (!grouped[groupKey]) {
-        grouped[groupKey] = {
-          leaseId: invoice.leaseId,
-          date: dateKey,
-          invoices: [],
-          totalAmount: 0,
-          totalPaid: 0,
-          tenant: invoice.lease?.tenant || {},
-          property: invoice.lease?.property || {},
-          unit: invoice.lease?.unit || {},
-        };
+    // Check if unit has an active listing - applications only allowed for listed units
+      if (!unit.listing) {
+        return NextResponse.json({ 
+          error: 'This unit is not currently available for applications. Only units with active marketplace listings accept applications.',
+          code: 'UNIT_NOT_LISTED',
+          unitId 
+        }, { status: 403 });
+      }
+      const listingStatusName = unit.listing.status?.name as string;
+      if (listingStatusName && !["ACTIVE", "COMING_SOON"].includes(listingStatusName)) {
+        return NextResponse.json({
+          error: 'This unit is not currently available for applications.',
+          code: 'UNIT_NOT_AVAILABLE',
+          unitId
+        }, { status: 403 });
       }
 
-      grouped[groupKey].invoices.push(invoice);
+    // Validate user if provided
+    let user = null;
+    if (userId) {
+      user = await prisma.user.findUnique({ where: { id: String(userId).trim() } });
+      if (!user) return NextResponse.json({ error: 'User not found', userId }, { status: 400 });
+    }
 
-      grouped[groupKey].totalAmount += invoice.amount;
-      grouped[groupKey].totalPaid += invoice.payments?.reduce(
-        (sum: number, p: any) => sum + (p.amount ?? 0),
-        0
-      ) ?? 0;
+    // Safe type casting
+    const numericOccupants = occupants ? Number(occupants) : null;
+    const numericIncome = monthlyIncome ? parseFloat(monthlyIncome) : null;
+
+    // Encrypt SSN if provided
+    let ssnEncrypted = null;
+    if (ssn && typeof ssn === 'string' && ssn.trim()) {
+      try {
+        ssnEncrypted = encryptSSN(ssn.trim());
+      } catch (encryptionError) {
+        console.error('Failed to encrypt SSN:', encryptionError);
+        return NextResponse.json(
+          { error: 'Failed to encrypt SSN data', details: 'Encryption error' },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Create tenant application
+    const newApplication = await prisma.tenantApplication.create({
+      data: {
+        fullName,
+        email,
+        phone,
+        dob: new Date(dob),
+        ssn: null, // Do not store plaintext SSN
+        ssnEncrypted, // Store encrypted SSN
+        address: address || null,
+        employerName: employerName || null,
+        jobTitle: jobTitle || null,
+        monthlyIncome: numericIncome,
+        employmentDuration: employmentDuration || null,
+        leaseType,
+        occupancyType,
+        moveInDate: new Date(moveInDate),
+        leaseDuration,
+        occupants: numericOccupants,
+        pets: pets || null,
+        landlordName: landlordName || null,
+        landlordContact: landlordContact || null,
+        reasonForMoving: reasonForMoving || null,
+        referenceName: referenceName || null,
+        referenceContact: referenceContact || null,
+        consent: !!consent,
+        unitId: unit.id,
+        propertyId: unit.property.id,
+        userId: user?.id || null,
+      },
+      include: { 
+        property: {
+          include: {
+            manager: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true
+                  }
+                }
+              }
+            }
+          }
+        }, 
+        unit: true, 
+        user: true 
+      },
     });
 
-    const result = Object.values(grouped).sort(
-      (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    // Send notification email to property manager
+    if (unit.property.manager?.user?.email) {
+      try {
+        const managerEmail = unit.property.manager.user.email;
+        const managerName = unit.property.manager.user.firstName || 'Property Manager';
+        const propertyName = unit.property.name || unit.property.city || 'Unknown Property';
+        const unitNumber = unit.unitNumber || 'N/A';
+        const moveInDateStr = new Date(moveInDate);
+        
+        await sendTenantApplicationNotification(
+          managerEmail,
+          managerName,
+          fullName,
+          email,
+          phone,
+          propertyName,
+          unitNumber,
+          moveInDateStr,
+          leaseType
+        );
+        
+        console.log(`ðŸ“§ Notification email sent to property manager: ${managerEmail}`);
+      } catch (emailError) {
+        console.error('Failed to send notification email:', emailError);
+        // Don't fail the application submission if email fails
+      }
+    } else {
+      console.warn('No property manager email found for notification');
+    }
 
-    return NextResponse.json({ success: true, data: result });
-  } catch (error) {
-    console.error("GET /api/tenants/[tenantId]/invoices error:", error);
+    // Send confirmation email to applicant
+    try {
+      const propertyName = unit.property.name || unit.property.city || 'Unknown Property';
+      const unitNumber = unit.unitNumber || 'N/A';
+      
+      await sendApplicationConfirmation(
+        email,
+        fullName,
+        propertyName,
+        unitNumber
+      );
+      
+      console.log(`ðŸ“§ Application confirmation email sent to applicant: ${email}`);
+    } catch (emailError) {
+      console.error('Failed to send confirmation email:', emailError);
+      // Don't fail the application submission if email fails
+    }
+
+    return NextResponse.json({ success: true, application: newApplication }, { status: 201 });
+  } catch (error: unknown) {
+    console.error('Error saving tenant application:', error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    return NextResponse.json({ error: 'Internal server error', details: errorMessage }, { status: 500 });
+  }
+}
+
+import { NextRequest } from 'next/server';
+import { Prisma } from '@prisma/client';
+
+export async function GET(req: NextRequest) {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Support filtering by propertyId if provided
+    const url = new URL(req.url);
+    const propertyId = url.searchParams.get("propertyId");
+
+    const where: Prisma.TenantApplicationWhereInput = {
+      property: {
+        manager: {
+          userId: user.id
+        }
+      }
+    };
+    if (propertyId) {
+      where.propertyId = propertyId;
+    }
+
+    const applications = await prisma.tenantApplication.findMany({
+      where,
+      include: {
+        property: true,
+        unit: true,
+        user: true
+      },
+      orderBy: { createdAt: "desc" }
+    });
+
+    return NextResponse.json(applications, { status: 200 });
+
+  } catch (error: unknown) {
+    console.error("Error fetching applications:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     return NextResponse.json(
-      { success: false, error: "Failed to fetch invoices for tenant" },
+      { error: "Internal server error", details: errorMessage },
       { status: 500 }
     );
   }

@@ -714,9 +714,9 @@ vi.mock('@prisma/client', () => {
   };
 });
 
-// Mock @/lib/db - makes every import of the database client
+// Mock @rentflow/iam - makes every import of the database client
 // across all test files receive mockPrismaInstance
-vi.mock('@/lib/db', () => ({
+vi.mock('@rentflow/iam', () => ({
   prisma: mockPrismaInstance,
   db: mockPrismaInstance,
 }));

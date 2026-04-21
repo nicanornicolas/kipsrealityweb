@@ -2,8 +2,8 @@
 // Handles deactivation of multiple properties with comprehensive reporting
 
 import { NextRequest, NextResponse } from 'next/server';
-import { propertyDeactivationService } from '@/lib/property-deactivation-service';
-import { getCurrentUser } from '@/lib/Getcurrentuser';
+import { propertyDeactivationService } from "@rentflow/property";
+import { getCurrentUser } from '@rentflow/iam';
 
 interface BulkDeactivateRequest {
   propertyIds: string[];
@@ -180,3 +180,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

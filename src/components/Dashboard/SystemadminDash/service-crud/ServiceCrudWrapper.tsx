@@ -1,5 +1,5 @@
 // app/dashboard/services/ServiceCrudWrapper.tsx
-import { prisma } from "@/lib/db";
+import { prisma } from "@rentflow/iam";
 import ServiceCrud from "./ServiceCrud";
 import { Category, Service } from "../../type";
 
@@ -29,3 +29,4 @@ export default async function ServiceCrudWrapper() {
 
   return <ServiceCrud initialCategories={categories} />;
 }
+

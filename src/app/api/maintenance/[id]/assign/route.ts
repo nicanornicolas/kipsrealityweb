@@ -1,71 +1,248 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { cookies } from "next/headers";
-import { verifyAccessToken } from "@/lib/auth";
+import { prisma } from "@rentflow/iam";
+import { getCurrentUser } from '@rentflow/iam';
+import type { MaintenanceRequest } from "@prisma/client";
 
-// POST /api/maintenance/:id/assign
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// GET /api/maintenance/tenant - Get tenant's maintenance requests
+export async function GET(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    const user = await getCurrentUser(req);
+    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = verifyAccessToken(token);
-
-    // only property managers or system admins should assign requests
-    if (payload.role !== "PROPERTY_MANAGER" && payload.role !== "SYSTEM_ADMIN") {
-      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
-    }
-
-    const { id: requestId } = await params;
-    const body = await req.json();
-    const { vendorId } = body;
-
-    if (!vendorId) {
-      return NextResponse.json({ success: false, error: "vendorId is required" }, { status: 400 });
-    }
-
-    // verify vendor belongs to same organization (optional safety check)
-    const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
-    if (!vendor || vendor.organizationId !== payload.organizationId) {
-      return NextResponse.json({ success: false, error: "Vendor not found in your organization" }, { status: 404 });
-    }
-
-    // Conditional update to avoid race conditions: only update when still OPEN and unassigned
-    const result = await (prisma as any).maintenanceRequest.updateMany({
+    // Find tenant's active lease to get property and unit info
+    const activeLease = await prisma.lease.findFirst({
       where: {
-        id: requestId,
-        organizationId: payload.organizationId,
-        status: "OPEN",
-        assignedVendorId: null,
+        tenantId: user.id,
+        leaseStatus: "ACTIVE",
       },
-      data: {
-        assignedVendorId: vendorId,
-        assignedAt: new Date(),
-        // status is NOT updated here
+      include: {
+        property: true,
+        unit: true,
       },
     });
 
-    if (result.count === 0) {
-      return NextResponse.json({ success: false, error: "Request is not open or already assigned" }, { status: 409 });
+    if (!activeLease) {
+      return NextResponse.json({ 
+        requests: [],
+        message: "No active lease found" 
+      });
     }
 
-    // return the updated record
-    const updated = await (prisma as any).maintenanceRequest.findUnique({
-      where: { id: requestId },
-      include: {
-        property: { select: { id: true, name: true } },
-        unit: { select: { id: true, unitNumber: true, unitName: true } },
-        requestedBy: { include: { user: { select: { firstName: true, lastName: true } } } },
-        vendor: { include: { user: { select: { firstName: true, lastName: true } } } },
+    // Find organization user record for this tenant
+    const orgUser = await prisma.organizationUser.findFirst({
+      where: {
+        userId: user.id,
+        organizationId: activeLease.property.organizationId || undefined,
       },
     });
 
-    return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
-    console.error(error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    if (!orgUser) {
+      return NextResponse.json({ 
+        requests: [],
+        message: "User not found in organization" 
+      });
+    }
+
+    // Fetch maintenance requests for this tenant's unit
+    const requests = await prisma.maintenanceRequest.findMany({
+      where: {
+        organizationId: activeLease.property.organizationId || "",
+        propertyId: activeLease.propertyId,
+        unitId: activeLease.unitId,
+        requestedById: orgUser.id,
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        property: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+          }
+        },
+        unit: { 
+          select: { 
+            id: true, 
+            unitNumber: true, 
+            unitName: true 
+          } 
+        },
+        requestedBy: { 
+          include: { 
+            user: { 
+              select: { 
+                firstName: true, 
+                lastName: true, 
+                email: true 
+              } 
+            } 
+          } 
+        },
+        vendor: { 
+          include: { 
+            user: { 
+              select: { 
+                firstName: true, 
+                lastName: true 
+              } 
+            } 
+          } 
+        },
+      },
+    });
+
+    return NextResponse.json({ 
+      success: true,
+      count: requests.length,
+      requests: Array.isArray(requests) ? requests : [] 
+    });
+
+  } catch (error) {
+    console.error("Tenant maintenance requests error:", error);
+    
+    // Check if error is due to missing table/column
+    if (error instanceof Error && error.message.includes("does not exist")) {
+      return NextResponse.json({ 
+        success: false,
+        error: "Maintenance requests feature not yet available",
+        requests: [] 
+      }, { status: 503 });
+    }
+    
+    const errorMessage = error instanceof Error ? error.message : "Failed to fetch maintenance requests";
+    return NextResponse.json({ 
+      success: false,
+      error: errorMessage,
+      requests: [] 
+    }, { status: 500 });
+  }
+}
+
+// POST /api/maintenance/tenant - Create a new maintenance request
+export async function POST(req: NextRequest) {
+  try {
+    const user = await getCurrentUser(req);
+    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const {
+      title,
+      description,
+      priority = "NORMAL",
+      category = "STANDARD",
+      mediaUrls = [],
+    } = body;
+
+    if (!title || !description) {
+      return NextResponse.json({ 
+        error: "Title and description are required" 
+      }, { status: 400 });
+    }
+
+    // Find tenant's active lease to get property and unit info
+    const activeLease = await prisma.lease.findFirst({
+      where: {
+        tenantId: user.id,
+        leaseStatus: "ACTIVE",
+      },
+      include: {
+        property: true,
+        unit: true,
+      },
+    });
+
+    if (!activeLease) {
+      return NextResponse.json({ 
+        error: "No active lease found" 
+      }, { status: 404 });
+    }
+
+    // Find organization user record for this tenant
+    const orgUser = await prisma.organizationUser.findFirst({
+      where: {
+        userId: user.id,
+        organizationId: activeLease.property.organizationId || undefined,
+      },
+    });
+
+    if (!orgUser) {
+      return NextResponse.json({ 
+        error: "User not found in organization" 
+      }, { status: 403 });
+    }
+
+    // Validate priority
+    const allowedPriorities = ["LOW", "NORMAL", "HIGH", "URGENT"];
+    if (priority && !allowedPriorities.includes(priority)) {
+      return NextResponse.json({ 
+        error: `Invalid priority value: ${priority}` 
+      }, { status: 400 });
+    }
+
+    // Validate category
+    const allowedCategories = ["EMERGENCY", "URGENT", "ROUTINE", "STANDARD"];
+    if (category && !allowedCategories.includes(category)) {
+      return NextResponse.json({ 
+        error: `Invalid category value: ${category}` 
+      }, { status: 400 });
+    }
+
+    const sanitizedMediaUrls = Array.isArray(mediaUrls)
+      ? mediaUrls
+          .filter((url) => typeof url === "string" && url.startsWith("http"))
+          .slice(0, 3)
+      : [];
+
+    const descriptionWithMedia =
+      sanitizedMediaUrls.length > 0
+        ? `${description}\n\nMedia Attachments:\n${sanitizedMediaUrls
+            .map((url) => `- ${url}`)
+            .join("\n")}`
+        : description;
+
+    // Create the maintenance request
+    const newRequest = await prisma.maintenanceRequest.create({
+      data: {
+        organizationId: activeLease.property.organizationId || "",
+        propertyId: activeLease.propertyId,
+        unitId: activeLease.unitId,
+        requestedById: orgUser.id,
+        title,
+        description: descriptionWithMedia,
+        priority: priority as "LOW" | "NORMAL" | "HIGH" | "URGENT",
+        category: category as "EMERGENCY" | "URGENT" | "ROUTINE" | "STANDARD",
+        status: "OPEN", // Default status
+      },
+    });
+
+    return NextResponse.json({ 
+      success: true,
+      request: newRequest,
+      message: "Maintenance request created successfully" 
+    }, { status: 201 });
+
+  } catch (error) {
+    console.error("Create maintenance request error:", error);
+    
+    // Check if error is due to missing table
+    if (error instanceof Error && error.message.includes("does not exist")) {
+      return NextResponse.json({ 
+        success: false,
+        error: "Maintenance requests feature not yet available" 
+      }, { status: 503 });
+    }
+    
+    const errorMessage = error instanceof Error ? error.message : "Failed to create maintenance request";
+    return NextResponse.json({ 
+      success: false,
+      error: errorMessage 
+    }, { status: 500 });
   }
 }

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { verifyAccessToken } from "@/lib/auth";
+import { prisma } from "@rentflow/iam";
+import { verifyAccessToken } from "@rentflow/iam";
 import { cookies } from "next/headers";
-import { sendTenantInviteEmail } from "@/lib/mail-service";
-import { getServerBaseUrl } from "@/lib/server-base-url";
+import { sendTenantInviteEmail } from "../../../../../../../lib/mail-service";
 
 type TokenPayload = {
   userId: string;
