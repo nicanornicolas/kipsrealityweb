@@ -99,4 +99,3 @@ async function notarizeDocument(documentId) {
 0 && (module.exports = {
   notarizeDocument
 });
-//# sourceMappingURL=notary-service.js.map

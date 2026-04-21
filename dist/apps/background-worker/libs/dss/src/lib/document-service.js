@@ -259,4 +259,3 @@ async function signDocument(documentId, userEmail, signatureData, onBehalfOf) {
   getDocumentForViewing,
   signDocument
 });
-//# sourceMappingURL=document-service.js.map

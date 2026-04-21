@@ -281,7 +281,6 @@ async function generateFinalSignedPdf(documentId, orgId) {
   await import_iam.prisma.dssDocument.update({
     where: { id: documentId },
     data: {
-      finalFileUrl,
       finalPdfSha256Hex
     }
   });
@@ -291,4 +290,3 @@ async function generateFinalSignedPdf(documentId, orgId) {
 0 && (module.exports = {
   generateFinalSignedPdf
 });
-//# sourceMappingURL=pdf-generator.js.map

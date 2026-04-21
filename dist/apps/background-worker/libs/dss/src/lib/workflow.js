@@ -73,4 +73,3 @@ async function canUserSignNow(documentId, userEmail) {
   canUserSignNow,
   getNextSigner
 });
-//# sourceMappingURL=workflow.js.map
