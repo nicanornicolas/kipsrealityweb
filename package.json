@@ -39,7 +39,7 @@
     "test:studio": "dotenv -e .env.test -- prisma studio",
     "db:studio": "prisma studio",
     "// --- UTILITIES ---": "",
-    "create-admin": "tsx scripts/create-admin.ts",
+    "create-admin": "dotenv -e .env.local -- tsx scripts/create-admin.ts",
     "lint": "next lint",
     "clean": "rimraf .next",
     "// --- UNIT TESTING (Vitest - Milliseconds) ---": "",
