@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { plaidClient, createStripeBankAccountToken } from "@rentflow/payments";
+import {
+    plaidClient,
+    createStripeBankAccountToken,
+    encryptPlaidAccessToken,
+} from "@rentflow/payments";
 import { prisma } from "@rentflow/iam";
 import Stripe from "stripe";
 import crypto from "crypto";
@@ -63,7 +67,7 @@ export async function POST(req: Request) {
                 id: crypto.randomUUID(),
                 userId,
                 type: 'ACH',
-                plaidAccessToken: accessToken, // ENCRYPT THIS
+                plaidAccessToken: encryptPlaidAccessToken(accessToken),
                 plaidAccountId: accountId,
                 stripePaymentMethodId: source.id,
                 isDefault: true,
