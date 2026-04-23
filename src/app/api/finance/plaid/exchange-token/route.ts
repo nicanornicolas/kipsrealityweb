@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
     await webhookQueue.add('plaid-initial-sync', {
       organizationId: user.organizationId,
-      connectedAccountId: connectedAccount.id,
+      accountId: connectedAccount.id,
     });
 
     return NextResponse.json({
