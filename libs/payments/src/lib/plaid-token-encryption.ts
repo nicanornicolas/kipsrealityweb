@@ -25,11 +25,16 @@ function validateEncryptionKey(): Buffer {
   throw new Error('ENCRYPTION_KEY must be 32 bytes (utf8) or base64-encoded 32 bytes');
 }
 
-// Fail fast on boot to prevent partial writes with an unusable key.
-const ENCRYPTION_KEY = validateEncryptionKey();
+let cachedEncryptionKey: Buffer | null = null;
 
 function getEncryptionKey(): Buffer {
-  return ENCRYPTION_KEY;
+  if (!cachedEncryptionKey) {
+    // Defer validation until runtime use so unrelated builds/routes do not fail
+    // just by importing the payments barrel.
+    cachedEncryptionKey = validateEncryptionKey();
+  }
+
+  return cachedEncryptionKey;
 }
 
 export function isProbablyEncryptedPlaidToken(value: string): boolean {
