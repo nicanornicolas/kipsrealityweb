@@ -1,17 +1,18 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import UpgradeRequiredModal from "@/components/monetization/UpgradeRequiredModal";
-import DocumentPreviewModal from "@/components/dss/DocumentPreviewModal";
-import { 
-  FolderOpen, 
-  FileText, 
-  File, 
-  Search, 
+import { useState, useEffect, useRef } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import UpgradeRequiredModal from '@/components/monetization/UpgradeRequiredModal';
+import DocumentPreviewModal from '@/components/dss/DocumentPreviewModal';
+import { toast } from 'sonner';
+import {
+  FolderOpen,
+  FileText,
+  File,
+  Search,
   Upload,
   Loader2,
   Download,
@@ -21,8 +22,8 @@ import {
   Grid,
   List,
   Home,
-  Building2
-} from "lucide-react";
+  Building2,
+} from 'lucide-react';
 
 interface Document {
   id: string;
@@ -33,7 +34,8 @@ interface Document {
   uploadedAt: string;
   property?: string;
   unit?: string;
-  status: "active" | "archived";
+  status: 'active' | 'archived';
+  dssStatus?: string;
 }
 
 interface Folder {
@@ -51,7 +53,7 @@ interface ApiDocument {
   type?: string;
   category?: string;
   size?: string;
-  status?: "active" | "archived";
+  status?: 'active' | 'archived';
   createdAt?: string;
   property?: { name?: string };
   unit?: { unitNumber?: string };
@@ -72,17 +74,21 @@ interface UpgradeErrorData {
 
 export default function DocumentsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [folders, setFolders] = useState<Folder[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [upgradeErrorData, setUpgradeErrorData] = useState<UpgradeErrorData | undefined>(undefined);
-  const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(null);
+  const [upgradeErrorData, setUpgradeErrorData] = useState<
+    UpgradeErrorData | undefined
+  >(undefined);
+  const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(
+    null,
+  );
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
@@ -90,12 +96,14 @@ export default function DocumentsPage() {
       try {
         setIsLoading(true);
         setErrorMessage(null);
-        
+
         // Fetch documents from API
         const res = await fetch('/api/dss/documents');
         if (!res.ok) throw new Error('Failed to fetch documents');
-        const data = (await res.json()) as ApiDocument[] | ApiDocumentListResponse;
-        const rawDocuments = Array.isArray(data) ? data : (data.documents || []);
+        const data = (await res.json()) as
+          | ApiDocument[]
+          | ApiDocumentListResponse;
+        const rawDocuments = Array.isArray(data) ? data : data.documents || [];
 
         const docs: Document[] = rawDocuments.map((d) => ({
           id: d.id,
@@ -103,31 +111,35 @@ export default function DocumentsPage() {
           type: d.type || 'PDF',
           category: d.category || 'Other',
           size: d.size || '0 KB',
-          uploadedAt: d.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0],
+          uploadedAt:
+            d.createdAt?.split('T')[0] ||
+            new Date().toISOString().split('T')[0],
           property: d.property?.name || '',
           unit: d.unit?.unitNumber || '',
-          status: d.status || 'active'
+          status: d.status || 'active',
+          dssStatus: (d as any).status || 'DRAFT',
         }));
-        
+
         setDocuments(docs);
-        
+
         // Generate folders from document categories
-        const categories = [...new Set(docs.map(d => d.category))];
-        const folderData: Folder[] = categories.map(cat => ({
+        const categories = [...new Set(docs.map((d) => d.category))];
+        const folderData: Folder[] = categories.map((cat) => ({
           id: cat.toLowerCase(),
           name: cat,
-          count: docs.filter(d => d.category === cat).length,
-          icon: 'FileText'
+          count: docs.filter((d) => d.category === cat).length,
+          icon: 'FileText',
         }));
         setFolders(folderData);
-        
       } catch (err) {
-        setErrorMessage(err instanceof Error ? err.message : 'Failed to load documents');
+        setErrorMessage(
+          err instanceof Error ? err.message : 'Failed to load documents',
+        );
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchData();
   }, []);
 
@@ -135,13 +147,15 @@ export default function DocumentsPage() {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== "application/pdf") {
-      alert("Please upload a PDF document.");
-      event.target.value = "";
+    if (file.type !== 'application/pdf') {
+      alert('Please upload a PDF document.');
+      event.target.value = '';
       return;
     }
 
@@ -149,12 +163,12 @@ export default function DocumentsPage() {
 
     try {
       const formData = new FormData();
-      formData.append("file", file);
-      formData.append("title", file.name.replace(/\.pdf$/i, ""));
-      formData.append("participants", "[]");
+      formData.append('file', file);
+      formData.append('title', file.name.replace(/\.pdf$/i, ''));
+      formData.append('participants', '[]');
 
-      const response = await fetch("/api/dss/documents", {
-        method: "POST",
+      const response = await fetch('/api/dss/documents', {
+        method: 'POST',
         body: formData,
       });
 
@@ -167,55 +181,87 @@ export default function DocumentsPage() {
       }
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to upload document");
+        throw new Error(data.error || 'Failed to upload document');
       }
 
       const uploadedDoc = data?.data;
       const uploadedDocument: Document = {
         id: uploadedDoc?.id || crypto.randomUUID(),
-        name: uploadedDoc?.title || file.name.replace(/\.pdf$/i, ""),
-        type: uploadedDoc?.mimeType || "PDF",
-        category: "Other",
+        name: uploadedDoc?.title || file.name.replace(/\.pdf$/i, ''),
+        type: uploadedDoc?.mimeType || 'PDF',
+        category: 'Other',
         size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
-        uploadedAt: new Date().toISOString().split("T")[0],
-        property: uploadedDoc?.property?.name || "",
-        unit: uploadedDoc?.unit?.unitNumber || "",
-        status: "active",
+        uploadedAt: new Date().toISOString().split('T')[0],
+        property: uploadedDoc?.property?.name || '',
+        unit: uploadedDoc?.unit?.unitNumber || '',
+        status: 'active',
       };
 
       setDocuments((prev) => [uploadedDocument, ...prev]);
-      alert("Document uploaded successfully to MinIO!");
+      alert('Document uploaded successfully to MinIO!');
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Upload failed";
-      console.error("Upload error:", error);
+      const message = error instanceof Error ? error.message : 'Upload failed';
+      console.error('Upload error:', error);
       alert(message);
     } finally {
       setIsUploading(false);
-      event.target.value = "";
+      event.target.value = '';
     }
   };
 
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || doc.category.toLowerCase() === selectedCategory;
+  const filteredDocuments = documents.filter((doc) => {
+    const matchesSearch = doc.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      selectedCategory === 'all' ||
+      doc.category.toLowerCase() === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case "Leases": return "bg-blue-100 text-blue-700";
-      case "Invoices": return "bg-green-100 text-green-700";
-      case "Maintenance": return "bg-orange-100 text-orange-700";
-      case "Applications": return "bg-purple-100 text-purple-700";
-      case "ID Documents": return "bg-teal-100 text-teal-700";
-      case "Insurance": return "bg-red-100 text-red-700";
-      default: return "bg-gray-100 text-gray-700";
+      case 'Leases':
+        return 'bg-blue-100 text-blue-700';
+      case 'Invoices':
+        return 'bg-green-100 text-green-700';
+      case 'Maintenance':
+        return 'bg-orange-100 text-orange-700';
+      case 'Applications':
+        return 'bg-purple-100 text-purple-700';
+      case 'ID Documents':
+        return 'bg-teal-100 text-teal-700';
+      case 'Insurance':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
     }
   };
 
   const openPreview = (documentId: string) => {
     setPreviewDocumentId(documentId);
     setIsPreviewOpen(true);
+  };
+
+  const handleDownload = async (documentId: string) => {
+    try {
+      const res = await fetch(`/api/dss/documents/${documentId}/download`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to get download link');
+      }
+
+      window.open(data.downloadUrl, '_blank');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Download failed';
+      toast.error(message);
+    }
+  };
+
+  const isDownloadEnabled = (doc: Document) => {
+    return doc.dssStatus === 'COMPLETED';
   };
 
   if (isLoading) {
@@ -243,7 +289,9 @@ export default function DocumentsPage() {
           <p className="text-gray-500 mt-1">
             Manage all your property documents in one place.
           </p>
-          {errorMessage && <p className="text-sm text-red-600 mt-2">{errorMessage}</p>}
+          {errorMessage && (
+            <p className="text-sm text-red-600 mt-2">{errorMessage}</p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline">
@@ -251,7 +299,11 @@ export default function DocumentsPage() {
             Filter
           </Button>
           <Button onClick={handleUploadClick} disabled={isUploading}>
-            {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 mr-2" />
+            )}
             Upload Document
           </Button>
         </div>
@@ -259,9 +311,9 @@ export default function DocumentsPage() {
 
       {/* Folders Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-        {folders.map(folder => (
-          <Card 
-            key={folder.id} 
+        {folders.map((folder) => (
+          <Card
+            key={folder.id}
             className="cursor-pointer hover:shadow-md transition-shadow"
             onClick={() => setSelectedCategory(folder.name.toLowerCase())}
           >
@@ -293,16 +345,16 @@ export default function DocumentsPage() {
             </div>
             <div className="flex items-center gap-2">
               <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="icon"
-                onClick={() => setViewMode("grid")}
+                onClick={() => setViewMode('grid')}
               >
                 <Grid className="h-4 w-4" />
               </Button>
               <Button
-                variant={viewMode === "list" ? "default" : "ghost"}
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
                 size="icon"
-                onClick={() => setViewMode("list")}
+                onClick={() => setViewMode('list')}
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -312,9 +364,9 @@ export default function DocumentsPage() {
       </Card>
 
       {/* Documents Display */}
-      {viewMode === "grid" ? (
+      {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {filteredDocuments.map(doc => (
+          {filteredDocuments.map((doc) => (
             <Card key={doc.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
@@ -325,15 +377,23 @@ export default function DocumentsPage() {
                     {doc.category}
                   </Badge>
                 </div>
-                <h4 className="font-medium text-sm mb-1 truncate">{doc.name}</h4>
-                <p className="text-xs text-gray-500 mb-3">{doc.size} • {doc.uploadedAt}</p>
+                <h4 className="font-medium text-sm mb-1 truncate">
+                  {doc.name}
+                </h4>
+                <p className="text-xs text-gray-500 mb-3">
+                  {doc.size} • {doc.uploadedAt}
+                </p>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <Home className="h-3 w-3" />
                   {doc.property}
                   {doc.unit && ` / ${doc.unit}`}
                 </div>
                 <div className="mt-3 flex justify-end">
-                  <Button variant="secondary" size="sm" onClick={() => openPreview(doc.id)}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => openPreview(doc.id)}
+                  >
                     <Eye className="h-4 w-4 mr-2" />
                     Preview
                   </Button>
@@ -348,16 +408,28 @@ export default function DocumentsPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Name</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Category</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Property</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Size</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Date</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-500">Actions</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                    Name
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                    Category
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                    Property
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                    Size
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                    Date
+                  </th>
+                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-500">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {filteredDocuments.map(doc => (
+                {filteredDocuments.map((doc) => (
                   <tr key={doc.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -374,17 +446,37 @@ export default function DocumentsPage() {
                       <div className="flex items-center gap-2 text-sm">
                         <Building2 className="h-4 w-4 text-gray-400" />
                         {doc.property}
-                        {doc.unit && <span className="text-gray-400">/ {doc.unit}</span>}
+                        {doc.unit && (
+                          <span className="text-gray-400">/ {doc.unit}</span>
+                        )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{doc.size}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{doc.uploadedAt}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">
+                      {doc.size}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">
+                      {doc.uploadedAt}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openPreview(doc.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openPreview(doc.id)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDownload(doc.id)}
+                          disabled={!isDownloadEnabled(doc)}
+                          title={
+                            isDownloadEnabled(doc)
+                              ? 'Download signed document'
+                              : 'Document must be completed before download'
+                          }
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon">
@@ -407,10 +499,16 @@ export default function DocumentsPage() {
             <File className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">No documents found</h3>
             <p className="text-gray-500 mb-4">
-              {searchTerm ? "Try adjusting your search terms" : "Upload your first document to get started"}
+              {searchTerm
+                ? 'Try adjusting your search terms'
+                : 'Upload your first document to get started'}
             </p>
             <Button onClick={handleUploadClick} disabled={isUploading}>
-              {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+              {isUploading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4 mr-2" />
+              )}
               Upload Document
             </Button>
           </CardContent>
