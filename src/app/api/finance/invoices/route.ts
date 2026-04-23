@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser, prisma } from '@rentflow/iam';
-import { JournalService } from '@rentflow/finance';
+import { InvoiceStatus, JournalService } from '@rentflow/finance';
 
 const journalService = new JournalService(prisma);
+const validStatuses: readonly InvoiceStatus[] = [
+  'DRAFT',
+  'PENDING',
+  'PAID',
+  'OVERDUE',
+  'CANCELLED',
+];
+
+function isInvoiceStatus(value: string): value is InvoiceStatus {
+  return validStatuses.includes(value as InvoiceStatus);
+}
 
 export async function GET(req: Request) {
   try {
@@ -25,18 +36,18 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const statusParam = searchParams.get('status');
-    const validStatuses = ['DRAFT', 'PENDING', 'PAID', 'OVERDUE', 'CANCELLED'];
-
-    if (statusParam && !validStatuses.includes(statusParam)) {
+    if (statusParam && !isInvoiceStatus(statusParam)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
-    const page = Math.max(1, Number(searchParams.get('page')) || 1);
-    const limit = Math.max(1, Number(searchParams.get('limit')) || 10);
+    const pageRaw = Number(searchParams.get('page'));
+    const limitRaw = Number(searchParams.get('limit'));
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 10;
 
     const result = await journalService.getInvoices(user.organizationId, {
       propertyId: searchParams.get('propertyId') || undefined,
-      status: (statusParam as any) || undefined,
+      status: statusParam || undefined,
       search: searchParams.get('search') || undefined,
       page,
       limit,

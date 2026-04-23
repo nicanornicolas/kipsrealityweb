@@ -13,7 +13,9 @@ function isValidationError(error: unknown): error is Error {
     message.includes('no organization') ||
     message.includes('no property') ||
     message.includes('no tenant') ||
-    message.includes('organization required')
+    message.includes('organization required') ||
+    message.includes('invalid') ||
+    message.includes('not allowed')
   );
 }
 
