@@ -226,7 +226,7 @@ export async function GET(req: Request) {
   try {
     // Add debug logging
     console.log('=== GET Properties Debug ===');
-    const host = req.headers.get('host') || 'localhost:3000';
+    const host = req.headers.get('host') || 'unknown-host';
     const protocol = req.headers.get('x-forwarded-proto') || 'http';
     const absoluteUrl = `${protocol}://${host}${new URL(req.url).search}`;
     console.log('Request URL (Absolute):', absoluteUrl);

@@ -1,16 +1,26 @@
-import { DssParticipantRole, DssDocumentStatus } from "@prisma/client";
+export enum DssParticipantRole {
+    TENANT,
+    LANDLORD,
+    PROPERTY_MANAGER,
+    AGENT,
+    WITNESS,
+    NOTARY,
+    CUSTODIAN,
+    VENDOR,
+    OTHER
+}
 
 // Define the hierarchy of signing power if needed
 export const ROLE_HIERARCHY: Record<DssParticipantRole, number> = {
-    TENANT: 1,           // Signs First
-    LANDLORD: 2,         // Signs Second
-    PROPERTY_MANAGER: 2, // Equivalent to Landlord
-    AGENT: 2,
-    WITNESS: 3,          // Signs Last
-    NOTARY: 4,           // Final seal
-    CUSTODIAN: 2,        // Equivalent to Landlord/Property Manager (signs on behalf of someone)
-    VENDOR: 0,
-    OTHER: 0
+    [DssParticipantRole.TENANT]: 1,           // Signs First
+    [DssParticipantRole.LANDLORD]: 2,         // Signs Second
+    [DssParticipantRole.PROPERTY_MANAGER]: 2, // Equivalent to Landlord
+    [DssParticipantRole.AGENT]: 2,
+    [DssParticipantRole.WITNESS]: 3,          // Signs Last
+    [DssParticipantRole.NOTARY]: 4,           // Final seal
+    [DssParticipantRole.CUSTODIAN]: 2,        // Equivalent to Landlord/Property Manager (signs on behalf of someone)
+    [DssParticipantRole.VENDOR]: 0,
+    [DssParticipantRole.OTHER]: 0
 };
 
 export interface SignerAction {

@@ -89,7 +89,7 @@ export async function POST(
 
     // --- 4. Send email ---
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      const baseUrl = await getServerBaseUrl();
       const inviteLink = `${baseUrl}/invite/tenant/accept?token=${invite.token}&email=${encodeURIComponent(invite.email)}&leaseId=${invite.leaseId}`;
 
       const propertyName = invite.lease?.unit?.property?.name || "Unknown Property";

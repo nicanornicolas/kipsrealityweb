@@ -41,3 +41,4 @@ describe("SmsFactory.getProvider", () => {
     expect(first.provider).toBe(second.provider);
   });
 });
+

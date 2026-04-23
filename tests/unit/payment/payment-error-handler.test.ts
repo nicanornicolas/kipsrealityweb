@@ -12,7 +12,7 @@ describe('Payment Error Handler', () => {
 
   beforeEach(() => {
     // Reset singleton to ensure fresh state
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (PaymentErrorHandler as any).instance = undefined;
     errorHandler = PaymentErrorHandler.getInstance();
     vi.clearAllMocks();
@@ -21,7 +21,7 @@ describe('Payment Error Handler', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     // Reset singleton after each test
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (PaymentErrorHandler as any).instance = undefined;
   });
 
@@ -314,7 +314,7 @@ describe('Payment Error Handler', () => {
       };
       
       // Reset singleton for test
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       (PaymentErrorHandler as any).instance = undefined;
       
       const customInstance = PaymentErrorHandler.getInstance(customConfig);
@@ -324,3 +324,4 @@ describe('Payment Error Handler', () => {
     });
   });
 });
+

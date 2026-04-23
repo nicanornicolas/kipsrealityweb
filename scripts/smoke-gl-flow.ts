@@ -425,7 +425,10 @@ async function runHttp() {
   const runId = `smoke-${Date.now()}`;
   const prefix = `SMOKE-${runId}`;
 
-  const baseUrl = getArgValue("--base-url") || process.env.SMOKE_BASE_URL || "http://localhost:3000";
+  const baseUrl = getArgValue("--base-url") || process.env.SMOKE_BASE_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (!baseUrl) {
+    throw new Error("Missing base URL. Set --base-url, SMOKE_BASE_URL, or NEXT_PUBLIC_APP_URL.");
+  }
 
   console.log(`\n🧪 GL Smoke Flow (HTTP): ${prefix}`);
   console.log(`🌐 Base URL: ${baseUrl}`);

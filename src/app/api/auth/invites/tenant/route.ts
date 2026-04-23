@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     });
 
     // --- 6. Construct invite link ---
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const baseUrl = await getServerBaseUrl();
     const inviteLink = `${baseUrl}/invite/tenant/accept?token=${result.invite.token}&email=${encodeURIComponent(normalizedEmail)}&leaseId=${lease.id}`;
 
     // --- 7. Send email to tenant ---

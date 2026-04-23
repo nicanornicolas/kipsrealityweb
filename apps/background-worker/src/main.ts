@@ -10,10 +10,11 @@ import { PlaidB2BService, processStripeWebhookJob } from '@rentflow/payments';
 import { generateFinalSignedPdf } from '@rentflow/dss';
 import {
   EmailNotificationService,
+  OutboundWebhookService,
   outboundWebhookService,
 } from '@rentflow/utilities';
 import { financeActions } from '@rentflow/finance';
-import { prisma } from '../../../libs/iam/src/lib/db';
+import { prisma } from '@rentflow/iam';
 
 const app = express();
 
@@ -178,16 +179,22 @@ pdfWorker.on('error', (err) => {
 const emailWorker = new Worker(
   'email-notifications',
   async (job) => {
-    if (job.name === 'send-signature-invite') {
-      const { email, documentTitle, documentId, role } = job.data;
-      console.log(`[Email Worker] Sending signature invite to ${email}...`);
-      await EmailNotificationService.sendSignatureInvitation({
-        email,
-        documentTitle,
-        documentId,
-        role,
-      });
-      console.log(`[Email Worker] Invite sent successfully to ${email}`);
+    switch (job.name) {
+      case 'send-signature-invite': {
+        const { email, documentTitle, documentId, role } = job.data;
+        console.log(`[Email Worker] Sending signature invite to ${email}...`);
+        await EmailNotificationService.sendSignatureInvitation({
+          email,
+          documentTitle,
+          documentId,
+          role,
+        });
+        console.log(`[Email Worker] Invite sent successfully to ${email}`);
+        break;
+      }
+      default:
+        console.error(`[Email Worker] Unhandled job: ${job.name}`, job.data);
+        throw new Error(`Unknown job type: ${job.name}`);
     }
   },
   { connection: redisConnection },
@@ -211,19 +218,24 @@ emailWorker.on('error', (err) => {
 const webhookWorker = new Worker(
   'webhooks',
   async (job) => {
-    if (job.name === 'fire-webhook') {
-      const { targetUrl, eventType, payload, secret } = job.data;
-      console.log(
-        `[Webhook Worker] Firing ${eventType} webhook to ${targetUrl}...`,
-      );
-      const { OutboundWebhookService } = await import('@rentflow/utilities');
-      await new OutboundWebhookService().fireEvent(
-        targetUrl,
-        eventType,
-        payload,
-        secret,
-      );
-      console.log(`[Webhook Worker] Webhook fired successfully`);
+    switch (job.name) {
+      case 'fire-webhook': {
+        const { targetUrl, eventType, payload, secret } = job.data;
+        console.log(
+          `[Webhook Worker] Firing ${eventType} webhook to ${targetUrl}...`,
+        );
+        await new OutboundWebhookService().fireEvent(
+          targetUrl,
+          eventType,
+          payload,
+          secret,
+        );
+        console.log(`[Webhook Worker] Webhook fired successfully`);
+        break;
+      }
+      default:
+        console.error(`[Webhook Worker] Unhandled job: ${job.name}`, job.data);
+        throw new Error(`Unknown job type: ${job.name}`);
     }
   },
   { connection: redisConnection },

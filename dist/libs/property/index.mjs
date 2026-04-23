@@ -14744,8 +14744,9 @@ var Cr = async (e) => {
 	try {
 		let r;
 		if (n) {
-			let n = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || process.env.VERCEL_URL || "http://localhost:3000";
-			r = `${n.startsWith("http") ? n : `https://${n}`}/api/units/${e}/${t}`;
+			let n = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || process.env.VERCEL_URL, i = n ? n.startsWith("http") ? n : `https://${n}` : null;
+			if (!i) throw Error("Missing base URL env. Set NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_BASE_URL, NEXTAUTH_URL, or VERCEL_URL.");
+			r = `${i}/api/units/${e}/${t}`;
 		} else r = `/api/units/${e}/${t}`;
 		let i = await fetch(r);
 		if (!i.ok) throw console.error(`API Error: ${i.status} ${i.statusText} for ${r}`), Error("Failed to fetch unit details");
