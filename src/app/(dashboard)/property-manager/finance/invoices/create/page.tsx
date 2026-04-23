@@ -4,10 +4,17 @@ import { generateFullInvoice } from '@/lib/Invoice';
 import { FullInvoiceInput, Invoice } from '@/app/data/FinanceData';
 import { toast } from 'sonner';
 
-export default function FullInvoiceButton({ leaseId }: { leaseId: string }) {
+export default function FullInvoiceButton() {
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const leaseId = searchParams.get("leaseId");
 
   async function handleGenerate() {
+    if (!leaseId) {
+      toast.error("Missing leaseId in query params");
+      return;
+    }
+
     setLoading(true);
     const payload: FullInvoiceInput = { leaseId: leaseId, type: 'RENT' };
 

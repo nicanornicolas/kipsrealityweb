@@ -5,7 +5,7 @@ export const SUPPORT_EMAIL = process.env.SMTP_USER || "Info@rentflow360.com";
 
 /**
  * Determines the correct base URL for links (Verification, Reset Password).
- * Prioritizes Production Env -> Vercel Env -> Localhost.
+ * Prioritizes explicit environment variables.
  */
 export const getBaseUrl = () => {
     // 1. Check the specific APP_URL env var first
@@ -33,13 +33,5 @@ export const getBaseUrl = () => {
         return vercelUrl;
     }
 
-    // 4. For production, throw error instead of falling back to localhost
-    if (process.env.NODE_ENV === 'production') {
-        console.error("❌ PRODUCTION ERROR: No base URL environment variables found!");
-        throw new Error('Base URL environment variables are not set for production');
-    }
-
-    // 5. Only for local development
-    console.log("📌 Development: No APP_URL or BASE_URL found. Falling back to localhost:3000 (Check .env if using network IP)");
-    return "http://localhost:3000";
+    throw new Error('Base URL environment variables are not set. Configure NEXT_PUBLIC_APP_URL or NEXT_PUBLIC_BASE_URL.');
 };

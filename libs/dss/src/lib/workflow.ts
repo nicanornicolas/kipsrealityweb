@@ -2,6 +2,13 @@ import { prisma } from "@rentflow/iam";
 import { DssDocumentStatus, DssParticipantRole, DssParticipant } from "@prisma/client";
 import { WorkflowResult } from "./types";
 
+type WorkflowParticipant = {
+    email: string;
+    hasSigned: boolean;
+    stepOrder: number;
+    role: string | null;
+};
+
 /**
  * Determines the next step in the signing workflow.
  * Enforces SEQUENTIAL processing based on 'stepOrder'.
@@ -22,7 +29,7 @@ export async function getNextSigner(documentId: string): Promise<WorkflowResult>
     }
 
     // 2. Check if already complete/voided
-    if (document.status === DssDocumentStatus.COMPLETED || document.status === DssDocumentStatus.VOIDED) {
+    if (document.status === "COMPLETED" || document.status === "VOIDED") {
         return {
             isComplete: true,
             nextStep: null,
@@ -32,7 +39,7 @@ export async function getNextSigner(documentId: string): Promise<WorkflowResult>
 
     // 3. Find the first participant who hasn't signed
     // Since we ordered by stepOrder asc, the first one we find is the "bottleneck"
-    const nextParticipant = document.participants.find((p: DssParticipant) => !p.hasSigned);
+    const nextParticipant = document.participants.find((p: WorkflowParticipant) => !p.hasSigned);
 
     if (!nextParticipant) {
         // All signed!
@@ -47,7 +54,7 @@ export async function getNextSigner(documentId: string): Promise<WorkflowResult>
     return {
         isComplete: false,
         nextStep: nextParticipant.stepOrder,
-        nextRole: nextParticipant.role
+        nextRole: nextParticipant.role as unknown as WorkflowResult["nextRole"]
     };
 }
 
@@ -67,7 +74,7 @@ export async function canUserSignNow(documentId: string, userEmail: string): Pro
     if (!document) return false;
 
     // Find the participant record for this user
-    const participant = document.participants.find((p) => p.email === userEmail);
+    const participant = document.participants.find((p: WorkflowParticipant) => p.email === userEmail);
 
     if (!participant) return false; // Not a participant
 

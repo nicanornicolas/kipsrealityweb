@@ -19,14 +19,20 @@ if (envResult.error) {
   console.warn("Warning: .env.test not found, using process.env only");
 }
 
+// Keep a deterministic browser cache path, but do not override explicit
+// values provided by scripts/CI.
+if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = ".playwright-browsers";
+}
+
 export default defineConfig({
   testDir: "./tests/e2e",
   
   // Fail the build on CI if you accidentally left test.only in the source code.
   forbidOnly: !!process.env.CI,
   
-  // Retry on CI only
-  retries: process.env.CI ? 2 : 0,
+  // Keep retries conservative in CI to limit masked flakiness and runtime overhead.
+  retries: process.env.CI ? 1 : 0,
   
   // E2E tests share seeded accounts (manager@test.com, tenant@test.com) and perform DB mutations.
   // Keep workers at 1 to avoid cross-test interference/flakiness in both CI and local.
@@ -39,7 +45,7 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
-    actionTimeout: 10000, // Explicitly timeout actions after 10s to fail fast
+    actionTimeout: 20000, // Allow slower dev-server interactions before failing actions
   },
 
   // Only run Chromium in CI for PRs to save time. Run all on 'main'.
@@ -71,8 +77,25 @@ export default defineConfig({
       : "npx dotenv -e .env.test -- npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
-    stdout: process.env.CI ? "pipe" : "ignore",
+    stdout: "pipe",
     stderr: "pipe",
-    timeout: 120000, // 2 minutes to start the server
+    timeout: 180000, // 3 minutes for CI - give it time to connect to DB
+    // Add health check endpoint
+    env: {
+      ...(process.env.DATABASE_URL && { DATABASE_URL: process.env.DATABASE_URL }),
+      ...(process.env.NEXTAUTH_SECRET && { NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET }),
+      ...(process.env.NEXTAUTH_URL && { NEXTAUTH_URL: process.env.NEXTAUTH_URL }),
+      ...(process.env.JWT_SECRET && { JWT_SECRET: process.env.JWT_SECRET }),
+      ...(process.env.JWT_REFRESH_SECRET && { JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET }),
+      ...(process.env.NEXT_PUBLIC_APP_URL && { NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL }),
+      ...(process.env.STRIPE_SECRET_KEY && { STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY }),
+      ...(process.env.STRIPE_PUBLISHABLE_KEY && { STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY }),
+      ...(process.env.STRIPE_WEBHOOK_SECRET && { STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET }),
+      ...(process.env.MPESA_CONSUMER_KEY && { MPESA_CONSUMER_KEY: process.env.MPESA_CONSUMER_KEY }),
+      ...(process.env.MPESA_CONSUMER_SECRET && { MPESA_CONSUMER_SECRET: process.env.MPESA_CONSUMER_SECRET }),
+      ...(process.env.MPESA_SHORTCODE && { MPESA_SHORTCODE: process.env.MPESA_SHORTCODE }),
+      ...(process.env.MPESA_PASSKEY && { MPESA_PASSKEY: process.env.MPESA_PASSKEY }),
+      ...(process.env.MPESA_ENV && { MPESA_ENV: process.env.MPESA_ENV }),
+    },
   },
 });

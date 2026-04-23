@@ -7,13 +7,10 @@ import Image from 'next/image';
 
 interface AuthLayoutProps {
     children: ReactNode;
-    mode?: 'login' | 'register';
 }
 
-export default function AuthLayout({ children, mode = 'login' }: AuthLayoutProps) {
-    const headline = mode === 'login'
-        ? "Welcome to RentFlow360"
-        : "Join RentFlow360 Today";
+export default function AuthLayout({ children }: AuthLayoutProps) {
+    const headline = "Welcome to RentFlow360";
 
     const subheading = "Start streamlining your property management Today!"
 
@@ -67,11 +64,11 @@ export default function AuthLayout({ children, mode = 'login' }: AuthLayoutProps
             </div>
 
             {/* Right Side - Auth Form */}
-            <div className="w-full md:w-1/2 relative z-10 flex items-center justify-center p-8">
+            <main className="w-full md:w-1/2 relative z-10 flex items-center justify-center p-8">
                 <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-neutral-100">
                     {children}
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

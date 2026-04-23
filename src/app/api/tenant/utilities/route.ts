@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
         const allocations = await prisma.utilityAllocation.findMany({
             select: {
                 id: true,
+                invoiceId: true,
                 amount: true,
                 percentage: true,
                 utilityBill: {

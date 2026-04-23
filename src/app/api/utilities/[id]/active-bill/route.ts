@@ -11,10 +11,10 @@ export async function GET(
 
     const utility = await prisma.utility.findUnique({
       where: { id: utilityId },
-      select: { id: true, propertyId: true },
+      select: { id: true },
     });
 
-    if (!utility || !utility.propertyId) {
+    if (!utility) {
       return NextResponse.json(
         { success: false, error: "UTILITY_NOT_FOUND" },
         { status: 404 }
@@ -25,7 +25,7 @@ export async function GET(
 
     const bill = await prisma.utilityBill.findFirst({
       where: {
-        propertyId: utility.propertyId,
+        utilityId: utility.id,
         status: { in: [UtilityBillStatus.APPROVED, UtilityBillStatus.POSTED] },
         AND: [
           {

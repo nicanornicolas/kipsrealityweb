@@ -1,29 +1,26 @@
 FROM node:20-alpine AS base
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@9 --activate
-
 # Prisma and some native Next.js dependencies require these runtime libs.
 RUN apk add --no-cache libc6-compat openssl
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json package-lock.json* ./
 COPY prisma ./prisma
-RUN pnpm install --frozen-lockfile --prod=false
+RUN npm install --production=false
 
 FROM deps AS development
 COPY . .
 EXPOSE 3000
-CMD ["pnpm", "run", "dev", "--", "--hostname", "0.0.0.0"]
+CMD ["npm", "run", "dev", "--", "--hostname", "0.0.0.0"]
 
 FROM base AS builder
 ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm run build
+RUN npm run build
 
 FROM base AS runner
 WORKDIR /app

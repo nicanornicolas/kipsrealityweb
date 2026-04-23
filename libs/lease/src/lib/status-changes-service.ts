@@ -68,7 +68,7 @@ export class LeaseStatusChangesService {
       const newStatus = log.action.replace("STATUS_CHANGED_TO_", "");
       const previousStatus = details?.previousStatus || "UNKNOWN";
 
-      let listingAction: ListingActionType = "NO_ACTION";
+      let listingAction: ListingActionType;
       let reason = details?.reason || "Status updated";
 
       switch (newStatus) {
