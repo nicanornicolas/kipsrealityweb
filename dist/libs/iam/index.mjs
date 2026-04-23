@@ -1026,6 +1026,30 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		stripeConnectId: "stripeConnectId",
 		irsEinEncrypted: "irsEinEncrypted",
 		stateTaxIds: "stateTaxIds"
+	}, e.Prisma.ConnectedBankAccountScalarFieldEnum = {
+		id: "id",
+		organizationId: "organizationId",
+		plaidAccessToken: "plaidAccessToken",
+		plaidItemId: "plaidItemId",
+		institutionName: "institutionName",
+		accountName: "accountName",
+		accountType: "accountType",
+		accountSubtype: "accountSubtype",
+		mask: "mask",
+		status: "status",
+		createdAt: "createdAt"
+	}, e.Prisma.BankTransactionScalarFieldEnum = {
+		id: "id",
+		organizationId: "organizationId",
+		plaidTransactionId: "plaidTransactionId",
+		accountId: "accountId",
+		amount: "amount",
+		date: "date",
+		merchantName: "merchantName",
+		description: "description",
+		status: "status",
+		matchedJournalId: "matchedJournalId",
+		createdAt: "createdAt"
 	}, e.Prisma.OrganizationWebhookScalarFieldEnum = {
 		id: "id",
 		organizationId: "organizationId",
@@ -1034,6 +1058,36 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		secret: "secret",
 		events: "events",
 		isActive: "isActive",
+		createdAt: "createdAt",
+		updatedAt: "updatedAt"
+	}, e.Prisma.SmsNotificationScalarFieldEnum = {
+		id: "id",
+		userId: "userId",
+		phone: "phone",
+		message: "message",
+		channel: "channel",
+		category: "category",
+		status: "status",
+		scheduledFor: "scheduledFor",
+		sentAt: "sentAt",
+		deliveredAt: "deliveredAt",
+		errorMessage: "errorMessage",
+		costCents: "costCents",
+		carrier: "carrier",
+		reference: "reference",
+		createdAt: "createdAt",
+		updatedAt: "updatedAt"
+	}, e.Prisma.NotificationPreferenceScalarFieldEnum = {
+		id: "id",
+		userId: "userId",
+		channel: "channel",
+		category: "category",
+		enabled: "enabled",
+		thresholdHours: "thresholdHours",
+		quietStartHour: "quietStartHour",
+		quietEndHour: "quietEndHour",
+		quietDays: "quietDays",
+		maxDailyAlerts: "maxDailyAlerts",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
 	}, e.Prisma.UserScalarFieldEnum = {
@@ -1074,33 +1128,21 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		expiresAt: "expiresAt",
 		type: "type",
 		createdAt: "createdAt"
-	}, e.Prisma.SmsNotificationScalarFieldEnum = {
+	}, e.Prisma.VendorTaxInfoScalarFieldEnum = {
 		id: "id",
-		userId: "userId",
-		phoneNumber: "phoneNumber",
-		message: "message",
-		category: "category",
-		status: "status",
-		provider: "provider",
-		providerMsgId: "providerMsgId",
-		failureReason: "failureReason",
-		sentAt: "sentAt",
-		deliveredAt: "deliveredAt",
-		createdAt: "createdAt",
-		updatedAt: "updatedAt"
-	}, e.Prisma.NotificationPreferenceScalarFieldEnum = {
-		id: "id",
-		userId: "userId",
-		rentReminders: "rentReminders",
-		paymentReceipts: "paymentReceipts",
-		maintenance: "maintenance",
-		utilityAlerts: "utilityAlerts",
-		marketing: "marketing",
-		preferredChannel: "preferredChannel",
+		vendorId: "vendorId",
+		taxId: "taxId",
+		taxIdEncrypted: "taxIdEncrypted",
+		isTaxExempt: "isTaxExempt",
+		exemptionCertificateUrl: "exemptionCertificateUrl",
+		stateOfIncorporation: "stateOfIncorporation",
+		incorporationDate: "incorporationDate",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
 	}, e.Prisma.VendorScalarFieldEnum = {
 		id: "id",
+		name: "name",
+		businessType: "businessType",
 		organizationId: "organizationId",
 		userId: "userId",
 		companyName: "companyName",
@@ -1110,6 +1152,18 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		isActive: "isActive",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
+	}, e.Prisma.VendorInvoiceScalarFieldEnum = {
+		id: "id",
+		vendorId: "vendorId",
+		organizationId: "organizationId",
+		propertyId: "propertyId",
+		amount: "amount",
+		category: "category",
+		description: "description",
+		dueDate: "dueDate",
+		postingStatus: "postingStatus",
+		journalEntryId: "journalEntryId",
+		createdAt: "createdAt"
 	}, e.Prisma.InviteScalarFieldEnum = {
 		id: "id",
 		email: "email",
@@ -1418,21 +1472,15 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 	}, e.Prisma.InvoiceScalarFieldEnum = {
 		id: "id",
 		leaseId: "leaseId",
-		organizationId: "organizationId",
 		type: "type",
 		totalAmount: "totalAmount",
 		amountPaid: "amountPaid",
 		balance: "balance",
-		taxAmount: "taxAmount",
-		taxRate: "taxRate",
-		taxExempt: "taxExempt",
 		dueDate: "dueDate",
 		status: "status",
 		postingStatus: "postingStatus",
 		journalEntryId: "journalEntryId",
 		utilityBillId: "utilityBillId",
-		referenceType: "referenceType",
-		referenceId: "referenceId",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
 	}, e.Prisma.InvoiceItemScalarFieldEnum = {
@@ -1519,7 +1567,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		fileSizeBytes: "fileSizeBytes",
 		originalPdfSha256Hex: "originalPdfSha256Hex",
 		finalPdfSha256Hex: "finalPdfSha256Hex",
-		finalFileUrl: "finalFileUrl",
 		status: "status",
 		signingMode: "signingMode",
 		currentStep: "currentStep",
@@ -1548,9 +1595,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		signatureHash: "signatureHash",
 		signedAt: "signedAt",
 		isProxy: "isProxy",
-		onBehalfOf: "onBehalfOf",
-		ipAddress: "ipAddress",
-		userAgent: "userAgent"
+		onBehalfOf: "onBehalfOf"
 	}, e.Prisma.DssFieldScalarFieldEnum = {
 		id: "id",
 		documentId: "documentId",
@@ -1593,7 +1638,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		id: "id",
 		organizationId: "organizationId",
 		createdBy: "createdBy",
-		categoryId: "categoryId",
 		statusId: "statusId",
 		locationId: "locationId",
 		title: "title",
@@ -1604,7 +1648,8 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		propertyId: "propertyId",
 		unitId: "unitId",
 		availabilityDate: "availabilityDate",
-		expirationDate: "expirationDate"
+		expirationDate: "expirationDate",
+		categoryId: "categoryId"
 	}, e.Prisma.ServiceMarketplaceScalarFieldEnum = {
 		id: "id",
 		listingId: "listingId",
@@ -1925,7 +1970,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		usedAt: "usedAt",
 		isUsed: "isUsed",
 		tenantId: "tenantId",
-		invitedAgentId: "invitedAgentId",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
 	}, e.Prisma.ListingAuditEntryScalarFieldEnum = {
@@ -1983,14 +2027,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		nextRetryAt: "nextRetryAt",
 		createdAt: "createdAt",
 		updatedAt: "updatedAt"
-	}, e.Prisma.VendorTaxInfoScalarFieldEnum = {
-		id: "id",
-		vendorId: "vendorId",
-		w9Collected: "w9Collected",
-		w9CollectedAt: "w9CollectedAt",
-		taxIdType: "taxIdType",
-		taxIdEncrypted: "taxIdEncrypted",
-		backupWithholding: "backupWithholding"
 	}, e.Prisma.SortOrder = {
 		asc: "asc",
 		desc: "desc"
@@ -2018,12 +2054,43 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		paystackSubaccountCode: "paystackSubaccountCode",
 		stripeConnectId: "stripeConnectId",
 		irsEinEncrypted: "irsEinEncrypted"
+	}, e.Prisma.ConnectedBankAccountOrderByRelevanceFieldEnum = {
+		id: "id",
+		organizationId: "organizationId",
+		plaidAccessToken: "plaidAccessToken",
+		plaidItemId: "plaidItemId",
+		institutionName: "institutionName",
+		accountName: "accountName",
+		accountType: "accountType",
+		accountSubtype: "accountSubtype",
+		mask: "mask",
+		status: "status"
+	}, e.Prisma.BankTransactionOrderByRelevanceFieldEnum = {
+		id: "id",
+		organizationId: "organizationId",
+		plaidTransactionId: "plaidTransactionId",
+		accountId: "accountId",
+		merchantName: "merchantName",
+		description: "description",
+		status: "status",
+		matchedJournalId: "matchedJournalId"
 	}, e.Prisma.OrganizationWebhookOrderByRelevanceFieldEnum = {
 		id: "id",
 		organizationId: "organizationId",
 		name: "name",
 		url: "url",
 		secret: "secret"
+	}, e.Prisma.SmsNotificationOrderByRelevanceFieldEnum = {
+		id: "id",
+		userId: "userId",
+		phone: "phone",
+		message: "message",
+		errorMessage: "errorMessage",
+		carrier: "carrier",
+		reference: "reference"
+	}, e.Prisma.NotificationPreferenceOrderByRelevanceFieldEnum = {
+		id: "id",
+		userId: "userId"
 	}, e.Prisma.UserOrderByRelevanceFieldEnum = {
 		id: "id",
 		email: "email",
@@ -2045,25 +2112,32 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		code: "code",
 		phone: "phone",
 		userId: "userId"
-	}, e.Prisma.SmsNotificationOrderByRelevanceFieldEnum = {
+	}, e.Prisma.VendorTaxInfoOrderByRelevanceFieldEnum = {
 		id: "id",
-		userId: "userId",
-		phoneNumber: "phoneNumber",
-		message: "message",
-		provider: "provider",
-		providerMsgId: "providerMsgId",
-		failureReason: "failureReason"
-	}, e.Prisma.NotificationPreferenceOrderByRelevanceFieldEnum = {
-		id: "id",
-		userId: "userId"
+		vendorId: "vendorId",
+		taxId: "taxId",
+		taxIdEncrypted: "taxIdEncrypted",
+		exemptionCertificateUrl: "exemptionCertificateUrl",
+		stateOfIncorporation: "stateOfIncorporation"
 	}, e.Prisma.VendorOrderByRelevanceFieldEnum = {
 		id: "id",
+		name: "name",
+		businessType: "businessType",
 		organizationId: "organizationId",
 		userId: "userId",
 		companyName: "companyName",
 		serviceType: "serviceType",
 		phone: "phone",
 		email: "email"
+	}, e.Prisma.VendorInvoiceOrderByRelevanceFieldEnum = {
+		id: "id",
+		vendorId: "vendorId",
+		organizationId: "organizationId",
+		propertyId: "propertyId",
+		category: "category",
+		description: "description",
+		postingStatus: "postingStatus",
+		journalEntryId: "journalEntryId"
 	}, e.Prisma.InviteOrderByRelevanceFieldEnum = {
 		id: "id",
 		email: "email",
@@ -2237,11 +2311,8 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 	}, e.Prisma.InvoiceOrderByRelevanceFieldEnum = {
 		id: "id",
 		leaseId: "leaseId",
-		organizationId: "organizationId",
 		journalEntryId: "journalEntryId",
-		utilityBillId: "utilityBillId",
-		referenceType: "referenceType",
-		referenceId: "referenceId"
+		utilityBillId: "utilityBillId"
 	}, e.Prisma.InvoiceItemOrderByRelevanceFieldEnum = {
 		id: "id",
 		invoiceId: "invoiceId",
@@ -2288,8 +2359,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		originalFileKey: "originalFileKey",
 		mimeType: "mimeType",
 		originalPdfSha256Hex: "originalPdfSha256Hex",
-		finalPdfSha256Hex: "finalPdfSha256Hex",
-		finalFileUrl: "finalFileUrl"
+		finalPdfSha256Hex: "finalPdfSha256Hex"
 	}, e.Prisma.DssParticipantOrderByRelevanceFieldEnum = {
 		id: "id",
 		documentId: "documentId",
@@ -2303,9 +2373,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		documentId: "documentId",
 		participantId: "participantId",
 		signatureHash: "signatureHash",
-		onBehalfOf: "onBehalfOf",
-		ipAddress: "ipAddress",
-		userAgent: "userAgent"
+		onBehalfOf: "onBehalfOf"
 	}, e.Prisma.DssFieldOrderByRelevanceFieldEnum = {
 		id: "id",
 		documentId: "documentId",
@@ -2333,13 +2401,13 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		id: "id",
 		organizationId: "organizationId",
 		createdBy: "createdBy",
-		categoryId: "categoryId",
 		statusId: "statusId",
 		locationId: "locationId",
 		title: "title",
 		description: "description",
 		propertyId: "propertyId",
-		unitId: "unitId"
+		unitId: "unitId",
+		categoryId: "categoryId"
 	}, e.Prisma.ServiceMarketplaceOrderByRelevanceFieldEnum = {
 		id: "id",
 		listingId: "listingId",
@@ -2528,8 +2596,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 	}, e.Prisma.AgentInviteOrderByRelevanceFieldEnum = {
 		id: "id",
 		inviteTokenHash: "inviteTokenHash",
-		tenantId: "tenantId",
-		invitedAgentId: "invitedAgentId"
+		tenantId: "tenantId"
 	}, e.Prisma.ListingAuditEntryOrderByRelevanceFieldEnum = {
 		id: "id",
 		unitId: "unitId",
@@ -2558,14 +2625,26 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		gateway: "gateway",
 		eventType: "eventType",
 		processingError: "processingError"
-	}, e.Prisma.VendorTaxInfoOrderByRelevanceFieldEnum = {
-		id: "id",
-		vendorId: "vendorId",
-		taxIdType: "taxIdType",
-		taxIdEncrypted: "taxIdEncrypted"
 	}, e.Region = e.$Enums.Region = {
 		USA: "USA",
 		KEN: "KEN"
+	}, e.NotificationChannel = e.$Enums.NotificationChannel = {
+		SMS: "SMS",
+		EMAIL: "EMAIL",
+		PUSH: "PUSH",
+		IN_APP: "IN_APP"
+	}, e.NotificationCategory = e.$Enums.NotificationCategory = {
+		RENT_REMINDER: "RENT_REMINDER",
+		PAYMENT_RECEIPT: "PAYMENT_RECEIPT",
+		MAINTENANCE_UPDATE: "MAINTENANCE_UPDATE",
+		LEASE_DOCUMENT: "LEASE_DOCUMENT",
+		UTILITY_BILL: "UTILITY_BILL",
+		SYSTEM_ALERT: "SYSTEM_ALERT"
+	}, e.SmsStatus = e.$Enums.SmsStatus = {
+		QUEUED: "QUEUED",
+		SENT: "SENT",
+		DELIVERED: "DELIVERED",
+		FAILED: "FAILED"
 	}, e.UserStatus = e.$Enums.UserStatus = {
 		ACTIVE: "ACTIVE",
 		INACTIVE: "INACTIVE",
@@ -2584,23 +2663,6 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 	}, e.OtpType = e.$Enums.OtpType = {
 		TWO_FACTOR: "TWO_FACTOR",
 		PHONE_VERIFICATION: "PHONE_VERIFICATION"
-	}, e.NotificationCategory = e.$Enums.NotificationCategory = {
-		RENT_REMINDER: "RENT_REMINDER",
-		PAYMENT_RECEIPT: "PAYMENT_RECEIPT",
-		MAINTENANCE_UPDATE: "MAINTENANCE_UPDATE",
-		LEASE_DOCUMENT: "LEASE_DOCUMENT",
-		UTILITY_BILL: "UTILITY_BILL",
-		SYSTEM_ALERT: "SYSTEM_ALERT"
-	}, e.SmsStatus = e.$Enums.SmsStatus = {
-		QUEUED: "QUEUED",
-		SENT: "SENT",
-		DELIVERED: "DELIVERED",
-		FAILED: "FAILED"
-	}, e.NotificationChannel = e.$Enums.NotificationChannel = {
-		SMS: "SMS",
-		EMAIL: "EMAIL",
-		PUSH: "PUSH",
-		IN_APP: "IN_APP"
 	}, e.InviteRole = e.$Enums.InviteRole = {
 		SYSTEM_ADMIN: "SYSTEM_ADMIN",
 		PROPERTY_MANAGER: "PROPERTY_MANAGER",
@@ -2683,15 +2745,13 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		COMPLIANT: "COMPLIANT",
 		NON_COMPLIANT: "NON_COMPLIANT",
 		UNDER_REVIEW: "UNDER_REVIEW"
-	}, e.InvoiceType = e.$Enums.InvoiceType = {
+	}, e.invoice_type = e.$Enums.invoice_type = {
 		RENT: "RENT",
 		UTILITY: "UTILITY",
 		MAINTENANCE: "MAINTENANCE",
-		DAMAGE: "DAMAGE",
-		FEE: "FEE"
-	}, e.InvoiceStatus = e.$Enums.InvoiceStatus = {
+		DAMAGE: "DAMAGE"
+	}, e.invoice_status = e.$Enums.invoice_status = {
 		DRAFT: "DRAFT",
-		ISSUED: "ISSUED",
 		PENDING: "PENDING",
 		PAID: "PAID",
 		OVERDUE: "OVERDUE",
@@ -2863,13 +2923,17 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		FAILED: "FAILED"
 	}, e.Prisma.ModelName = {
 		Organization: "Organization",
+		ConnectedBankAccount: "ConnectedBankAccount",
+		BankTransaction: "BankTransaction",
 		OrganizationWebhook: "OrganizationWebhook",
+		SmsNotification: "SmsNotification",
+		NotificationPreference: "NotificationPreference",
 		User: "User",
 		OrganizationUser: "OrganizationUser",
 		Otp: "Otp",
-		SmsNotification: "SmsNotification",
-		NotificationPreference: "NotificationPreference",
+		VendorTaxInfo: "VendorTaxInfo",
 		Vendor: "Vendor",
+		VendorInvoice: "VendorInvoice",
 		Invite: "Invite",
 		PasswordResetToken: "PasswordResetToken",
 		FinancialEntity: "FinancialEntity",
@@ -2947,8 +3011,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		UsageMetric: "UsageMetric",
 		SubscriptionEvent: "SubscriptionEvent",
 		FeatureLimit: "FeatureLimit",
-		WebhookEvent: "WebhookEvent",
-		VendorTaxInfo: "VendorTaxInfo"
+		WebhookEvent: "WebhookEvent"
 	}, e.PrismaClient = class {
 		constructor() {
 			return new Proxy(this, { get(e, t) {
