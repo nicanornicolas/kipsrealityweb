@@ -6,6 +6,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl as getPresignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
+import { ResponseContentDisposition } from '@aws-sdk/s3-request-presigner';
 
 interface StorageConfig {
   bucket: string;
@@ -90,6 +91,24 @@ export class StorageService {
       new GetObjectCommand({
         Bucket: config.bucket,
         Key: key,
+      }),
+      { expiresIn: expiresInSeconds },
+    );
+  }
+
+  static async getDownloadUrl(
+    key: string,
+    filename: string,
+    expiresInSeconds = 3600,
+  ): Promise<string> {
+    const config = this.getConfig();
+
+    return getPresignedUrl(
+      this.getClient(),
+      new GetObjectCommand({
+        Bucket: config.bucket,
+        Key: key,
+        ResponseContentDisposition: `attachment; filename="${filename}"`,
       }),
       { expiresIn: expiresInSeconds },
     );
