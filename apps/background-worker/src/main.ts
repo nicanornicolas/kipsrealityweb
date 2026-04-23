@@ -38,25 +38,27 @@ const worker = new Worker(
   'stripe-webhooks',
   async (job) => {
     if (job.name === 'plaid-initial-sync') {
-      const { organizationId, connectedAccountId } = job.data as {
+      const { organizationId, accountId, connectedAccountId } = job.data as {
         organizationId?: string;
+        accountId?: string;
         connectedAccountId?: string;
       };
+      const resolvedAccountId = accountId ?? connectedAccountId;
 
-      if (!organizationId || !connectedAccountId) {
-        throw new Error('Missing organizationId or connectedAccountId for plaid-initial-sync');
+      if (!organizationId || !resolvedAccountId) {
+        throw new Error('Missing organizationId or accountId for plaid-initial-sync');
       }
 
       const account = await prisma.connectedBankAccount.findUnique({
-        where: { id: connectedAccountId },
+        where: { id: resolvedAccountId },
       });
 
       if (!account) {
-        throw new Error(`No connected account found for ID: ${connectedAccountId}`);
+        throw new Error(`No connected account found for ID: ${resolvedAccountId}`);
       }
 
       if (account.organizationId !== organizationId) {
-        throw new Error('connectedAccountId does not belong to organizationId');
+        throw new Error('accountId does not belong to organizationId');
       }
 
       console.log(`Starting initial Plaid sync for Org: ${organizationId}`);
