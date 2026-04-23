@@ -24,12 +24,22 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
+    const statusParam = searchParams.get('status');
+    const validStatuses = ['DRAFT', 'PENDING', 'PAID', 'OVERDUE', 'CANCELLED'];
+
+    if (statusParam && !validStatuses.includes(statusParam)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    }
+
+    const page = Math.max(1, Number(searchParams.get('page')) || 1);
+    const limit = Math.max(1, Number(searchParams.get('limit')) || 10);
+
     const result = await journalService.getInvoices(user.organizationId, {
       propertyId: searchParams.get('propertyId') || undefined,
-      status: (searchParams.get('status') as any) || undefined,
+      status: (statusParam as any) || undefined,
       search: searchParams.get('search') || undefined,
-      page: Number(searchParams.get('page') || 1),
-      limit: Number(searchParams.get('limit') || 10),
+      page,
+      limit,
     });
 
     return NextResponse.json({ success: true, ...result });
