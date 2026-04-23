@@ -78,6 +78,7 @@
     "uat:property:deactivation-recovery": "npx tsx scripts/verify-property-deactivation-recovery.ts",
     "uat:ui:dashboards": "npx tsx scripts/verify-dashboards.ts",
     "uat:access:role-redirection": "node scripts/test-role-based-redirection.js",
+    "security:migrate:plaid-tokens": "tsx scripts/migrate-plaid-tokens.ts",
     "uat:cycle1:smoke": "npm run uat:setup:db && npm run uat:setup:coa && npm run uat:finance:smoke && npm run uat:payments:strategy && npm run uat:dss:seed-notarize",
     "uat:cycle1:smoke:with-notarize": "npm run uat:cycle1:smoke && npm run uat:dss:notarize -- -DocumentId %npm_config_documentid%",
     "uat:cycle2:core": "npm run uat:finance:lease-activation && npm run uat:finance:verify-core && npm run uat:finance:utilities && npm run uat:finance:maintenance && npm run uat:finance:rent-roll && npm run uat:finance:summary",
