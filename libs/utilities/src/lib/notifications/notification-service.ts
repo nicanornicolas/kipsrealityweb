@@ -43,15 +43,17 @@ export class NotificationService {
     }
 
     const prefs = await prisma.notificationPreference.findUnique({
-      where: { userId },
+      where: {
+        userId_channel_category: {
+          userId,
+          channel: "SMS",
+          category,
+        },
+      },
     });
 
-    if (prefs) {
-      if (prefs.preferredChannel !== "SMS") return false;
-      if (category === "RENT_REMINDER" && !prefs.rentReminders) return false;
-      if (category === "PAYMENT_RECEIPT" && !prefs.paymentReceipts) return false;
-      if (category === "MAINTENANCE_UPDATE" && !prefs.maintenance) return false;
-      if (category === "UTILITY_BILL" && !prefs.utilityAlerts) return false;
+    if (prefs && !prefs.enabled) {
+      return false;
     }
 
     // --- DRY RUN INTERCEPTOR ---
@@ -65,10 +67,10 @@ export class NotificationService {
       await prisma.smsNotification.create({
         data: {
           userId,
-          phoneNumber,
+          phone: phoneNumber,
           message,
+          channel: "SMS",
           category,
-          provider: "LOCAL_STUB",
           status: "DELIVERED",
           sentAt: new Date(),
           deliveredAt: new Date(),
@@ -85,11 +87,12 @@ export class NotificationService {
     const queuedNotification = await prisma.smsNotification.create({
       data: {
         userId,
-        phoneNumber,
+        phone: phoneNumber,
         message,
+        channel: "SMS",
         category,
-        provider: providerName,
         status: "QUEUED",
+        reference: providerName,
       },
     });
 
@@ -101,8 +104,8 @@ export class NotificationService {
       where: { id: queuedNotification.id },
       data: {
         status: result.success ? "SENT" : "FAILED",
-        providerMsgId: result.messageId,
-        failureReason: result.error,
+        reference: result.messageId ?? providerName,
+        errorMessage: result.error,
         sentAt: result.success ? new Date() : null,
       },
     });

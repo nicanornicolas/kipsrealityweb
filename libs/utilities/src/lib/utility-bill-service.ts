@@ -6,7 +6,7 @@ import {
   UtilityBillStatus as PrismaUtilityBillStatus,
   UtilitySplitMethod as PrismaUtilitySplitMethod,
   UtilityImportMethod as PrismaUtilityImportMethod,
-  InvoiceType,
+  invoice_type,
 } from '@prisma/client';
 import {
   CreateBillError,
@@ -351,7 +351,7 @@ export async function generateInvoicesForBill(
       const invoice = await tx.invoice.create({
         data: {
           leaseId: lease.id,
-          type: InvoiceType.UTILITY,
+          type: invoice_type.UTILITY,
           totalAmount: Number(alloc.amount), // Map Decimal to Float (Legacy compat)
           amountPaid: 0,
           balance: Number(alloc.amount),

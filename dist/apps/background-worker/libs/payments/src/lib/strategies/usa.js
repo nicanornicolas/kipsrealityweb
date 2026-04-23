@@ -129,4 +129,3 @@ class UsaPaymentStrategy {
 0 && (module.exports = {
   UsaPaymentStrategy
 });
-//# sourceMappingURL=usa.js.map

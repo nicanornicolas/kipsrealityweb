@@ -25,4 +25,3 @@ var import_mpesa = require("./mpesa");
 0 && (module.exports = {
   KenyaPaymentStrategy
 });
-//# sourceMappingURL=kenya.js.map

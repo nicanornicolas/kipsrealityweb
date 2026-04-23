@@ -159,8 +159,6 @@ export class WorkflowService {
           documentId: payload.documentId,
           participantId: participant.id,
           signatureHash: signatureProof, // Cryptographic proof
-          ipAddress: payload.ipAddress,
-          userAgent: payload.userAgent,
         },
       });
 

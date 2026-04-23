@@ -20,6 +20,8 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
+var dotenv = __toESM(require("dotenv"));
+var path = __toESM(require("path"));
 var import_express = __toESM(require("express"));
 var import_bullmq = require("bullmq");
 var import_ioredis = __toESM(require("ioredis"));
@@ -28,15 +30,65 @@ var import_dss = require("@rentflow/dss");
 var import_utilities = require("@rentflow/utilities");
 var import_finance = require("@rentflow/finance");
 var import_db = require("../../../libs/iam/src/lib/db");
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 const app = (0, import_express.default)();
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
 });
 const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
 const redisConnection = new import_ioredis.default(redisUrl, { maxRetriesPerRequest: null });
-const worker = new import_bullmq.Worker("stripe-webhooks", import_payments.processStripeWebhookJob, {
-  connection: redisConnection
-});
+const worker = new import_bullmq.Worker(
+  "stripe-webhooks",
+  async (job) => {
+    if (job.name === "plaid-initial-sync") {
+      const { organizationId, plaidAccessToken } = job.data;
+      if (!organizationId || !plaidAccessToken) {
+        throw new Error("Missing organizationId or plaidAccessToken for plaid-initial-sync");
+      }
+      console.log(`Starting initial Plaid sync for Org: ${organizationId}`);
+      const syncService = new import_payments.PlaidB2BService();
+      const syncedCount = await syncService.syncTransactions(
+        organizationId,
+        plaidAccessToken
+      );
+      console.log(
+        `Initial sync complete for Org: ${organizationId}. Synced ${syncedCount} transactions.`
+      );
+      return;
+    }
+    if (job.name === "plaid-webhook-sync") {
+      const { plaidItemId, webhookEventId } = job.data;
+      if (!plaidItemId || !webhookEventId) {
+        throw new Error("Missing plaidItemId or webhookEventId for plaid-webhook-sync");
+      }
+      const account = await import_db.prisma.connectedBankAccount.findFirst({
+        where: { plaidItemId }
+      });
+      if (!account) {
+        console.error(`No account found for Plaid Item: ${plaidItemId}`);
+        await import_db.prisma.webhookEvent.update({
+          where: { id: webhookEventId },
+          data: {
+            status: "FAILED",
+            processingError: `No account found for Plaid Item: ${plaidItemId}`
+          }
+        });
+        return;
+      }
+      const plaidService = new import_payments.PlaidB2BService();
+      await plaidService.syncTransactions(account.organizationId, account.plaidAccessToken);
+      await import_db.prisma.webhookEvent.update({
+        where: { id: webhookEventId },
+        data: { status: "PROCESSED" }
+      });
+      return;
+    }
+    await (0, import_payments.processStripeWebhookJob)(job);
+  },
+  {
+    connection: redisConnection
+  }
+);
 worker.on("completed", (job) => {
   console.log(`[Stripe Worker] Job ${job.id} completed`);
 });
@@ -185,4 +237,3 @@ process.on("SIGTERM", () => {
 process.on("SIGINT", () => {
   void shutdown("SIGINT");
 });
-//# sourceMappingURL=main.js.map

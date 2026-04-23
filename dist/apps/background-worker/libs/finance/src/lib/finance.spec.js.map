@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../../libs/finance/src/lib/finance.spec.tsx"],
-  "sourcesContent": ["/* @vitest-environment jsdom */\r\nimport { render } from '@testing-library/react';\r\n\r\nimport Finance from './finance';\r\n\r\ndescribe('Finance', () => {\r\n  it('should render successfully', () => {\r\n    const { baseElement } = render(<Finance />);\r\n    expect(baseElement).toBeTruthy();\r\n  });\r\n});\r\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;AAOmC;AANnC,mBAAuB;AAEvB,qBAAoB;AAEpB,SAAS,WAAW,MAAM;AACxB,KAAG,8BAA8B,MAAM;AACrC,UAAM,EAAE,YAAY,QAAI,qBAAO,4CAAC,eAAAA,SAAA,EAAQ,CAAE;AAC1C,WAAO,WAAW,EAAE,WAAW;AAAA,EACjC,CAAC;AACH,CAAC;",
-  "names": ["Finance"]
-}

@@ -71,4 +71,3 @@ class MpesaPaymentStrategy {
 0 && (module.exports = {
   MpesaPaymentStrategy
 });
-//# sourceMappingURL=mpesa.js.map

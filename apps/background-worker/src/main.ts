@@ -1,7 +1,21 @@
+import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const localEnvPath = path.resolve(process.cwd(), '.env.local');
+
+if (process.env.NODE_ENV !== 'production' && fs.existsSync(localEnvPath)) {
+  dotenv.config({ path: localEnvPath });
+}
+
 import express from 'express';
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
-import { processStripeWebhookJob } from '@rentflow/payments';
+import {
+  PlaidB2BService,
+  processStripeWebhookJob,
+  resolvePlaidAccessToken,
+} from '@rentflow/payments';
 import { generateFinalSignedPdf } from '@rentflow/dss';
 import {
   EmailNotificationService,
@@ -20,9 +34,106 @@ app.get('/health', (_req, res) => {
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const redisConnection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
 
-const worker = new Worker('stripe-webhooks', processStripeWebhookJob, {
-  connection: redisConnection,
-});
+const worker = new Worker(
+  'stripe-webhooks',
+  async (job) => {
+    if (job.name === 'plaid-initial-sync') {
+      const { organizationId, accountId, connectedAccountId } = job.data as {
+        organizationId?: string;
+        accountId?: string;
+        connectedAccountId?: string;
+      };
+      const resolvedAccountId = accountId ?? connectedAccountId;
+
+      if (!organizationId || !resolvedAccountId) {
+        throw new Error('Missing organizationId or accountId for plaid-initial-sync');
+      }
+
+      const account = await prisma.connectedBankAccount.findUnique({
+        where: { id: resolvedAccountId },
+      });
+
+      if (!account) {
+        throw new Error(`No connected account found for ID: ${resolvedAccountId}`);
+      }
+
+      if (account.organizationId !== organizationId) {
+        throw new Error('accountId does not belong to organizationId');
+      }
+
+      console.log(`Starting initial Plaid sync for Org: ${organizationId}`);
+      const syncService = new PlaidB2BService();
+      const accessToken = resolvePlaidAccessToken(account.plaidAccessToken);
+      const syncedCount = await syncService.syncTransactions(organizationId, accessToken);
+      console.log(
+        `Initial sync complete for Org: ${organizationId}. Synced ${syncedCount} transactions.`,
+      );
+      return;
+    }
+
+    if (job.name === 'plaid-webhook-sync') {
+      const { plaidItemId, webhookEventId } = job.data as {
+        plaidItemId?: string;
+        webhookEventId?: string;
+      };
+
+      if (!plaidItemId || !webhookEventId) {
+        throw new Error('Missing plaidItemId or webhookEventId for plaid-webhook-sync');
+      }
+
+      await prisma.webhookEvent.update({
+        where: { id: webhookEventId },
+        data: {
+          status: 'PROCESSING',
+          retryCount: { increment: 1 },
+        },
+      });
+
+      try {
+        const account = await prisma.connectedBankAccount.findFirst({
+          where: { plaidItemId },
+        });
+
+        if (!account) {
+          console.error(`No account found for Plaid Item: ${plaidItemId}`);
+          await prisma.webhookEvent.update({
+            where: { id: webhookEventId },
+            data: {
+              status: 'FAILED',
+              processingError: `No account found for Plaid Item: ${plaidItemId}`,
+            },
+          });
+          return;
+        }
+
+        const plaidService = new PlaidB2BService();
+        const accessToken = resolvePlaidAccessToken(account.plaidAccessToken);
+        await plaidService.syncTransactions(account.organizationId, accessToken);
+
+        await prisma.webhookEvent.update({
+          where: { id: webhookEventId },
+          data: { status: 'PROCESSED' },
+        });
+      } catch (error: unknown) {
+        await prisma.webhookEvent.update({
+          where: { id: webhookEventId },
+          data: {
+            status: 'FAILED',
+            processingError: error instanceof Error ? error.message : String(error),
+          },
+        });
+        throw error;
+      }
+
+      return;
+    }
+
+    await processStripeWebhookJob(job as any);
+  },
+  {
+    connection: redisConnection,
+  },
+);
 
 worker.on('completed', (job) => {
   console.log(`[Stripe Worker] Job ${job.id} completed`);

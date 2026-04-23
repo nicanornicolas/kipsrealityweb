@@ -52,14 +52,16 @@ class NotificationService {
       return false;
     }
     const prefs = await import_iam.prisma.notificationPreference.findUnique({
-      where: { userId }
+      where: {
+        userId_channel_category: {
+          userId,
+          channel: "SMS",
+          category
+        }
+      }
     });
-    if (prefs) {
-      if (prefs.preferredChannel !== "SMS") return false;
-      if (category === "RENT_REMINDER" && !prefs.rentReminders) return false;
-      if (category === "PAYMENT_RECEIPT" && !prefs.paymentReceipts) return false;
-      if (category === "MAINTENANCE_UPDATE" && !prefs.maintenance) return false;
-      if (category === "UTILITY_BILL" && !prefs.utilityAlerts) return false;
+    if (prefs && !prefs.enabled) {
+      return false;
     }
     if (process.env.SMS_DRY_RUN === "true") {
       const maskedPhone = NotificationService.maskPhone(phoneNumber);
@@ -70,10 +72,10 @@ class NotificationService {
       await import_iam.prisma.smsNotification.create({
         data: {
           userId,
-          phoneNumber,
+          phone: phoneNumber,
           message,
+          channel: "SMS",
           category,
-          provider: "LOCAL_STUB",
           status: "DELIVERED",
           sentAt: /* @__PURE__ */ new Date(),
           deliveredAt: /* @__PURE__ */ new Date()
@@ -85,11 +87,12 @@ class NotificationService {
     const queuedNotification = await import_iam.prisma.smsNotification.create({
       data: {
         userId,
-        phoneNumber,
+        phone: phoneNumber,
         message,
+        channel: "SMS",
         category,
-        provider: providerName,
-        status: "QUEUED"
+        status: "QUEUED",
+        reference: providerName
       }
     });
     const result = await provider.sendSms(phoneNumber, message);
@@ -97,8 +100,8 @@ class NotificationService {
       where: { id: queuedNotification.id },
       data: {
         status: result.success ? "SENT" : "FAILED",
-        providerMsgId: result.messageId,
-        failureReason: result.error,
+        reference: result.messageId ?? providerName,
+        errorMessage: result.error,
         sentAt: result.success ? /* @__PURE__ */ new Date() : null
       }
     });
@@ -109,4 +112,3 @@ class NotificationService {
 0 && (module.exports = {
   NotificationService
 });
-//# sourceMappingURL=notification-service.js.map

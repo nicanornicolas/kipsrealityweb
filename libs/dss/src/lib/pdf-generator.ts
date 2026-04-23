@@ -314,7 +314,6 @@ export async function generateFinalSignedPdf(
   await prisma.dssDocument.update({
     where: { id: documentId },
     data: {
-      finalFileUrl,
       finalPdfSha256Hex,
     },
   });

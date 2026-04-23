@@ -66,4 +66,3 @@ async function checkBalance(accessToken, accountId, amount) {
   createStripeBankAccountToken,
   plaidClient
 });
-//# sourceMappingURL=plaid-service.js.map

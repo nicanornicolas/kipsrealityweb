@@ -96,4 +96,3 @@ class StorageService {
 0 && (module.exports = {
   StorageService
 });
-//# sourceMappingURL=storage-service.js.map

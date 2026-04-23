@@ -9,10 +9,12 @@ import {
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import RevenueChart from "./RevenueChart";
-import { FinancialSummaryCard } from "./financial-summary-card";
 import { PendingLeasesCard } from "./pending-leases-card";
 import OccupancyLineChart from "./OccupancyLineChart";
 import InvoiceQueueCard from "./InvoiceQueueCard";
+import { DashboardFilters } from "@/components/Dashboard/DashboardFilters";
+import { FinancialHealthGrid } from "@/components/Dashboard/FinancialHealthGrid";
+import { InvoiceTable } from "@/components/finance/InvoiceTable";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -262,6 +264,15 @@ export default function Dashboard() {
 			</div>
 
 			{/* 2. Alert Ribbon - Compact top-level status */}
+			<DashboardFilters
+				properties={data?.properties || []}
+				selectedProperty={selectedProperty}
+				selectedTimeRange={selectedTimeRange}
+				onPropertyChange={setSelectedProperty}
+				onTimeRangeChange={setSelectedTimeRange}
+			/>
+
+			{/* 3. Alert Ribbon - Compact top-level status */}
 			<div className="flex flex-wrap gap-3">
 				<AlertChip 
 					icon={CheckCircle} 
@@ -285,7 +296,7 @@ export default function Dashboard() {
 				/>
 			</div>
 
-			{/* 3. KPI Cards Row (4 Columns) */}
+			{/* 4. KPI Cards Row (4 Columns) */}
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 				<KpiCard 
 					title="Occupancy Rate" 
@@ -313,7 +324,13 @@ export default function Dashboard() {
 				/>
 			</div>
 
-			{/* 4. Trends Section (2 Columns on Large) */}
+			{/* 5. Financial Health Grid v2.0 */}
+			<FinancialHealthGrid selectedProperty={selectedProperty} />
+
+			{/* 6. Invoice Management Table */}
+			<InvoiceTable propertyId={selectedProperty} />
+
+			{/* 7. Trends Section (2 Columns on Large) */}
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 				{/* Occupancy Trend */}
 				<div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col lg:col-span-2 min-h-[380px]">
@@ -383,7 +400,7 @@ export default function Dashboard() {
 				</div>
 			</div>
 
-			{/* 5. Action Queues (3 Columns) */}
+			{/* 8. Action Queues (3 Columns) */}
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* Invoice Queue */}
 				<InvoiceQueueCard />
@@ -395,7 +412,7 @@ export default function Dashboard() {
 				<QueueCard title="Upcoming Lease Expirations" items={leaseItems} type="lease" />
 			</div>
 
-			{/* 6. Tooltip Banner */}
+			{/* 9. Tooltip Banner */}
 			<div className="bg-blue-50/50 border border-blue-100 p-3 rounded-lg flex items-center gap-2">
 				<span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">TIP</span>
 				<p className="text-xs text-blue-700 italic">

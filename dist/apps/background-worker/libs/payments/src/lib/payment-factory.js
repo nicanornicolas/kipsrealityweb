@@ -33,4 +33,3 @@ class PaymentFactory {
 0 && (module.exports = {
   PaymentFactory
 });
-//# sourceMappingURL=payment-factory.js.map

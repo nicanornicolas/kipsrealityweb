@@ -41,4 +41,3 @@ const ROLE_HIERARCHY = {
 0 && (module.exports = {
   ROLE_HIERARCHY
 });
-//# sourceMappingURL=types.js.map

@@ -27,4 +27,3 @@ var import_client = require("@prisma/client");
   PaymentGateway,
   TransactionStatus
 });
-//# sourceMappingURL=types.js.map

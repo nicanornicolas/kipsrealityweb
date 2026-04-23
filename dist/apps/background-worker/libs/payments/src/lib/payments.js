@@ -41,4 +41,3 @@ var payments_default = Payments;
 0 && (module.exports = {
   Payments
 });
-//# sourceMappingURL=payments.js.map

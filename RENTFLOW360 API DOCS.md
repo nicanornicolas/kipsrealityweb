@@ -1,8 +1,8 @@
 # RentFlow360 API Documentation
 
-**Version:** 7.0
-**Date:** March 29, 2026
-**Status:** Production Ready - Multi-Payment Gateway Integration Complete (Updated)
+**Version:** 7.1
+**Date:** April 21, 2026
+**Status:** Production Ready - Route Inventory Reconciled with Source Handlers
 
 ---
 
@@ -27,6 +27,7 @@
 17. [Webhooks](#17-webhooks)
 18. [Security & Encryption](#18-security--encryption)
 19. [Error Handling](#19-error-handling)
+20. [Current Route Inventory](#20-current-route-inventory)
 
 ---
 
@@ -40,7 +41,7 @@ RentFlow360 is a comprehensive property rental management platform with multi-re
 
 ### API Statistics
 
-- **Total API Endpoints**: 175+
+- **Total API Endpoints**: 205 (from `src/app/api/**/route.ts`)
 - **Database Models**: 81
 - **Prisma Schema**: Comprehensive (updated from 79 models)
 
@@ -1494,6 +1495,22 @@ Return webhook queue depth metrics for monitoring.
 
 Cron entrypoint for Vercel scheduled jobs. Requires `Authorization: Bearer ${CRON_SECRET}`.
 
+### 17.6 Plaid Webhook Ingestion
+
+**POST** `/api/webhooks/plaid`
+
+Ingests Plaid webhooks and stores them in `WebhookEvent` for async processing.
+
+### 17.7 Termii Webhook
+
+**POST** `/api/webhooks/termii`
+
+Receives SMS delivery/update callbacks.
+
+**GET** `/api/webhooks/termii`
+
+Health/alive verification endpoint for webhook URL validation.
+
 ---
 
 ## 18. Security & Encryption
@@ -1600,6 +1617,46 @@ Non-PCI payment metadata is encrypted using AES-256-GCM.
 
 ---
 
+## 20. Current Route Inventory
+
+This documentation is now paired with a generated route inventory sourced directly from implementation files under `src/app/api/**/route.ts`.
+
+- **Inventory File:** `API_ROUTE_INVENTORY.md`
+- **Indexed Route Count:** 205
+- **Method Coverage:** `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, plus exported secure wrappers
+
+### 20.1 Notable Additions Since v7.0
+
+- Auth invite lifecycle routes:
+  - `/api/auth/invites/tenant`
+  - `/api/auth/invites/vendor`
+  - `/api/auth/invites/agent`
+  - `/api/auth/invites/accept`
+  - `/api/auth/invites/validate`
+- Security and audit routes:
+  - `/api/listings/security/stats`
+  - `/api/listings/security/manage`
+  - `/api/audit/statistics`
+  - `/api/audit/listing-history`
+  - `/api/audit/export`
+- Internal/operations routes:
+  - `/api/internal/process-webhooks`
+  - `/api/cron/lease-automation`
+  - `/api/cron/lease-integration`
+  - `/api/cron/time-based-listings`
+  - `/api/cron/listing-notifications`
+  - `/api/cron/generate-rent`
+- Utility allocation and billing expansion:
+  - `/api/utilities/bills/[billId]/allocate`
+  - `/api/utilities/bills/[billId]/allocations`
+  - `/api/utilities/allocations/status`
+  - `/api/utilities/allocations/upload`
+  - `/api/utilities/allocations/[id]/approve`
+
+For full path/method/file mapping, use `API_ROUTE_INVENTORY.md` as source-of-truth.
+
+---
+
 ## Appendix: Environment Variables
 
 ```env
@@ -1640,4 +1697,4 @@ ADMIN_EMAIL=admin@rentflow360.com
 
 ---
 
-_Document updated on March 4, 2026_
+_Document updated on April 21, 2026_

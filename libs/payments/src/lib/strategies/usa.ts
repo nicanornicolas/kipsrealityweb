@@ -3,6 +3,7 @@ import { TransactionStatus } from "@prisma/client";
 import Stripe from "stripe";
 import { prisma } from "@rentflow/iam";
 import { checkBalance } from "../services/plaid-service";
+import { resolvePlaidAccessToken } from "../plaid-token-encryption";
 
 export class UsaPaymentStrategy implements IPaymentStrategy {
     private stripe: Stripe;
@@ -29,8 +30,9 @@ export class UsaPaymentStrategy implements IPaymentStrategy {
             try {
                 // ⚠️ RISK CHECK ⚠️
                 // Before charging, check Plaid Balance
+                const accessToken = resolvePlaidAccessToken(paymentMethod.plaidAccessToken);
                 const balanceCheck = await checkBalance(
-                    paymentMethod.plaidAccessToken, // In prod, decrypt this first
+                    accessToken,
                     paymentMethod.plaidAccountId,
                     req.amount
                 );

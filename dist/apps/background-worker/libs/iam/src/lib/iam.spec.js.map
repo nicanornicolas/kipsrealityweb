@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../../libs/iam/src/lib/iam.spec.tsx"],
-  "sourcesContent": ["import { render } from '@testing-library/react';\n\nimport Iam from './iam';\n\ndescribe('Iam', () => {\n  it('should render successfully', () => {\n    const { baseElement } = render(<Iam />);\n    expect(baseElement).toBeTruthy();\n  });\n});\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;AAMmC;AANnC,mBAAuB;AAEvB,iBAAgB;AAEhB,SAAS,OAAO,MAAM;AACpB,KAAG,8BAA8B,MAAM;AACrC,UAAM,EAAE,YAAY,QAAI,qBAAO,4CAAC,WAAAA,SAAA,EAAI,CAAE;AACtC,WAAO,WAAW,EAAE,WAAW;AAAA,EACjC,CAAC;AACH,CAAC;",
-  "names": ["Iam"]
-}

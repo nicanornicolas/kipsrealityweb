@@ -171,4 +171,3 @@ function parseCreateReadingInput(input) {
   validateNonNegativeReading,
   validatePercentageSum
 });
-//# sourceMappingURL=utility-validators.js.map

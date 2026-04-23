@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../libs/utilities/src/client.ts"],
-  "sourcesContent": ["// libs/utilities/src/client.ts\r\n// CLIENT-SAFE EXPORTS ONLY\r\n// This barrel must never import server-only modules (prisma, server-only, next/headers)\r\n\r\n// Enums and types from utility-types.ts - all are safe (no external dependencies)\r\nexport {\r\n  UtilityBillStatus,\r\n  UtilitySplitMethod,\r\n  UtilityImportMethod,\r\n  CreateBillError,\r\n  ReadingError,\r\n  AllocateError,\r\n  TransitionError,\r\n  ApproveError,\r\n  InvoiceError,\r\n  PostError,\r\n} from './lib/utility-types';\r\n\r\nexport type {\r\n  Result,\r\n  CreateUtilityBillInput,\r\n  CreateUtilityReadingInput,\r\n  UtilitySplitContext,\r\n  UtilityAllocationResult,\r\n  CreateBillResult,\r\n  CreateReadingResult,\r\n  AllocateBillResult,\r\n  ApproveBillResult,\r\n  GenerateInvoicesResult,\r\n  PostBillResult,\r\n  UtilityBillState,\r\n  AllocationMethod,\r\n  UnitAllocation,\r\n  UtilityAllocationPayload,\r\n} from './lib/utility-types';\r\n\r\n// Re-export the split method type and utility allocation payload from index.ts\r\nexport type { SplitMethod } from './index';\r\nexport type { UtilityAllocationPayload as OldUtilityAllocationPayload } from './index';\r\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAKA,2BAWO;",
-  "names": []
-}

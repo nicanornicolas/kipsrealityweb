@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../libs/payments/src/client.ts"],
-  "sourcesContent": ["// libs/payments/src/client.ts\r\n// CLIENT-SAFE EXPORTS ONLY\r\n// This barrel must never import server-only modules (prisma, server-only, next/headers)\r\n\r\n// Client-safe types from client-types.ts\r\nexport type {\r\n  PaymentInitializationRequest,\r\n  PaymentInitializationResponse,\r\n} from './lib/client-types';\r\n"],
-  "mappings": ";;;;;;;;;;;;;AAAA;AAAA;",
-  "names": []
-}

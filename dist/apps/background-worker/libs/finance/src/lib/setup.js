@@ -63,4 +63,3 @@ async function setupFinancials(organizationId, orgName) {
 0 && (module.exports = {
   setupFinancials
 });
-//# sourceMappingURL=setup.js.map

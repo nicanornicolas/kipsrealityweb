@@ -51,7 +51,7 @@ class FinanceActions {
       );
       return;
     }
-    const organizationId = invoice.organizationId ?? invoice.Lease?.property?.organizationId;
+    const organizationId = invoice.Lease?.property?.organizationId;
     const propertyId = invoice.propertyId ?? invoice.Lease?.propertyId ?? invoice.Lease?.property?.id;
     const tenantId = invoice.tenantId ?? invoice.Lease?.tenantId;
     if (!organizationId) {
@@ -64,7 +64,7 @@ class FinanceActions {
       throw new Error(`Invoice ${invoiceId} has no tenant assigned`);
     }
     const rentAmount = new import_library.Decimal(invoice.totalAmount);
-    const taxAmount = invoice.taxAmount ? new import_library.Decimal(invoice.taxAmount) : new import_library.Decimal(0);
+    const taxAmount = new import_library.Decimal(0);
     const totalReceivable = rentAmount.plus(taxAmount);
     try {
       const lines = [
@@ -206,20 +206,27 @@ class FinanceActions {
    * and automatically posts it to the General Ledger.
    */
   async billOrganizationForService(params) {
+    const leaseId = params.leaseId ?? (await this.db.lease.findFirst({
+      where: { property: { organizationId: params.organizationId } },
+      select: { id: true }
+    }))?.id;
+    if (!leaseId) {
+      throw new Error(
+        `Cannot create service invoice: no lease found for organization ${params.organizationId}`
+      );
+    }
     const invoice = await this.db.invoice.create({
       data: {
-        organizationId: params.organizationId,
-        type: "FEE",
+        leaseId,
+        type: "MAINTENANCE",
         totalAmount: params.amount,
         balance: params.amount,
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1e3),
-        status: "ISSUED",
-        referenceType: params.referenceType,
-        referenceId: params.referenceId,
+        status: "PENDING",
         InvoiceItem: {
           create: [
             {
-              description: params.description,
+              description: `${params.referenceType}:${params.referenceId} - ${params.description}`,
               amount: params.amount
             }
           ]
@@ -264,6 +271,77 @@ class FinanceActions {
       throw error;
     }
   }
+  /**
+   * Recognizes a Vendor Expense (Liability) to GL.
+   * Dr. 5100 Maintenance Expense (or 5200 for Utility)
+   * Cr. 2200 Accounts Payable
+   *
+   * USA Compliance: This posts the expense amount, tracking YTD spend for 1099-MISC eligibility.
+   */
+  async postExpenseToGL(vendorInvoiceId) {
+    const invoice = await this.db.vendorInvoice.findUnique({
+      where: { id: vendorInvoiceId },
+      include: { vendor: true }
+    });
+    if (!invoice) throw new Error("Vendor invoice not found");
+    if (invoice.postingStatus === "POSTED") {
+      console.log(
+        `[Finance] Vendor invoice ${vendorInvoiceId} is already posted. Skipping.`
+      );
+      return;
+    }
+    const { organizationId, propertyId, amount, category, vendor } = invoice;
+    if (!organizationId) {
+      throw new Error(
+        `Vendor invoice ${vendorInvoiceId} has no organization assigned`
+      );
+    }
+    if (!propertyId) {
+      throw new Error(
+        `Vendor invoice ${vendorInvoiceId} has no property assigned`
+      );
+    }
+    const expenseAmount = new import_library.Decimal(amount);
+    const expenseAccountCode = category === "UTILITY" ? import_types.CHART_OF_ACCOUNTS.UTILITY_EXPENSE : category === "TAX" ? "5300" : category === "MANAGEMENT_FEE" ? import_types.CHART_OF_ACCOUNTS.MANAGEMENT_FEES : import_types.CHART_OF_ACCOUNTS.MAINTENANCE_EXPENSE;
+    try {
+      const lines = [
+        // Debit Expense Account
+        {
+          accountCode: expenseAccountCode,
+          debit: expenseAmount,
+          credit: new import_library.Decimal(0),
+          propertyId
+        },
+        // Credit Accounts Payable (liability for vendor payment)
+        {
+          accountCode: import_types.CHART_OF_ACCOUNTS.ACCOUNTS_PAYABLE,
+          debit: new import_library.Decimal(0),
+          credit: expenseAmount,
+          propertyId
+        }
+      ];
+      const { journalEntryId } = await this.journalService.postJournalEntry({
+        organizationId,
+        date: invoice.createdAt || /* @__PURE__ */ new Date(),
+        reference: `VEND-${vendorInvoiceId.substring(0, 8)}`,
+        description: `Vendor Bill: ${vendor.companyName} - ${invoice.description || "Expense"}`,
+        lines
+      });
+      await this.db.vendorInvoice.update({
+        where: { id: vendorInvoiceId },
+        data: {
+          postingStatus: "POSTED",
+          journalEntryId
+        }
+      });
+    } catch (error) {
+      await this.db.vendorInvoice.update({
+        where: { id: vendorInvoiceId },
+        data: { postingStatus: "FAILED" }
+      });
+      throw error;
+    }
+  }
 }
 const financeActions = new FinanceActions(
   import_iam.prisma,
@@ -274,4 +352,3 @@ const financeActions = new FinanceActions(
   FinanceActions,
   financeActions
 });
-//# sourceMappingURL=actions.js.map

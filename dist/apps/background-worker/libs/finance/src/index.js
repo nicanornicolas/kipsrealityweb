@@ -20,6 +20,7 @@ __reExport(src_exports, require("./lib/types"), module.exports);
 __reExport(src_exports, require("./lib/setup"), module.exports);
 __reExport(src_exports, require("./lib/maintenance-service"), module.exports);
 __reExport(src_exports, require("./lib/utility-service"), module.exports);
+__reExport(src_exports, require("./lib/reconciliation-service"), module.exports);
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   ...require("./lib/journal-service"),
@@ -27,6 +28,6 @@ __reExport(src_exports, require("./lib/utility-service"), module.exports);
   ...require("./lib/types"),
   ...require("./lib/setup"),
   ...require("./lib/maintenance-service"),
-  ...require("./lib/utility-service")
+  ...require("./lib/utility-service"),
+  ...require("./lib/reconciliation-service")
 });
-//# sourceMappingURL=index.js.map

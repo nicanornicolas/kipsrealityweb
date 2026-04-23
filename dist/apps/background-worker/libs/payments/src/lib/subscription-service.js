@@ -316,4 +316,3 @@ class SubscriptionService {
 0 && (module.exports = {
   SubscriptionService
 });
-//# sourceMappingURL=subscription-service.js.map

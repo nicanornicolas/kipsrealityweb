@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../../libs/dss/src/lib/dss.tsx"],
-  "sourcesContent": ["import styles from './dss.module.css';\n\nexport function Dss() {\n  return (\n    <div className={styles['container']}>\n      <h1>Welcome to Dss!</h1>\n    </div>\n  );\n}\n\nexport default Dss;\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAKM;AALN,iBAAmB;AAEZ,SAAS,MAAM;AACpB,SACE,4CAAC,SAAI,WAAW,WAAAA,QAAO,WAAW,GAChC,sDAAC,QAAG,6BAAe,GACrB;AAEJ;AAEA,IAAO,cAAQ;",
-  "names": ["styles"]
-}

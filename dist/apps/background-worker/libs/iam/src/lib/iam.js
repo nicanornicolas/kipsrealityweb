@@ -41,4 +41,3 @@ var iam_default = Iam;
 0 && (module.exports = {
   Iam
 });
-//# sourceMappingURL=iam.js.map

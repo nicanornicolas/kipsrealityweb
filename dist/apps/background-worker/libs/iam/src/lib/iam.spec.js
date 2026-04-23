@@ -29,4 +29,3 @@ describe("Iam", () => {
     expect(baseElement).toBeTruthy();
   });
 });
-//# sourceMappingURL=iam.spec.js.map

@@ -259,7 +259,7 @@ async function generateInvoicesForBill(billId) {
       const invoice = await tx.invoice.create({
         data: {
           leaseId: lease.id,
-          type: import_client.InvoiceType.UTILITY,
+          type: import_client.invoice_type.UTILITY,
           totalAmount: Number(alloc.amount),
           // Map Decimal to Float (Legacy compat)
           amountPaid: 0,
@@ -306,4 +306,3 @@ async function getAllocationsForBillFromBillService(billId) {
   getBillById,
   transitionToProcessing
 });
-//# sourceMappingURL=utility-bill-service.js.map

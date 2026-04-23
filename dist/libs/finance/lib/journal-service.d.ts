@@ -1,5 +1,5 @@
 import { Decimal } from '@prisma/client/runtime/library';
-import { PostJournalInput, IFinanceModule } from '../index';
+import { PostJournalInput, IFinanceModule, FinanceSummary, InvoiceFilters, InvoiceListItem, InvoiceDetail } from '../index';
 import { PrismaClient } from '@prisma/client';
 /**
  * JournalService implements the core financial invariants of our Engineering Constitution:
@@ -17,6 +17,34 @@ export declare class JournalService implements IFinanceModule {
     postJournalEntry(input: PostJournalInput, tx?: any): Promise<{
         journalEntryId: string;
     }>;
+    getFinanceSummary(organizationId: string, propertyId?: string): Promise<FinanceSummary>;
+    getInvoices(organizationId: string, filters: InvoiceFilters): Promise<{
+        data: InvoiceListItem[];
+        pagination: {
+            total: number;
+            page: number;
+            limit: number;
+        };
+    }>;
+    getInvoiceDetail(organizationId: string, invoiceId: string): Promise<InvoiceDetail>;
+    /**
+     * Get vendor compliance list with YTD spend tracking and W-9 status.
+     * Used for 1099-MISC risk assessment and IRS threshold monitoring.
+     *
+     * Returns vendors with:
+     * - YTD spend aggregation (posted expenses only)
+     * - W-9 collection status
+     * - 1099 requirement flag (businessType !== 'CORPORATION' && YTD >= $600)
+     */
+    getVendorComplianceList(organizationId: string): Promise<{
+        id: string;
+        name: string;
+        category: any;
+        businessType: any;
+        w9Status: string;
+        totalPaidYTD: number;
+        requires1099: boolean;
+    }[]>;
     generateInvoice(input: any): Promise<{
         invoiceId: string;
     }>;

@@ -41,4 +41,3 @@ function isFile(s) {
   }
 }
 module.exports = require("./apps/background-worker/src/main.js");
-//# sourceMappingURL=main.js.map

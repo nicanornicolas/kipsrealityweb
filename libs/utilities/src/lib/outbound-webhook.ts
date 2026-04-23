@@ -118,7 +118,7 @@ export class OutboundWebhookService {
       status: document.status,
       completedAt: document.completedAt,
       organizationId: document.organizationId,
-      finalFileUrl: document.finalFileUrl,
+      finalFileUrl: document.originalFileUrl,
       signatures: document.signatures.map((s) => ({
         participantEmail: s.participant.email,
         participantName: s.participant.fullName,

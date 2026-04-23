@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../../libs/utilities/src/lib/utilities.tsx"],
-  "sourcesContent": ["import styles from './utilities.module.css';\n\nexport function Utilities() {\n  return (\n    <div className={styles['container']}>\n      <h1>Welcome to Utilities!</h1>\n    </div>\n  );\n}\n\nexport default Utilities;\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAKM;AALN,uBAAmB;AAEZ,SAAS,YAAY;AAC1B,SACE,4CAAC,SAAI,WAAW,iBAAAA,QAAO,WAAW,GAChC,sDAAC,QAAG,mCAAqB,GAC3B;AAEJ;AAEA,IAAO,oBAAQ;",
-  "names": ["styles"]
-}

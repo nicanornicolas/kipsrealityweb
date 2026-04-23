@@ -125,10 +125,8 @@ class WorkflowService {
         data: {
           documentId: payload.documentId,
           participantId: participant.id,
-          signatureHash: signatureProof,
+          signatureHash: signatureProof
           // Cryptographic proof
-          ipAddress: payload.ipAddress,
-          userAgent: payload.userAgent
         }
       });
       await tx.dssParticipant.update({
@@ -190,4 +188,3 @@ class WorkflowService {
 0 && (module.exports = {
   WorkflowService
 });
-//# sourceMappingURL=workflow-service.js.map

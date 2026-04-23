@@ -75,4 +75,3 @@ function computeZkProofPlaceholder(fileBuffer) {
   verifyDocumentIntegrity,
   verifyZkProof
 });
-//# sourceMappingURL=hashing.js.map
