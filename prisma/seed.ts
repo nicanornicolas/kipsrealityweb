@@ -807,7 +807,7 @@ async function main() {
     { id: "3", name: "condominium (Condos)", description: "Condominium units" },
     { id: "4", name: "Land", description: "Vacant land or plots" },
     { id: "5", name: "Townhouse", description: "Townhouse or row house" },
-  ]
+  ];
 
   for (const type of propertyTypes) {
     await prisma.propertyType.upsert({
