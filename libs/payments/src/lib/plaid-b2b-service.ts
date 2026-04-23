@@ -132,6 +132,8 @@ export class PlaidB2BService {
     return prisma.connectedBankAccount.create({
       data: {
         organizationId,
+        // TODO(security): Migrate encryption/decryption orchestration to a centralized
+        // crypto service boundary (e.g. libs/security) to keep domain libs decoupled.
         plaidAccessToken: encryptPlaidAccessToken(accessToken),
         plaidItemId: itemId,
         institutionName: 'Verified Institution',
