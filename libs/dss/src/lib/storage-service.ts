@@ -6,7 +6,6 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl as getPresignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
-import { ResponseContentDisposition } from '@aws-sdk/s3-request-presigner';
 
 interface StorageConfig {
   bucket: string;
