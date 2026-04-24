@@ -95,6 +95,24 @@ export class StorageService {
     );
   }
 
+  static async getDownloadUrl(
+    key: string,
+    filename: string,
+    expiresInSeconds = 3600,
+  ): Promise<string> {
+    const config = this.getConfig();
+
+    return getPresignedUrl(
+      this.getClient(),
+      new GetObjectCommand({
+        Bucket: config.bucket,
+        Key: key,
+        ResponseContentDisposition: `attachment; filename="${filename}"`,
+      }),
+      { expiresIn: expiresInSeconds },
+    );
+  }
+
   static async downloadDocument(key: string): Promise<Buffer> {
     const config = this.getConfig();
     const command = new GetObjectCommand({ Bucket: config.bucket, Key: key });
