@@ -2,6 +2,23 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser, prisma } from '@rentflow/iam';
 import { financeActions } from '@rentflow/finance';
 
+function isValidationError(error: unknown): error is Error {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('not found') ||
+    message.includes('no organization') ||
+    message.includes('no property') ||
+    message.includes('no tenant') ||
+    message.includes('organization required') ||
+    message.includes('invalid') ||
+    message.includes('not allowed')
+  );
+}
+
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
     const user = await getCurrentUser(req);
@@ -46,7 +63,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[FINANCE_INVOICE_POST_API]', error);
-    const message = error instanceof Error ? error.message : 'Failed to post invoice';
-    return NextResponse.json({ error: message }, { status: 400 });
+    if (isValidationError(error)) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

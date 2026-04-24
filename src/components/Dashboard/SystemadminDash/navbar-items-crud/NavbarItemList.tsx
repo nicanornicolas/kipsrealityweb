@@ -2,11 +2,21 @@
 
 import { JSX, useState } from "react";
 import { ChevronDown, ChevronRight, Edit2, Trash2, Plus } from "lucide-react";
-import { NavbarItem } from "@prisma/client";
+
+interface NavbarItemData {
+  id: number;
+  parentId?: number | null;
+  name: string;
+  href: string;
+  order: number;
+  isVisible: boolean;
+  isAvailable: boolean;
+  children?: NavbarItemData[];
+}
 
 interface NavbarItemListProps {
-  items: any[];
-  onEdit: (item: any) => void;
+  items: NavbarItemData[];
+  onEdit: (item: NavbarItemData) => void;
   onDelete: (id: number) => void;
   onAddSubmenu: (parentId: number) => void;
 }
@@ -29,10 +39,10 @@ export default function NavbarItemList({
     setExpandedItems(newExpanded);
   };
 
-  const flattenItems = (itemsList: NavbarItem[]): NavbarItem[] => {
-    const flattened: NavbarItem[] = [];
+  const flattenItems = (itemsList: NavbarItemData[]): NavbarItemData[] => {
+    const flattened: NavbarItemData[] = [];
     itemsList.forEach(item => {
-      const { children, ...itemWithoutChildren } = item as any;
+      const { children, ...itemWithoutChildren } = item;
       flattened.push(itemWithoutChildren);
       if (children && children.length > 0) {
         flattened.push(...flattenItems(children));
@@ -51,9 +61,9 @@ export default function NavbarItemList({
       acc[item.parentId].push(item);
     }
     return acc;
-  }, {} as Record<number, NavbarItem[]>);
+  }, {} as Record<number, NavbarItemData[]>);
 
-  const renderItemRow = (item: any, isChild: boolean = false): JSX.Element => {
+  const renderItemRow = (item: NavbarItemData, isChild: boolean = false): JSX.Element => {
     const hasChildren = childrenMap[item.id]?.length > 0;
     const isExpanded = expandedItems.has(item.id);
 
@@ -183,7 +193,7 @@ export default function NavbarItemList({
         {/* Render children if expanded */}
         {hasChildren && isExpanded && (
           <div className="bg-[#15386a]/30">
-            {childrenMap[item.id].map((child: any) => renderItemRow(child, true))}
+            {childrenMap[item.id].map((child: NavbarItemData) => renderItemRow(child, true))}
           </div>
         )}
       </div>

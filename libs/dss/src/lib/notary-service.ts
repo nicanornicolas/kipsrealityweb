@@ -36,7 +36,7 @@ export async function notarizeDocument(documentId: string) {
 
     if (!doc) throw new Error("Document not found");
 
-    if (doc.status !== DssDocumentStatus.COMPLETED) {
+    if (doc.status !== "COMPLETED") {
         throw new Error("Document must be COMPLETED before notarization.");
     }
 
@@ -59,7 +59,7 @@ export async function notarizeDocument(documentId: string) {
             chainId: MOCK_CHAIN_ID,
             contractAddress: MOCK_CONTRACT_ADDRESS,
             notarizedHash: doc.finalPdfSha256Hex,
-            status: BlockchainNotaryStatus.PENDING
+            status: "PENDING"
         }
     });
 
@@ -71,7 +71,7 @@ export async function notarizeDocument(documentId: string) {
         const updatedRecord = await prisma.blockchainNotaryRecord.update({
             where: { id: record.id },
             data: {
-                status: BlockchainNotaryStatus.CONFIRMED,
+                status: "CONFIRMED",
                 txHash: txReceipt.txHash,
                 blockNumber: txReceipt.blockNumber,
                 confirmedAt: new Date()
@@ -81,14 +81,14 @@ export async function notarizeDocument(documentId: string) {
         console.log(`✅ [Notary] Success! Tx: ${updatedRecord.txHash}`);
         return updatedRecord;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("❌ [Notary] Blockchain Transaction Failed:", error);
 
         // 5. Handle Failure
         await prisma.blockchainNotaryRecord.update({
             where: { id: record.id },
             data: {
-                status: BlockchainNotaryStatus.FAILED,
+                status: "FAILED",
                 // In real app, store error message if you add a field for it
             }
         });

@@ -1,0 +1,21 @@
+name: Clean Up Old Artifacts
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+
+    steps:
+      - name: Delete Old Artifacts (> 7 days)
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          name: |
+            playwright-*
+          failOnError: false

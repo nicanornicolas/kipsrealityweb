@@ -4,7 +4,7 @@ import { prisma } from "@rentflow/iam";
 
 // Type for context allowing async params
 interface RouteContext {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // GET /api/plan/[id]

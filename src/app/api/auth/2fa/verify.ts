@@ -83,14 +83,12 @@ export async function POST(req: Request) {
       { status: 200 }
     );
 
-    // Detect if we are in production BUT running on a local IP/HTTP
+    // Secure cookies whenever running in production.
     const isProduction = process.env.NODE_ENV === 'production';
-    const isLocalNetwork = req.url.includes("192.168.") || req.url.includes("localhost");
 
     response.cookies.set('token', accessToken, {
       httpOnly: true,
-      // ONLY set Secure if in production AND NOT on local network
-      secure: isProduction && !isLocalNetwork,
+      secure: isProduction,
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 15
@@ -98,8 +96,7 @@ export async function POST(req: Request) {
 
     response.cookies.set('refreshToken', refreshToken, {
       httpOnly: true,
-      // ONLY set Secure if in production AND NOT on local network
-      secure: isProduction && !isLocalNetwork,
+      secure: isProduction,
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 7

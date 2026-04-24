@@ -1,3 +1,4 @@
+export declare function verifyPlaidWebhookSignature(rawBody: string, plaidVerificationHeader: string, plaidVerificationTimestamp: string): Promise<boolean>;
 export declare class PlaidB2BService {
     /**
      * Generates a Link Token for the Property Manager to connect the Business Account.

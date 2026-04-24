@@ -1,8 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
-    "rootDir": "../..",
+    "rootDir": "./src",
     "outDir": "../../dist/libs/dss",
     "types": [
       "node",

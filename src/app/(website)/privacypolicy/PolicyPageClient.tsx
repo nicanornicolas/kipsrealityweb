@@ -36,6 +36,17 @@ export default function PolicyPageClient({ policy }: PolicyPageClientProps) {
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
     const [searchTerm, setSearchTerm] = useState("");
 
+    const filteredSections = useMemo(() => {
+        if (!policy) return [];
+
+        const term = searchTerm.trim().toLowerCase();
+        // Map sections with their original index before filtering
+        const sectionsWithIndex = policy.sections.map((s, idx) => ({ ...s, originalIndex: idx }));
+        if (!term) return sectionsWithIndex;
+        // Filter by title only for more intuitive search results
+        return sectionsWithIndex.filter((s) => s.title.toLowerCase().includes(term));
+    }, [searchTerm, policy]);
+
     if (!policy) {
         return (
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-12">
@@ -59,15 +70,6 @@ export default function PolicyPageClient({ policy }: PolicyPageClientProps) {
             .replace(/{privacyEmail}/g, policy.privacyEmail)
             .replace(/{responseTime}/g, policy.responseTime || "")
             .replace(/{inactiveAccountThreshold}/g, policy.inactiveAccountThreshold || "") || "";
-
-    const filteredSections = useMemo(() => {
-        const term = searchTerm.trim().toLowerCase();
-        // Map sections with their original index before filtering
-        const sectionsWithIndex = policy.sections.map((s, idx) => ({ ...s, originalIndex: idx }));
-        if (!term) return sectionsWithIndex;
-        // Filter by title only for more intuitive search results
-        return sectionsWithIndex.filter((s) => s.title.toLowerCase().includes(term));
-    }, [searchTerm, policy.sections]);
 
     return (
         <div className="min-h-screen bg-gray-50/50 pb-20">

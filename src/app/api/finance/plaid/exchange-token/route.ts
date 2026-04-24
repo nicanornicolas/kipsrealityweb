@@ -29,7 +29,6 @@ export async function POST(req: Request) {
 
     await webhookQueue.add('plaid-initial-sync', {
       organizationId: user.organizationId,
-      plaidAccessToken: connectedAccount.plaidAccessToken,
       accountId: connectedAccount.id,
     });
 
