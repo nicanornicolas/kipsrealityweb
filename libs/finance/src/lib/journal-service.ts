@@ -6,7 +6,6 @@ import {
   InvoiceFilters,
   InvoiceListItem,
   InvoiceDetail,
-  VendorListItem,
 } from '../index';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '@rentflow/iam';

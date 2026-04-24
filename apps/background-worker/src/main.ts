@@ -1,19 +1,29 @@
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+const localEnvPath = path.resolve(process.cwd(), '.env.local');
+
+if (process.env.NODE_ENV !== 'production' && fs.existsSync(localEnvPath)) {
+  dotenv.config({ path: localEnvPath });
+}
 
 import express from 'express';
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
-import { PlaidB2BService, processStripeWebhookJob } from '@rentflow/payments';
+import {
+  PlaidB2BService,
+  processStripeWebhookJob,
+  resolvePlaidAccessToken,
+} from '@rentflow/payments';
 import { generateFinalSignedPdf } from '@rentflow/dss';
 import {
   EmailNotificationService,
+  OutboundWebhookService,
   outboundWebhookService,
 } from '@rentflow/utilities';
 import { financeActions } from '@rentflow/finance';
-import { prisma } from '../../../libs/iam/src/lib/db';
+import { prisma } from '@rentflow/iam';
 
 const app = express();
 
@@ -28,21 +38,33 @@ const worker = new Worker(
   'stripe-webhooks',
   async (job) => {
     if (job.name === 'plaid-initial-sync') {
-      const { organizationId, plaidAccessToken } = job.data as {
+      const { organizationId, accountId, connectedAccountId } = job.data as {
         organizationId?: string;
-        plaidAccessToken?: string;
+        accountId?: string;
+        connectedAccountId?: string;
       };
+      const resolvedAccountId = accountId ?? connectedAccountId;
 
-      if (!organizationId || !plaidAccessToken) {
-        throw new Error('Missing organizationId or plaidAccessToken for plaid-initial-sync');
+      if (!organizationId || !resolvedAccountId) {
+        throw new Error('Missing organizationId or accountId for plaid-initial-sync');
+      }
+
+      const account = await prisma.connectedBankAccount.findUnique({
+        where: { id: resolvedAccountId },
+      });
+
+      if (!account) {
+        throw new Error(`No connected account found for ID: ${resolvedAccountId}`);
+      }
+
+      if (account.organizationId !== organizationId) {
+        throw new Error('accountId does not belong to organizationId');
       }
 
       console.log(`Starting initial Plaid sync for Org: ${organizationId}`);
       const syncService = new PlaidB2BService();
-      const syncedCount = await syncService.syncTransactions(
-        organizationId,
-        plaidAccessToken,
-      );
+      const accessToken = resolvePlaidAccessToken(account.plaidAccessToken);
+      const syncedCount = await syncService.syncTransactions(organizationId, accessToken);
       console.log(
         `Initial sync complete for Org: ${organizationId}. Synced ${syncedCount} transactions.`,
       );
@@ -59,29 +81,50 @@ const worker = new Worker(
         throw new Error('Missing plaidItemId or webhookEventId for plaid-webhook-sync');
       }
 
-      const account = await prisma.connectedBankAccount.findFirst({
-        where: { plaidItemId },
+      await prisma.webhookEvent.update({
+        where: { id: webhookEventId },
+        data: {
+          status: 'PROCESSING',
+          retryCount: { increment: 1 },
+        },
       });
 
-      if (!account) {
-        console.error(`No account found for Plaid Item: ${plaidItemId}`);
+      try {
+        const account = await prisma.connectedBankAccount.findFirst({
+          where: { plaidItemId },
+        });
+
+        if (!account) {
+          console.error(`No account found for Plaid Item: ${plaidItemId}`);
+          await prisma.webhookEvent.update({
+            where: { id: webhookEventId },
+            data: {
+              status: 'FAILED',
+              processingError: `No account found for Plaid Item: ${plaidItemId}`,
+            },
+          });
+          return;
+        }
+
+        const plaidService = new PlaidB2BService();
+        const accessToken = resolvePlaidAccessToken(account.plaidAccessToken);
+        await plaidService.syncTransactions(account.organizationId, accessToken);
+
+        await prisma.webhookEvent.update({
+          where: { id: webhookEventId },
+          data: { status: 'PROCESSED' },
+        });
+      } catch (error: unknown) {
         await prisma.webhookEvent.update({
           where: { id: webhookEventId },
           data: {
             status: 'FAILED',
-            processingError: `No account found for Plaid Item: ${plaidItemId}`,
+            processingError: error instanceof Error ? error.message : String(error),
           },
         });
-        return;
+        throw error;
       }
 
-      const plaidService = new PlaidB2BService();
-      await plaidService.syncTransactions(account.organizationId, account.plaidAccessToken);
-
-      await prisma.webhookEvent.update({
-        where: { id: webhookEventId },
-        data: { status: 'PROCESSED' },
-      });
       return;
     }
 
@@ -178,16 +221,22 @@ pdfWorker.on('error', (err) => {
 const emailWorker = new Worker(
   'email-notifications',
   async (job) => {
-    if (job.name === 'send-signature-invite') {
-      const { email, documentTitle, documentId, role } = job.data;
-      console.log(`[Email Worker] Sending signature invite to ${email}...`);
-      await EmailNotificationService.sendSignatureInvitation({
-        email,
-        documentTitle,
-        documentId,
-        role,
-      });
-      console.log(`[Email Worker] Invite sent successfully to ${email}`);
+    switch (job.name) {
+      case 'send-signature-invite': {
+        const { email, documentTitle, documentId, role } = job.data;
+        console.log(`[Email Worker] Sending signature invite to ${email}...`);
+        await EmailNotificationService.sendSignatureInvitation({
+          email,
+          documentTitle,
+          documentId,
+          role,
+        });
+        console.log(`[Email Worker] Invite sent successfully to ${email}`);
+        break;
+      }
+      default:
+        console.error(`[Email Worker] Unhandled job: ${job.name}`, job.data);
+        throw new Error(`Unknown job type: ${job.name}`);
     }
   },
   { connection: redisConnection },
@@ -211,19 +260,24 @@ emailWorker.on('error', (err) => {
 const webhookWorker = new Worker(
   'webhooks',
   async (job) => {
-    if (job.name === 'fire-webhook') {
-      const { targetUrl, eventType, payload, secret } = job.data;
-      console.log(
-        `[Webhook Worker] Firing ${eventType} webhook to ${targetUrl}...`,
-      );
-      const { OutboundWebhookService } = await import('@rentflow/utilities');
-      await new OutboundWebhookService().fireEvent(
-        targetUrl,
-        eventType,
-        payload,
-        secret,
-      );
-      console.log(`[Webhook Worker] Webhook fired successfully`);
+    switch (job.name) {
+      case 'fire-webhook': {
+        const { targetUrl, eventType, payload, secret } = job.data;
+        console.log(
+          `[Webhook Worker] Firing ${eventType} webhook to ${targetUrl}...`,
+        );
+        await new OutboundWebhookService().fireEvent(
+          targetUrl,
+          eventType,
+          payload,
+          secret,
+        );
+        console.log(`[Webhook Worker] Webhook fired successfully`);
+        break;
+      }
+      default:
+        console.error(`[Webhook Worker] Unhandled job: ${job.name}`, job.data);
+        throw new Error(`Unknown job type: ${job.name}`);
     }
   },
   { connection: redisConnection },

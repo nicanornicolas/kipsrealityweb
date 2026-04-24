@@ -1,0 +1,91 @@
+# Query: prisma.tenantapplication.create
+# Flags: RegExp
+# ContextLines: 1
+
+19 results - 10 files
+
+prisma\seed.e2e.ts:
+  102    // 7. Create Tenant Application (required for lease foreign key)
+  103:   const tenantApplication = await prisma.tenantApplication.create({
+  104      data: {
+
+scripts\seed-e2e.ts:
+  180      // 8. Create Tenant Application (Required by Lease)
+  181:     const application = await prisma.tenantapplication.create({
+  182          data: {
+
+scripts\verify-lease-activation.ts:
+  61  
+  62:         const application = await prisma.tenantapplication.create({
+  63              data: {
+
+scripts\verify-maintenance-billing.ts:
+  52  
+  53:         const application = await prisma.tenantapplication.create({
+  54              data: {
+
+scripts\verify-utility-allocation.ts:
+  80                  // Need an application first
+  81:                 const app = await prisma.tenantapplication.create({
+  82                      data: {
+
+src\app\api\tenant-application\route.ts:
+  137      // Create tenant application
+  138:     const newApplication = await prisma.tenantApplication.create({
+  139        data: {
+
+tests\integration\application-data-integrity.test.ts:
+  202        const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
+  203:       const application = await prisma.tenantapplication.create({ data: applicationData });
+  204        createdEntities.applications.push(application.id);
+
+  255        const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
+  256:       const application = await prisma.tenantapplication.create({ data: applicationData });
+  257        createdEntities.applications.push(application.id);
+
+  314        const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
+  315:       const application = await prisma.tenantapplication.create({ data: applicationData });
+  316        createdEntities.applications.push(application.id);
+
+  359        const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
+  360:       const application = await prisma.tenantapplication.create({ data: applicationData });
+  361        createdEntities.applications.push(application.id);
+
+  444        try {
+  445:         const application = await prisma.tenantapplication.create({ data: applicationData });
+  446          createdEntities.applications.push(application.id);
+
+  513        const applicationData = generateApplicationData(unit.id, property.id, testUser.id);
+  514:       const application = await prisma.tenantapplication.create({ data: applicationData });
+  515        createdEntities.applications.push(application.id);
+
+tests\unit\property-deactivation-cascade.test.ts:
+  376        // Create tenant application
+  377:       const application = await prisma.tenantapplication.create({
+  378          data: {
+
+tests\unit\reporting-data-completeness.test.ts:
+  137                              for (let i = 0; i < applicationCount; i++) {
+  138:                                 await prisma.tenantApplication.create({
+  139                                      data: {
+
+  303                          for (let i = 0; i < config.applicationCount; i++) {
+  304:                             await prisma.tenantApplication.create({
+  305                                  data: {
+
+tests\unit\reporting-features.test.ts:
+  117              // Create test applications
+  118:             await prisma.tenantApplication.create({
+  119                  data: {
+
+  129  
+  130:             await prisma.tenantApplication.create({
+  131                  data: {
+
+  217              // Create applications
+  218:             await prisma.tenantApplication.create({
+  219                  data: {
+
+  229  
+  230:             await prisma.tenantApplication.create({
+  231                  data: {

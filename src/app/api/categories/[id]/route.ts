@@ -3,7 +3,7 @@ import { prisma } from "@rentflow/iam";
 
 // Allow async params handling
 interface RouteContext {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }
 
 //  GET category by ID

@@ -151,7 +151,7 @@ export default function LeaseInvoiceGroupPage() {
     });
 
     // Financial summary
-    const summaryY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 0 + 10;
+    const summaryY = ((doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 0) + 10;
     doc.setFontSize(12);
     doc.text("Financial Summary", 14, summaryY);
     doc.setFontSize(10);

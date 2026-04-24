@@ -51,10 +51,10 @@ interface Participant {
   role: string;
 }
 
-interface DocumentData {
+interface ViewDocumentData {
   id: string;
   title: string;
-  originalPdfUrl: string;
+  viewUrl: string;
   participants: Participant[];
 }
 
@@ -111,7 +111,6 @@ function DroppablePage({
   pdfWidth,
   pdfHeight,
   fields,
-  selectedParticipantId,
   onFieldClick,
   activeField,
 }: {
@@ -119,7 +118,6 @@ function DroppablePage({
   pdfWidth: number;
   pdfHeight: number;
   fields: ExistingField[];
-  selectedParticipantId: string | null;
   onFieldClick: (field: ExistingField) => void;
   activeField: { type: FieldType; x: number; y: number } | null;
 }) {
@@ -133,7 +131,7 @@ function DroppablePage({
   return (
     <div
       ref={setNodeRef}
-      className={`relative bg-white ${isOver ? 'ring-2 ring-blue-400' : ''}`}
+      className={`relative bg-white shadow-2xl ${isOver ? 'ring-2 ring-blue-400' : ''}`}
       style={{ width: pdfWidth, height: pdfHeight }}
     >
       <Page
@@ -193,7 +191,7 @@ export default function DocumentPreparePage() {
   const params = useParams();
   const documentId = params.id as string;
 
-  const [document, setDocument] = useState<DocumentData | null>(null);
+  const [document, setDocument] = useState<ViewDocumentData | null>(null);
   const [fields, setFields] = useState<ExistingField[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -211,7 +209,6 @@ export default function DocumentPreparePage() {
     x: number;
     y: number;
   } | null>(null);
-  const [newFieldType, setNewFieldType] = useState<FieldType | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -224,16 +221,16 @@ export default function DocumentPreparePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [docRes, fieldsRes] = await Promise.all([
-          fetch(`/api/dss/documents/${documentId}`),
+        const [viewRes, fieldsRes] = await Promise.all([
+          fetch(`/api/dss/documents/${documentId}/view`),
           fetch(`/api/dss/documents/${documentId}/fields`),
         ]);
 
-        if (docRes.ok) {
-          const docData = await docRes.json();
-          setDocument(docData.document);
-          if (docData.document.participants?.length > 0) {
-            setSelectedParticipantId(docData.document.participants[0].id);
+        if (viewRes.ok) {
+          const viewData = await viewRes.json();
+          setDocument(viewData.document);
+          if (viewData.document.participants?.length > 0) {
+            setSelectedParticipantId(viewData.document.participants[0].id);
           }
         }
 
@@ -263,8 +260,8 @@ export default function DocumentPreparePage() {
       getPage(1).then((page: any) => {
         const { width, height } = page.getViewport({ scale: 1 });
         setPdfDimensions({
-          width: Math.min(width, 600),
-          height: Math.min(height, 800),
+          width: Math.min(width, 800),
+          height: Math.min(height, 1000),
         });
       });
     },
@@ -276,21 +273,18 @@ export default function DocumentPreparePage() {
 
     if (!over || !selectedParticipantId) {
       setActiveField(null);
-      setNewFieldType(null);
       return;
     }
 
     const activeData = active.data.current;
     if (!activeData?.isTool) {
       setActiveField(null);
-      setNewFieldType(null);
       return;
     }
 
     const overData = over.data.current;
     if (!overData?.pageNumber) {
       setActiveField(null);
-      setNewFieldType(null);
       return;
     }
 
@@ -322,14 +316,13 @@ export default function DocumentPreparePage() {
 
       if (res.ok) {
         const data = await res.json();
-        setFields([...fields, data.fields]);
+        setFields([...fields, ...data.fields]);
       }
     } catch (error) {
       console.error('Failed to save field:', error);
     } finally {
       setSaving(false);
       setActiveField(null);
-      setNewFieldType(null);
     }
   };
 
@@ -366,48 +359,46 @@ export default function DocumentPreparePage() {
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="container mx-auto py-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Prepare Document</h1>
+      <div className="min-h-screen bg-gray-200">
+        <div className="bg-white border-b px-6 py-4">
+          <h1 className="text-2xl font-bold text-gray-900">Prepare Document</h1>
           <p className="text-gray-600">{document.title}</p>
         </div>
 
-        <div className="flex gap-6">
-          <div className="w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg border p-4 sticky top-4">
-              <h3 className="font-semibold mb-4">Signer</h3>
-              <select
-                value={selectedParticipantId || ''}
-                onChange={(e) => setSelectedParticipantId(e.target.value)}
-                className="w-full p-2 border rounded-md mb-4"
-              >
-                {document.participants.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.fullName || p.email}
-                  </option>
-                ))}
-              </select>
+        <div className="flex">
+          <div className="w-72 bg-white border-r min-h-[calc(100vh-73px)] p-4">
+            <h3 className="font-semibold text-gray-900 mb-4">Signer</h3>
+            <select
+              value={selectedParticipantId || ''}
+              onChange={(e) => setSelectedParticipantId(e.target.value)}
+              className="w-full p-2 border rounded-md mb-6"
+            >
+              {document.participants.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.fullName || p.email}
+                </option>
+              ))}
+            </select>
 
-              <h3 className="font-semibold mb-4">Field Tools</h3>
-              <div className="space-y-2">
-                {FIELD_TOOLS.map((tool) => (
-                  <DraggableFieldTool key={tool.type} {...tool} />
-                ))}
-              </div>
-
-              {saving && (
-                <div className="mt-4 flex items-center gap-2 text-sm text-blue-600">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </div>
-              )}
+            <h3 className="font-semibold text-gray-900 mb-4">Field Tools</h3>
+            <div className="space-y-2">
+              {FIELD_TOOLS.map((tool) => (
+                <DraggableFieldTool key={tool.type} {...tool} />
+              ))}
             </div>
+
+            {saving && (
+              <div className="mt-4 flex items-center gap-2 text-sm text-blue-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </div>
+            )}
           </div>
 
-          <div className="flex-1">
-            <div className="bg-gray-100 rounded-lg p-4 overflow-auto max-h-[90vh]">
+          <div className="flex-1 flex flex-col items-center justify-start pt-8 px-4 overflow-auto max-h-[calc(100vh-73px)]">
+            <div className="bg-gray-200 rounded-lg p-4">
               <Document
-                file={document.originalPdfUrl}
+                file={document.viewUrl}
                 onLoadSuccess={onDocumentLoadSuccess}
                 loading={
                   <div className="flex items-center justify-center h-64">
@@ -424,7 +415,6 @@ export default function DocumentPreparePage() {
                         pdfWidth={pdfDimensions.width}
                         pdfHeight={pdfDimensions.height}
                         fields={fields}
-                        selectedParticipantId={selectedParticipantId}
                         onFieldClick={handleFieldClick}
                         activeField={activeField}
                       />

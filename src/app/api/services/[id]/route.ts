@@ -3,7 +3,7 @@ import { prisma } from "@rentflow/iam";
 import { requireSystemAdmin } from "@rentflow/iam";
 
 type RouteContext = {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 };
 
 // GET service by ID

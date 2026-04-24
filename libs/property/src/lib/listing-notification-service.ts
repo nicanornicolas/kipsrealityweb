@@ -20,6 +20,26 @@ export interface ExpirationNotification {
     propertyManagerEmails: string[];
 }
 
+interface PropertyManagerUser {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+}
+
+interface OrganizationUserWithUser {
+    user: PropertyManagerUser;
+}
+
+interface ExpiringListingWithUnit {
+    id: string;
+    title: string;
+    expirationDate: Date;
+    unit: {
+        unitNumber: string | null;
+    } | null;
+}
+
 /**
  * Service for managing listing-related notifications
  */
@@ -151,13 +171,19 @@ export class ListingNotificationService {
                         }
                     }
                 }
-            });
+            }) as {
+                property?: {
+                    organization?: {
+                        users: OrganizationUserWithUser[];
+                    };
+                };
+            };
 
             if (!unit?.property?.organization?.users) {
                 return [];
             }
 
-            return unit.property.organization.users.map(orgUser => orgUser.user);
+            return unit.property.organization.users.map((orgUser) => orgUser.user);
 
         } catch (error) {
             console.error('Error getting property managers:', error);
@@ -332,7 +358,12 @@ export class ListingNotificationService {
                         }
                     }
                 }
-            });
+            }) as Array<{
+                id: string;
+                name: string;
+                users: OrganizationUserWithUser[];
+                listings: ExpiringListingWithUnit[];
+            }>;
 
             return organizations.map(org => ({
                 id: org.id,
@@ -342,9 +373,9 @@ export class ListingNotificationService {
                     listingId: listing.id,
                     unitNumber: listing.unit?.unitNumber || 'Unknown',
                     title: listing.title,
-                    expirationDate: listing.expirationDate!,
+                    expirationDate: listing.expirationDate,
                     daysUntilExpiration: Math.ceil(
-                        (listing.expirationDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+                        (listing.expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
                     )
                 }))
             }));

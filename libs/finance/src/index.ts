@@ -29,7 +29,7 @@ export type AccountCode =
   | '6200'
   | '6300';
 export type InvoiceType = 'RENT' | 'UTILITY' | 'DEPOSIT' | 'FEE' | 'TAX';
-export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'VOID' | 'OVERDUE' | 'CANCELLED';
+export type InvoiceStatus = 'DRAFT' | 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
 export type PostingStatus = 'PENDING' | 'POSTED' | 'FAILED';
 
 export interface InvoiceFilters {

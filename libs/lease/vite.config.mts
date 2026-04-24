@@ -8,7 +8,7 @@ import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
-  cacheDir: '../../node_modules/.vite/libs/utilities',
+  cacheDir: '../../node_modules/.vite/libs/lease',
   plugins: [
     react(),
     nxViteTsPaths(),
@@ -20,7 +20,7 @@ export default defineConfig(() => ({
     }),
   ],
   build: {
-    outDir: '../../dist/libs/utilities',
+    outDir: '../../dist/libs/lease',
     emptyOutDir: true,
     reportCompressedSize: true,
     commonjsOptions: {
@@ -28,7 +28,7 @@ export default defineConfig(() => ({
     },
     lib: {
       entry: 'src/index.ts',
-      name: 'utilities',
+      name: 'lease',
       fileName: 'index',
       formats: ['es' as const],
     },
@@ -37,14 +37,14 @@ export default defineConfig(() => ({
     },
   },
   test: {
-    name: 'utilities',
+    name: 'lease',
     watch: false,
     globals: true,
     environment: 'jsdom',
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],
     coverage: {
-      reportsDirectory: '../../coverage/libs/utilities',
+      reportsDirectory: '../../coverage/libs/lease',
       provider: 'v8' as const,
       reporter: ['text', 'html', 'json'],
       thresholds: {

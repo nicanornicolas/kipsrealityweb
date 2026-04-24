@@ -3,6 +3,36 @@ import { prisma } from "@rentflow/iam";
 import { verifyAccessToken } from "@rentflow/iam";
 import { cookies } from "next/headers";
 
+// Type definitions for Prisma query results to avoid 'any'
+type MaintenancePriorityItem = {
+  id: string;
+  priority: string;
+  createdAt: Date;
+  status: string;
+};
+
+type PropertyItem = {
+  id: string;
+  name: string | null;
+  apartmentComplexDetail: { buildingName: string | null } | null;
+  houseDetail: { houseName: string | null } | null;
+};
+
+type CompletedMaintenanceItem = {
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type RecentLeaseItem = {
+  startDate: Date;
+  application: { createdAt: Date } | null;
+};
+
+type MaintenanceBacklogItem = {
+  createdAt: Date;
+  status: string;
+};
+
 export async function GET(req: Request) {
     try {
         const cookieStore = await cookies();
@@ -403,7 +433,7 @@ export async function GET(req: Request) {
         console.log("Analytics Debug: Properties Found =", propertiesList.length);
 
         // Post-process properties to ensure name is populated
-        const formattedProperties = propertiesList.map((p: any) => ({
+        const formattedProperties = propertiesList.map((p: PropertyItem) => ({
             id: p.id,
             name: p.name || p.apartmentComplexDetail?.buildingName || p.houseDetail?.houseName || "Unnamed Property"
         }));
@@ -435,9 +465,9 @@ export async function GET(req: Request) {
         const occupancyTrend = ((occupancyRate - lastMonthOccupancy)).toFixed(1);
 
         // Maintenance SLA Calculation - Separate URGENT from HIGH
-        const urgentRequests = maintenanceByPriority.filter((m: any) => m.priority === 'URGENT');
-        const highPriorityRequests = maintenanceByPriority.filter((m: any) => m.priority === 'HIGH');
-        const normalPriorityRequests = maintenanceByPriority.filter((m: any) => m.priority === 'NORMAL' || m.priority === 'LOW');
+        const urgentRequests = maintenanceByPriority.filter((m: MaintenancePriorityItem) => m.priority === 'URGENT');
+        const highPriorityRequests = maintenanceByPriority.filter((m: MaintenancePriorityItem) => m.priority === 'HIGH');
+        const normalPriorityRequests = maintenanceByPriority.filter((m: MaintenancePriorityItem) => m.priority === 'NORMAL' || m.priority === 'LOW');
         
         // Calculate SLA: URGENT should be resolved fastest, HIGH next, Normal last
         // Using a weighted approach: URGENT=100%, HIGH=85%, Normal=80% targets
@@ -455,7 +485,7 @@ export async function GET(req: Request) {
         // 2. Average Maintenance Response Time
         let totalResponseTimeHours = 0;
         let responseTimeCount = 0;
-        completedMaintenance.forEach(req => {
+        completedMaintenance.forEach((req: CompletedMaintenanceItem) => {
             if (req.createdAt && req.updatedAt) {
                 const diff = new Date(req.updatedAt).getTime() - new Date(req.createdAt).getTime();
                 totalResponseTimeHours += diff / (1000 * 60 * 60); // Hours
@@ -467,7 +497,7 @@ export async function GET(req: Request) {
         // 3. Average Time to Fill Vacancy
         let totalVacancyDays = 0;
         let filledCount = 0;
-        recentLeases.forEach(lease => {
+        recentLeases.forEach((lease: RecentLeaseItem) => {
             if (lease.startDate && lease.application?.createdAt) {
                 const diff = new Date(lease.startDate).getTime() - new Date(lease.application.createdAt).getTime();
                 totalVacancyDays += diff / (1000 * 60 * 60 * 24); // Days
@@ -482,7 +512,7 @@ export async function GET(req: Request) {
             sevenTo30Days: 0,
             thirtyPlusDays: 0
         };
-        maintenanceBacklog.forEach(req => {
+        maintenanceBacklog.forEach((req: MaintenanceBacklogItem) => {
             const ageDays = (now.getTime() - new Date(req.createdAt).getTime()) / (1000 * 60 * 60 * 24);
             if (ageDays < 7) maintenanceBacklogAging.lessThan7Days++;
             else if (ageDays <= 30) maintenanceBacklogAging.sevenTo30Days++;

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { PrismaClient } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 
 const prisma = new PrismaClient();
 
@@ -94,8 +95,11 @@ test.describe('Tenant Invitation Flow', () => {
         // Now it is safe to wait for the redirect
         await expect(page).toHaveURL(/\/property-manager/, { timeout: 30000 });
 
+        // Wait for sidebar to finish loading (Next.js may still be compiling the route)
+        await expect(page.getByRole('button', { name: 'My Tenants' })).toBeVisible({ timeout: 30000 });
+
         // 3. Navigate to "My tenants"
-        await page.getByRole('button', { name: 'My tenants' }).click();
+        await page.getByRole('button', { name: 'My Tenants' }).click();
         await expect(page).toHaveURL(/\/property-manager\/content\/tenants/, { timeout: 20000 });
 
         // 4. Open Invite Modal
@@ -107,11 +111,14 @@ test.describe('Tenant Invitation Flow', () => {
         await expect(leaseSelect.locator('option')).not.toHaveCount(1, { timeout: 20000 });
         await leaseSelect.selectOption({ index: 1 });
 
-        const testEmail = `tenant_${Date.now()}@example.com`;
+        const inviteRunId = `${Date.now()}_${test.info().workerIndex}_${test.info().retry}_${randomUUID().slice(0, 8)}`;
+        const testEmail = `tenant_${inviteRunId}@example.com`;
+        const uniquePhoneSuffix = Math.floor(Math.random() * 100000000).toString().padStart(8, '0');
+        const testPhone = `+2547${uniquePhoneSuffix}`;
         await page.fill('#invite-email', testEmail);
         await page.fill('input[placeholder="John"]', 'Test');
         await page.fill('input[placeholder="Doe"]', 'Tenant');
-        await page.fill('input[placeholder="+254 7XX XXX XXX"]', '1234567890');
+        await page.fill('input[placeholder="+254 7XX XXX XXX"]', testPhone);
 
         // 6. Send
         const sendButton = page.locator('button:has-text("Send Invite")');

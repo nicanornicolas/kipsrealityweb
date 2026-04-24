@@ -947,6 +947,7 @@ model DssDocument {
   fileSizeBytes        Int?                    @map("file_size_bytes")
   originalPdfSha256Hex String                  @map("original_pdf_sha256_hex")
   finalPdfSha256Hex    String?                 @map("final_pdf_sha256_hex")
+  finalFileUrl         String?                 @map("final_file_url") @db.Text
   status               DssDocumentStatus       @default(DRAFT)
   signingMode          DssSigningMode          @default(SEQUENTIAL)
   currentStep          Int                     @default(1) @map("current_step")
