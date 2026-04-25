@@ -45,7 +45,7 @@ RentFlow360 is intended to support the full rental lifecycle:
 
 ### Backend and Data
 
-- Node.js 20+
+- Node.js 20 LTS (required for local development)
 - Prisma ORM
 - MySQL
 - NextAuth-based authentication flows
@@ -156,7 +156,7 @@ App/API route
 
 Install prerequisites based on your workflow:
 
-- Core local app run: Node.js 20+, npm, MySQL
+- Core local app run: Node.js 20 LTS, npm, MySQL
 - Async/webhook workflows: Docker Desktop (or Docker Engine) to run Redis via Compose, plus background worker (`npm run worker:dev`)
 - Integration testing: Docker + Docker Compose (for `docker-compose.test.yml`)
 - E2E testing: Playwright browsers (`npx playwright install`)
@@ -260,6 +260,21 @@ REDIS_URL=redis://localhost:6379
 - If database access fails, verify MySQL, `DATABASE_URL`, and `npm run db:migrate`.
 - If image URLs fail in deployment, review host configuration in `next.config.ts`.
 - If role-based pages redirect unexpectedly, verify active role and organization membership.
+- If you hit a Turbopack panic while compiling CSS/PostCSS on Windows:
+  - Panic logs are written under `%LOCALAPPDATA%\\Temp` (example: `C:\\Users\\<you>\\AppData\\Local\\Temp\\next-panic-*.log`).
+  - Use the safe fallback command: `npm run dev` (explicit `--webpack` default).
+  - Retry Turbopack intentionally after dependency/config updates with: `npm run dev:turbo`.
+
+### Local Runtime Policy (Windows-First)
+
+- Local development is standardized on Node 20 LTS.
+- This repo includes `.nvmrc` set to `20` to make version switching consistent.
+- Example:
+
+```bash
+nvm use
+node -v
+```
 
 ### Working With The Main Domains
 
@@ -321,7 +336,8 @@ Alternative start targets:
 
 ### App and Worker
 
-- `npm run dev` - Start the Next.js development server through Nx
+- `npm run dev` - Start the Next.js development server through Nx with explicit Webpack (safe default)
+- `npm run dev:turbo` - Start the Next.js development server through Nx with Turbopack (opt-in)
 - `npm run build` - Build the application for production
 - `npm run postbuild` - Create the standalone server output
 - `npm start` - Start the app through the Nx start target
