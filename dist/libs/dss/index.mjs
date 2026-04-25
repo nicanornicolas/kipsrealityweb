@@ -1644,6 +1644,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		fileSizeBytes: "fileSizeBytes",
 		originalPdfSha256Hex: "originalPdfSha256Hex",
 		finalPdfSha256Hex: "finalPdfSha256Hex",
+		finalFileUrl: "finalFileUrl",
 		status: "status",
 		signingMode: "signingMode",
 		currentStep: "currentStep",
@@ -2436,7 +2437,8 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		originalFileKey: "originalFileKey",
 		mimeType: "mimeType",
 		originalPdfSha256Hex: "originalPdfSha256Hex",
-		finalPdfSha256Hex: "finalPdfSha256Hex"
+		finalPdfSha256Hex: "finalPdfSha256Hex",
+		finalFileUrl: "finalFileUrl"
 	}, e.Prisma.DssParticipantOrderByRelevanceFieldEnum = {
 		id: "id",
 		documentId: "documentId",
@@ -13561,6 +13563,14 @@ var dv = "UNSIGNED-PAYLOAD", fv = "X-Amz-Content-Sha256", pv = class {
 			Bucket: n.bucket,
 			Key: e
 		}), { expiresIn: t });
+	}
+	static async getDownloadUrl(e, t, n = 3600) {
+		let r = this.getConfig();
+		return mv(this.getClient(), new cv({
+			Bucket: r.bucket,
+			Key: e,
+			ResponseContentDisposition: `attachment; filename="${t}"`
+		}), { expiresIn: n });
 	}
 	static async downloadDocument(e) {
 		let t = new cv({
@@ -27210,4 +27220,4 @@ async function MD(e, t) {
 	};
 }
 //#endregion
-export { _v as DocumentService, g as Dss, _ as DssParticipantRole, v as ROLE_HIERARCHY, Tv as WorkflowService, D as canUserSignNow, b as computeDocumentHash, S as computePqHash, T as computeZkProofPlaceholder, vv as createDocument, MD as generateFinalSignedPdf, C as generateZkProof, yv as getDocumentForViewing, E as getNextSigner, wv as notarizeDocument, bv as signDocument, x as verifyDocumentIntegrity, w as verifyZkProof };
+export { _v as DocumentService, g as Dss, _ as DssParticipantRole, v as ROLE_HIERARCHY, gv as StorageService, Tv as WorkflowService, D as canUserSignNow, b as computeDocumentHash, S as computePqHash, T as computeZkProofPlaceholder, vv as createDocument, MD as generateFinalSignedPdf, C as generateZkProof, yv as getDocumentForViewing, E as getNextSigner, wv as notarizeDocument, bv as signDocument, x as verifyDocumentIntegrity, w as verifyZkProof };

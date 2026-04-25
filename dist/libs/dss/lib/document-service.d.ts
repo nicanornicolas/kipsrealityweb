@@ -52,6 +52,7 @@ export declare class DocumentService {
         fileSizeBytes: number | null;
         originalPdfSha256Hex: string;
         finalPdfSha256Hex: string | null;
+        finalFileUrl: string | null;
         signingMode: import("@prisma/client").$Enums.DssSigningMode;
         currentStep: number;
         sentAt: Date | null;
@@ -108,6 +109,7 @@ export declare class DocumentService {
         fileSizeBytes: number | null;
         originalPdfSha256Hex: string;
         finalPdfSha256Hex: string | null;
+        finalFileUrl: string | null;
         signingMode: import("@prisma/client").$Enums.DssSigningMode;
         currentStep: number;
         sentAt: Date | null;
@@ -174,6 +176,7 @@ export declare function createDocument({ title, organizationId, fileBuffer, part
     fileSizeBytes: number | null;
     originalPdfSha256Hex: string;
     finalPdfSha256Hex: string | null;
+    finalFileUrl: string | null;
     signingMode: import("@prisma/client").$Enums.DssSigningMode;
     currentStep: number;
     sentAt: Date | null;
@@ -216,6 +219,7 @@ export declare function getDocumentForViewing(documentId: string): Promise<{
         fileSizeBytes: number | null;
         originalPdfSha256Hex: string;
         finalPdfSha256Hex: string | null;
+        finalFileUrl: string | null;
         signingMode: import("@prisma/client").$Enums.DssSigningMode;
         currentStep: number;
         sentAt: Date | null;

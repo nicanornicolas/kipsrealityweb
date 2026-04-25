@@ -6,5 +6,6 @@ export declare class StorageService {
         key: string;
     }>;
     static getSignedUrl(key: string, expiresInSeconds?: number): Promise<string>;
+    static getDownloadUrl(key: string, filename: string, expiresInSeconds?: number): Promise<string>;
     static downloadDocument(key: string): Promise<Buffer>;
 }
