@@ -103,25 +103,23 @@ jobs:
             echo "==> Fetching latest code..."
             git fetch --prune origin
 
-            git rev-parse --verify "\$TARGET_COMMIT^{commit}" >/dev/null 2>&1 || {
-              echo "ERROR: Target commit not found: \$TARGET_COMMIT"
-              exit 1
-            }
-
             echo "==> Checking out branch..."
             git checkout -f "\$TARGET_BRANCH"
 
             echo "==> Resetting to exact commit..."
             git reset --hard "\$TARGET_COMMIT"
 
-            echo "==> Running deploy script..."
-            chmod +x deploy.sh
+            echo "==> Installing dependencies..."
+            npm ci
 
-            if command -v timeout >/dev/null 2>&1; then
-              timeout 900 ./deploy.sh
-            else
-              ./deploy.sh
-            fi
+            echo "==> Building background-worker..."
+            npx nx build background-worker
+
+            echo "==> Running database migrations..."
+            npx dotenv -e .env.production -- npx prisma migrate deploy
+
+            echo "==> Reloading PM2 worker..."
+            pm2 reload rentflow-worker && pm2 save
 
             echo "==> Deployment completed successfully"
           EOF
