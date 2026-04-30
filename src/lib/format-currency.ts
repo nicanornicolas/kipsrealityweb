@@ -5,6 +5,13 @@ const CURRENCY_MAP = {
   GHA: 'GHS',
 } as const;
 
+const USD_FORMATTER = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 export function formatCurrency(
   amount: number,
   currency: keyof typeof CURRENCY_MAP | string = 'USD',
@@ -28,4 +35,8 @@ export function formatCompactCurrency(amount: number): string {
     return `${(amount / 1_000).toFixed(0)}K`;
   }
   return amount.toString();
+}
+
+export function formatUSD(amount: number): string {
+  return USD_FORMATTER.format(amount);
 }
