@@ -1147,7 +1147,7 @@ model MaintenanceRequest {
   status             MaintenanceRequestStatus @default(OPEN)
   createdAt          DateTime                 @default(now())
   updatedAt          DateTime                 @updatedAt
-  category           RequestCategory          @default(STANDARD)
+  category           RequestCategory          @default(OTHER)
   unitId             String?
   assignedVendorId   String?                  @map("assigned_vendor_id")
   cost               Decimal?                 @db.Decimal(10, 2)
@@ -1656,10 +1656,13 @@ enum Priority {
 }
 
 enum RequestCategory {
-  EMERGENCY
-  URGENT
-  ROUTINE
-  STANDARD
+  PLUMBING
+  ELECTRICAL
+  APPLIANCE
+  HVAC
+  STRUCTURAL
+  PEST_CONTROL
+  OTHER
 }
 
 enum UserStatus {

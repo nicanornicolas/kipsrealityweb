@@ -1,5 +1,3 @@
-﻿Γùç injected env (37) from .env.local // tip: Γùê secrets for agents [www.dotenvx.com]
-Γùç injected env (0) from .env // tip: Γîÿ suppress logs { quiet: true }
 -- CreateTable
 CREATE TABLE `organizations` (
     `id` VARCHAR(191) NOT NULL,
