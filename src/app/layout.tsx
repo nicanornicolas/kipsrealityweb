@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import type { Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
 import { QueryProvider } from "@/context/QueryProvider";
 import { LoadingBar } from "@/components/ui/loading-bar";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { GlobalUpgradeModalHost } from "@/components/monetization/GlobalUpgradeModalHost";
 import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
@@ -75,14 +76,14 @@ export default function RootLayout({
               fallback={
                 <div className="min-h-screen flex items-center justify-center">
                   <div className="text-center">
-                    <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    <p className="text-gray-600">Loading...</p>
+                    <LoadingSpinner text="Loading..." />
                   </div>
                 </div>
               }
             >
               <LoadingBar />
               {children}
+              <GlobalUpgradeModalHost />
               <ServiceWorkerRegister />
               <Toaster
                 position="top-center"
