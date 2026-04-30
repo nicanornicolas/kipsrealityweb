@@ -20,7 +20,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const authError = await requireRole(
-    ['PROPERTY_MANAGER', 'SYSTEM_ADMIN'],
+    ['PROPERTY_MANAGER', 'SYSTEM_ADMIN', 'TENANT'],
     req,
   );
   if (authError) return authError;
@@ -50,15 +50,43 @@ export async function GET(
       );
     }
 
+    const isTenant = currentUser.role === 'TENANT';
+    let tenantParticipantId: string | undefined;
+
+    if (isTenant) {
+      const participant = await prisma.dssParticipant.findFirst({
+        where: {
+          documentId,
+          email: currentUser.email,
+        },
+      });
+
+      if (!participant) {
+        return NextResponse.json(
+          { error: 'Forbidden - You are not assigned to this document.' },
+          { status: 403 },
+        );
+      }
+
+      tenantParticipantId = participant.id;
+    }
+
     const fields = await prisma.dssField.findMany({
-      where: { documentId },
+      where: {
+        documentId,
+        ...(tenantParticipantId ? { participantId: tenantParticipantId } : {}),
+      },
       include: {
         participant: true,
       },
       orderBy: [{ pageNumber: 'asc' }, { y: 'desc' }],
     });
 
-    return NextResponse.json({ success: true, fields });
+    return NextResponse.json({
+      success: true,
+      fields,
+      currentParticipantId: tenantParticipantId,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Failed to fetch fields';
