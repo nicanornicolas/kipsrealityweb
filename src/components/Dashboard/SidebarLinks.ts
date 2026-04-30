@@ -353,7 +353,6 @@ const roleSidebarConfig: Record<DashboardRole, DashboardRouteGroup[]> = {
           path: '/tenant/renew-terminate',
           label: 'Renew / Terminate Request',
           icon: Users,
-          comingSoon: true,
         },
         {
           path: '/tenant/insurance-upload',
