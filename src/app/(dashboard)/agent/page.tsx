@@ -1,15 +1,16 @@
-"use client"
-import React from "react";
-import Dashboard from "@/components/Dashboard/propertymanagerdash/dashboardOverview";
+'use client';
 
-const DashboardPage = () => {
+import { EmptyState } from '@/components/ui/empty-state';
+import { Users } from 'lucide-react';
+
+export default function AgentDashboardPage() {
   return (
-    <div className="bg-[#0f172a] h-full">
-      <Dashboard />
+    <div className="p-6">
+      <EmptyState
+        icon={<Users className="h-10 w-10 text-muted-foreground" />}
+        title="Agent Dashboard"
+        description="No properties, tenants, or conversations are assigned yet. Once assignments are available, your metrics and workflows will appear here."
+      />
     </div>
   );
-};
-
-export default DashboardPage;
-
-
+}
