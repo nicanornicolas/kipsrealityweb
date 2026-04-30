@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ interface User {
 }
 
 export default function AdminUsersPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [roles, setRoles] = useState<Role[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -180,7 +182,7 @@ export default function AdminUsersPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <p className="text-red-500 mb-2">Error: {error}</p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
+            <Button onClick={() => router.refresh()}>Retry</Button>
           </div>
         </div>
       </div>
