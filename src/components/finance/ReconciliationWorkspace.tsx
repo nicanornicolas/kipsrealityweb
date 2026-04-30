@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/format-currency';
+import { api } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,20 +36,29 @@ interface SuggestedJournalEntry {
   lines: JournalLineItem[];
 }
 
+const unmatchedQueryKey = ['reconciliation-unmatched'] as const;
+const suggestionsQueryKey = (bankTransactionId: string | null) =>
+  ['reconciliation-suggestions', bankTransactionId || 'none'] as const;
+
 async function fetchUnmatched(): Promise<BankTransactionItem[]> {
-  const res = await fetch('/api/finance/reconciliation/unmatched', { cache: 'no-store' });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Failed to fetch unmatched transactions');
+  const res = await api.get<{ success: boolean; data: BankTransactionItem[]; error?: string }>(
+    '/api/finance/reconciliation/unmatched',
+  );
+  const json = res.data;
+  if (res.error || !json?.success) {
+    throw new Error(json?.error || res.error || 'Failed to fetch unmatched transactions');
+  }
   return json.data || [];
 }
 
 async function fetchSuggestions(bankTransactionId: string): Promise<SuggestedJournalEntry[]> {
-  const res = await fetch(
+  const res = await api.get<{ success: boolean; data: SuggestedJournalEntry[]; error?: string }>(
     `/api/finance/reconciliation/suggestions?bankTransactionId=${encodeURIComponent(bankTransactionId)}`,
-    { cache: 'no-store' },
   );
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Failed to fetch suggestions');
+  const json = res.data;
+  if (res.error || !json?.success) {
+    throw new Error(json?.error || res.error || 'Failed to fetch suggestions');
+  }
   return json.data || [];
 }
 
@@ -61,8 +71,9 @@ export function ReconciliationWorkspace() {
     isLoading: isLoadingUnmatched,
     isFetching: isRefreshingUnmatched,
   } = useQuery({
-    queryKey: ['reconciliation-unmatched'],
+    queryKey: unmatchedQueryKey,
     queryFn: fetchUnmatched,
+    staleTime: 15_000,
   });
 
   const activeBankTransaction = useMemo(
@@ -71,52 +82,88 @@ export function ReconciliationWorkspace() {
   );
 
   const { data: suggestions = [], isLoading: isLoadingSuggestions } = useQuery({
-    queryKey: ['reconciliation-suggestions', selectedBankTransactionId],
+    queryKey: suggestionsQueryKey(selectedBankTransactionId),
     queryFn: () => fetchSuggestions(selectedBankTransactionId as string),
     enabled: Boolean(selectedBankTransactionId),
+    placeholderData: (previous) => previous,
+    staleTime: 10_000,
   });
+
+  useEffect(() => {
+    if (!selectedBankTransactionId) return;
+    const stillPresent = unmatched.some((item) => item.id === selectedBankTransactionId);
+    if (!stillPresent) {
+      setSelectedBankTransactionId(null);
+    }
+  }, [selectedBankTransactionId, unmatched]);
 
   const matchMutation = useMutation({
     mutationFn: async ({ bankTransactionId, journalEntryId }: { bankTransactionId: string; journalEntryId: string }) => {
-      const res = await fetch('/api/finance/reconciliation/match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bankTransactionId, journalEntryId }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to match transaction');
+      const res = await api.post<{ success: boolean; error?: string }>(
+        '/api/finance/reconciliation/match',
+        { bankTransactionId, journalEntryId },
+      );
+      const json = res.data;
+      if (res.error || !json?.success) {
+        throw new Error(json?.error || res.error || 'Failed to match transaction');
+      }
       return json;
+    },
+    onMutate: async ({ bankTransactionId }) => {
+      await queryClient.cancelQueries({ queryKey: unmatchedQueryKey, exact: true });
+      const previousUnmatched = queryClient.getQueryData<BankTransactionItem[]>(unmatchedQueryKey) || [];
+      queryClient.setQueryData<BankTransactionItem[]>(
+        unmatchedQueryKey,
+        previousUnmatched.filter((item) => item.id !== bankTransactionId),
+      );
+      return { previousUnmatched };
+    },
+    onError: (error: unknown, _variables, context) => {
+      if (context?.previousUnmatched) {
+        queryClient.setQueryData(unmatchedQueryKey, context.previousUnmatched);
+      }
+      toast.error(error instanceof Error ? error.message : 'Failed to match transaction');
     },
     onSuccess: async () => {
       toast.success('Transaction matched successfully');
       setSelectedBankTransactionId(null);
-      await queryClient.invalidateQueries({ queryKey: ['reconciliation-unmatched'] });
-      await queryClient.invalidateQueries({ queryKey: ['reconciliation-suggestions'] });
-    },
-    onError: (error: unknown) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to match transaction');
+      await queryClient.invalidateQueries({ queryKey: unmatchedQueryKey, exact: true });
+      await queryClient.invalidateQueries({ queryKey: suggestionsQueryKey(selectedBankTransactionId), exact: true });
     },
   });
 
   const ignoreMutation = useMutation({
     mutationFn: async (bankTransactionId: string) => {
-      const res = await fetch('/api/finance/reconciliation/ignore', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bankTransactionId }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to ignore transaction');
+      const res = await api.post<{ success: boolean; error?: string }>(
+        '/api/finance/reconciliation/ignore',
+        { bankTransactionId },
+      );
+      const json = res.data;
+      if (res.error || !json?.success) {
+        throw new Error(json?.error || res.error || 'Failed to ignore transaction');
+      }
       return json;
+    },
+    onMutate: async (bankTransactionId: string) => {
+      await queryClient.cancelQueries({ queryKey: unmatchedQueryKey, exact: true });
+      const previousUnmatched = queryClient.getQueryData<BankTransactionItem[]>(unmatchedQueryKey) || [];
+      queryClient.setQueryData<BankTransactionItem[]>(
+        unmatchedQueryKey,
+        previousUnmatched.filter((item) => item.id !== bankTransactionId),
+      );
+      return { previousUnmatched };
+    },
+    onError: (error: unknown, _variables, context) => {
+      if (context?.previousUnmatched) {
+        queryClient.setQueryData(unmatchedQueryKey, context.previousUnmatched);
+      }
+      toast.error(error instanceof Error ? error.message : 'Failed to ignore transaction');
     },
     onSuccess: async () => {
       toast.success('Transaction marked as ignored');
       setSelectedBankTransactionId(null);
-      await queryClient.invalidateQueries({ queryKey: ['reconciliation-unmatched'] });
-      await queryClient.invalidateQueries({ queryKey: ['reconciliation-suggestions'] });
-    },
-    onError: (error: unknown) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to ignore transaction');
+      await queryClient.invalidateQueries({ queryKey: unmatchedQueryKey, exact: true });
+      await queryClient.invalidateQueries({ queryKey: suggestionsQueryKey(selectedBankTransactionId), exact: true });
     },
   });
 
@@ -134,7 +181,7 @@ export function ReconciliationWorkspace() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ['reconciliation-unmatched'] })}
+              onClick={() => queryClient.invalidateQueries({ queryKey: unmatchedQueryKey, exact: true })}
               disabled={isLoadingUnmatched || isRefreshingUnmatched}
               className="gap-2"
             >

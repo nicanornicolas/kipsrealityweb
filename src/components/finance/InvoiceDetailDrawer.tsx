@@ -4,19 +4,32 @@ import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { api } from '@/lib/api-client';
+import { formatUSD } from '@/lib/format-currency';
 import { StatusBadge } from './StatusBadge';
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 2,
-  }).format(value);
-}
 
 interface InvoiceDetailDrawerProps {
   invoiceId: string | null;
   onClose: () => void;
+}
+
+interface InvoiceDetailResponse {
+  status: string;
+  postingStatus: string;
+  invoiceNumber: string;
+  tenantName: string;
+  propertyName: string;
+  unitNumber: string;
+  dueDate: string;
+  amount: number;
+  description?: string;
+  ledgerEntries: Array<{
+    accountId: string;
+    debit: number;
+    credit: number;
+  }>;
+  createdAt: string;
+  postedAt?: string | null;
 }
 
 export function InvoiceDetailDrawer({ invoiceId, onClose }: InvoiceDetailDrawerProps) {
@@ -24,13 +37,13 @@ export function InvoiceDetailDrawer({ invoiceId, onClose }: InvoiceDetailDrawerP
     queryKey: ['invoice-detail', invoiceId],
     enabled: Boolean(invoiceId),
     queryFn: async () => {
-      const response = await fetch(`/api/finance/invoices/${invoiceId}`, {
-        cache: 'no-store',
-      });
-      const result = await response.json();
+      const response = await api.get<{ success: boolean; data: InvoiceDetailResponse; error?: string }>(
+        `/api/finance/invoices/${invoiceId}`,
+      );
+      const result = response.data;
 
-      if (!response.ok || !result?.success) {
-        throw new Error(result?.error || 'Failed to fetch invoice detail');
+      if (response.error || !result?.success) {
+        throw new Error(result?.error || response.error || 'Failed to fetch invoice detail');
       }
 
       return result.data;
@@ -92,7 +105,7 @@ export function InvoiceDetailDrawer({ invoiceId, onClose }: InvoiceDetailDrawerP
 
               <section className="rounded-lg bg-slate-50 p-4">
                 <p className="text-xs uppercase tracking-wide text-slate-400">Total Due</p>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(data.amount)}</p>
+                <p className="text-2xl font-bold text-slate-900">{formatUSD(data.amount)}</p>
               </section>
 
               <section className="space-y-2">
@@ -112,8 +125,8 @@ export function InvoiceDetailDrawer({ invoiceId, onClose }: InvoiceDetailDrawerP
                     {data.ledgerEntries.map((line) => (
                       <div key={`${line.accountId}-${line.debit}-${line.credit}`} className="grid grid-cols-3 border-b border-slate-100 px-3 py-2 font-mono last:border-0">
                         <span className="text-slate-700">{line.accountId}</span>
-                        <span className="text-right text-blue-600">{line.debit > 0 ? formatCurrency(line.debit) : '-'}</span>
-                        <span className="text-right text-rose-600">{line.credit > 0 ? formatCurrency(line.credit) : '-'}</span>
+                        <span className="text-right text-blue-600">{line.debit > 0 ? formatUSD(line.debit) : '-'}</span>
+                        <span className="text-right text-rose-600">{line.credit > 0 ? formatUSD(line.credit) : '-'}</span>
                       </div>
                     ))}
                   </div>
