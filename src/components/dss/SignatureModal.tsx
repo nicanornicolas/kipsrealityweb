@@ -1,14 +1,24 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { FormInput } from '@/components/ui/form-input';
+import { LoadingButton } from '@/components/ui/loading-button';
 
 interface SignatureModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (typedName: string) => Promise<void> | void;
   submitting?: boolean;
+  participantName?: string;
 }
 
 const scriptFontOptions = [
@@ -17,14 +27,22 @@ const scriptFontOptions = [
   '"Pacifico", cursive',
 ];
 
-export function SignatureModal({ isOpen, onClose, onSubmit, submitting = false }: SignatureModalProps) {
+export function SignatureModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  submitting = false,
+  participantName = '',
+}: SignatureModalProps) {
   const [typedName, setTypedName] = useState('');
 
   useEffect(() => {
-    if (!isOpen) {
-      setTypedName('');
+    if (isOpen) {
+      setTypedName(participantName || '');
+      return;
     }
-  }, [isOpen]);
+    setTypedName('');
+  }, [isOpen, participantName]);
 
   const activePreviewFont = useMemo(() => {
     const index = typedName.length % scriptFontOptions.length;
@@ -33,27 +51,29 @@ export function SignatureModal({ isOpen, onClose, onSubmit, submitting = false }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Apply Signature</DialogTitle>
+          <DialogTitle>Sign Document</DialogTitle>
+          <DialogDescription>
+            Type your full legal name to apply your electronic signature. This
+            is legally binding.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 py-2">
-          <label className="block text-sm font-medium text-slate-700">Type your legal name</label>
-          <input
+        <div className="space-y-6 py-4">
+          <FormInput
+            label="Full Legal Name"
             value={typedName}
             onChange={(event) => setTypedName(event.target.value)}
-            placeholder="e.g. Jane Doe"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="John Doe"
           />
 
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-            <p className="text-xs text-amber-700">Signature preview</p>
+          <div className="p-6 bg-muted/30 border rounded-lg flex items-center justify-center min-h-[100px]">
             <p
-              className="mt-2 text-2xl text-slate-900"
+              className="text-4xl text-navy-900 select-none"
               style={{ fontFamily: activePreviewFont }}
             >
-              {typedName || 'Your signature will appear here'}
+              {typedName || 'Your Signature'}
             </p>
           </div>
         </div>
@@ -62,13 +82,13 @@ export function SignatureModal({ isOpen, onClose, onSubmit, submitting = false }
           <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button
-            type="button"
+          <LoadingButton
             onClick={() => onSubmit(typedName.trim())}
-            disabled={submitting || typedName.trim().length === 0}
+            isLoading={submitting}
+            disabled={!typedName.trim()}
           >
-            {submitting ? 'Applying...' : 'Apply Signature'}
-          </Button>
+            Agree & Sign
+          </LoadingButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
