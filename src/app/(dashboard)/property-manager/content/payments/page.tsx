@@ -9,7 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@mui/material';
 
 interface Property {
   id: string;
@@ -148,7 +147,10 @@ export default function PaymentsPage() {
       const res = await fetch(`/api/payments?${queryParams.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch payments');
 
-      const data: Payment[] = await res.json();
+      const payload = await res.json();
+      const data: Payment[] = Array.isArray(payload)
+        ? payload
+        : payload.payments || [];
       setPayments(data);
     } catch (error) {
       console.error(error);
