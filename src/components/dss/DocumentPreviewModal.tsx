@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Eye, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { api } from '@/lib/api-client';
 
 interface DocumentPreviewModalProps {
   documentId: string | null;
@@ -32,11 +33,13 @@ export default function DocumentPreviewModal({
       setViewUrl(null);
 
       try {
-        const res = await fetch(`/api/dss/documents/${documentId}/view`);
-        const data = await res.json();
+        const res = await api.get<{ success: boolean; document?: { viewUrl?: string; originalFileUrl?: string }; error?: string }>(
+          `/api/dss/documents/${documentId}/view`,
+        );
+        const data = res.data;
 
-        if (!res.ok) {
-          throw new Error(data?.error || 'Failed to load document');
+        if (res.error || !data?.success) {
+          throw new Error(data?.error || res.error || 'Failed to load document');
         }
 
         const secureUrl = data?.document?.viewUrl || data?.document?.originalFileUrl;

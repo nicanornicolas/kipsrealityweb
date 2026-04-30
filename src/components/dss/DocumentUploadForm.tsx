@@ -6,6 +6,7 @@ import { Eye, FolderOpen, Loader2, Plus, Trash, Upload, UploadCloud } from "luci
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import DocumentPreviewModal from "@/components/dss/DocumentPreviewModal";
+import { api } from '@/lib/api-client';
 
 interface Participant {
     email: string;
@@ -48,9 +49,11 @@ export default function DocumentUploadForm() {
 
             setIsVaultLoading(true);
             try {
-                const res = await fetch("/api/dss/documents?status=DRAFT");
-                const data = (await res.json()) as VaultListResponse;
-                if (!res.ok) throw new Error("Failed to fetch vault documents");
+                const res = await api.get<VaultListResponse & { error?: string }>(
+                    '/api/dss/documents?status=DRAFT',
+                );
+                if (res.error) throw new Error(res.error || 'Failed to fetch vault documents');
+                const data = res.data as VaultListResponse;
                 setVaultDocuments(data.documents || []);
             } catch (error) {
                 console.error(error);
@@ -96,14 +99,14 @@ export default function DocumentUploadForm() {
         formData.append("title", title);
         formData.append("participants", JSON.stringify(participants));
 
-        const res = await fetch("/api/dss/documents", {
+        const res = await api.request<{ data?: { id?: string }; error?: string }>("/api/dss/documents", {
             method: "POST",
             body: formData,
         });
 
-        const data = await res.json();
-        if (!res.ok) {
-            throw new Error(data?.error || data?.message || "Failed to create document");
+        const data = res.data;
+        if (res.error) {
+            throw new Error(data?.error || res.error || "Failed to create document");
         }
 
         const createdDocumentId = data?.data?.id as string | undefined;
@@ -130,20 +133,18 @@ export default function DocumentUploadForm() {
 
         for (let index = 0; index < nonEmptyParticipants.length; index++) {
             const participant = nonEmptyParticipants[index];
-            const participantRes = await fetch(`/api/dss/documents/${selectedDocumentId}/participants`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
+            const participantRes = await api.post<{ success?: boolean; error?: string }>(
+                `/api/dss/documents/${selectedDocumentId}/participants`,
+                {
                     email: participant.email,
                     fullName: participant.fullName,
                     role: participant.role,
                     stepOrder: index + 1,
-                }),
-            });
+                },
+            );
 
-            if (!participantRes.ok) {
-                const payload = await participantRes.json();
-                throw new Error(payload?.error || "Failed to add participant to selected document");
+            if (participantRes.error || participantRes.data?.success === false) {
+                throw new Error(participantRes.data?.error || participantRes.error || "Failed to add participant to selected document");
             }
         }
 
