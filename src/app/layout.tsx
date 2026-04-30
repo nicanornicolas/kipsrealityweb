@@ -11,7 +11,7 @@ import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
-import { Inter, Plus_Jakarta_Sans, Sen } from "next/font/google";
+import { Caveat, Inter, Plus_Jakarta_Sans, Sen } from "next/font/google";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -25,6 +25,11 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 const sen = Sen({
   variable: "--font-sen",
+  subsets: ["latin"],
+});
+
+const caveat = Caveat({
+  variable: "--font-caveat",
   subsets: ["latin"],
 });
 
@@ -68,7 +73,7 @@ export default function RootLayout({
     <html lang="en" className="light" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${plusJakartaSans.variable} ${inter.variable} ${sen.variable} font-sans antialiased min-h-screen transition-colors duration-500`}
+        className={`${plusJakartaSans.variable} ${inter.variable} ${sen.variable} ${caveat.variable} font-sans antialiased min-h-screen transition-colors duration-500`}
       >
         <QueryProvider>
           <AuthProvider>
