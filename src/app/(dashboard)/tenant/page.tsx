@@ -653,13 +653,21 @@ const DashboardPage = () => {
                     Maintenance Requests
                   </h2>
                 </div>
-                <button
-                  onClick={() => setShowNewRequestModal(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  New Request
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowNewRequestModal(true)}
+                    className="text-xs text-gray-600 hover:text-gray-800 underline"
+                  >
+                    Quick submit (classic)
+                  </button>
+                  <button
+                    onClick={() => router.push('/tenant/submit-request')}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Request
+                  </button>
+                </div>
               </div>
 
               {maintenanceLoading ? (
@@ -785,7 +793,7 @@ const DashboardPage = () => {
                   </p>
                 </button>
                 <button
-                  onClick={() => setShowNewRequestModal(true)}
+                  onClick={() => router.push('/tenant/submit-request')}
                   className="p-4 border-2 border-gray-200 hover:border-blue-400 rounded-lg text-left transition-colors group min-w-0"
                 >
                   <Wrench className="w-8 h-8 text-gray-600 group-hover:text-blue-600 mb-2 flex-shrink-0" />

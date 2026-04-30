@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { SignatureModal } from "@/components/dss/SignatureModal";
+import { useSignDocument } from "@/hooks/queries/use-tenant-lease";
 
 if (typeof window !== "undefined") {
   pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -36,9 +37,9 @@ export default function TenantSigningPage() {
   const documentId = params?.id as string;
 
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedField, setSelectedField] = useState<SignField | null>(null);
+  const { mutate: signDocument, isPending: submitting } = useSignDocument();
 
   const [documentData, setDocumentData] = useState<SigningDoc | null>(null);
   const [viewUrl, setViewUrl] = useState<string | null>(null);
@@ -102,30 +103,24 @@ export default function TenantSigningPage() {
     setIsModalOpen(true);
   };
 
-  const handleApplySignature = async (typedName: string) => {
+  const handleApplySignature = (typedName: string) => {
     if (!selectedField || !documentId) return;
 
-    setSubmitting(true);
-    try {
-      const signatureHash = btoa(unescape(encodeURIComponent(typedName)));
-      const response = await api.post<{ success: boolean; error?: string }>(
-        `/api/dss/documents/${documentId}/sign`,
-        { signatureHash, fieldId: selectedField.id },
-      );
-
-      if (response.error || !response.data?.success) {
-        throw new Error(response.data?.error || response.error || "Failed to apply signature");
-      }
-
-      toast.success("Signature applied");
-      setIsModalOpen(false);
-      setSelectedField(null);
-      await loadSigningData();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to apply signature");
-    } finally {
-      setSubmitting(false);
-    }
+    const signatureHash = btoa(unescape(encodeURIComponent(typedName)));
+    signDocument(
+      {
+        documentId,
+        signatureHash,
+        fieldId: selectedField.id,
+      },
+      {
+        onSuccess: async () => {
+          setIsModalOpen(false);
+          setSelectedField(null);
+          await loadSigningData();
+        },
+      },
+    );
   };
 
   if (loading) {
@@ -224,6 +219,7 @@ export default function TenantSigningPage() {
         }}
         onSubmit={handleApplySignature}
         submitting={submitting}
+        participantName=""
       />
     </div>
   );
