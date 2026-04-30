@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { api } from '@/lib/api-client';
 
 interface FinancialSummary {
   cashInBank: number;
@@ -25,14 +26,15 @@ export function FinancialSummaryCard() {
   async function fetchFinancialSummary() {
     try {
       setLoading(true);
-      const response = await fetch('/api/finance/summary');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch financial summary');
+      const response = await api.get<{ success: boolean; data: FinancialSummary; error?: string }>(
+        '/api/finance/summary',
+      );
+
+      if (response.error || !response.data?.success) {
+        throw new Error(response.data?.error || response.error || 'Failed to fetch financial summary');
       }
 
-      const data = await response.json();
-      setSummary(data);
+      setSummary(response.data.data);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
