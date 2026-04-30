@@ -135,19 +135,20 @@ describe('NotificationService.sendSmsNotification', () => {
     expect(prismaMock.smsNotification.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         userId: baseParams.userId,
-        phoneNumber: baseParams.phoneNumber,
+        phone: baseParams.phoneNumber,
         message: baseParams.message,
         category: baseParams.category,
-        provider: 'TWILIO',
+        reference: 'TWILIO',
         status: 'QUEUED',
+        channel: 'SMS',
       }),
     });
     expect(prismaMock.smsNotification.update).toHaveBeenCalledWith({
       where: { id: 'notif-1' },
       data: {
         status: 'SENT',
-        providerMsgId: 'sid-123',
-        failureReason: undefined,
+        reference: 'sid-123',
+        errorMessage: undefined,
         sentAt: expect.any(Date),
       },
     });
@@ -164,8 +165,8 @@ describe('NotificationService.sendSmsNotification', () => {
       where: { id: 'notif-2' },
       data: {
         status: 'FAILED',
-        providerMsgId: undefined,
-        failureReason: 'oops',
+        reference: 'TWILIO',
+        errorMessage: 'oops',
         sentAt: null,
       },
     });
