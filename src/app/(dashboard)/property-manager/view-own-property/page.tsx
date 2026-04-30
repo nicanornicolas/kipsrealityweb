@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Building2,
   Home,
@@ -22,6 +23,7 @@ import { deleteProperty } from '@rentflow/property/client';
 import { toast } from 'sonner';
 
 export default function PropertyManagerPage() {
+  const router = useRouter();
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -158,7 +160,7 @@ export default function PropertyManagerPage() {
           <div className="text-red-500 text-xl mb-2">⚠️</div>
           <p className="text-red-500 mb-4">{error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => router.refresh()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Retry

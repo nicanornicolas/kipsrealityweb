@@ -5,8 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import UpgradeRequiredModal from "@/components/monetization/UpgradeRequiredModal";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import DocumentPreviewModal from "@/components/dss/DocumentPreviewModal";
+import { toast } from "sonner";
+import { api } from '@/lib/api-client';
 import { 
   FolderOpen, 
   FileText, 
@@ -62,12 +64,12 @@ interface ApiDocumentListResponse {
   documents?: ApiDocument[];
 }
 
-interface UpgradeErrorData {
-  message?: string;
-  featureKey?: string;
-  limit?: number;
-  used?: number;
-  remaining?: number;
+interface UploadedDocumentPayload {
+  id?: string;
+  title?: string;
+  mimeType?: string;
+  property?: { name?: string };
+  unit?: { unitNumber?: string };
 }
 
 export default function DocumentsPage() {
@@ -80,8 +82,6 @@ export default function DocumentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [upgradeErrorData, setUpgradeErrorData] = useState<UpgradeErrorData | undefined>(undefined);
   const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
@@ -92,9 +92,9 @@ export default function DocumentsPage() {
         setErrorMessage(null);
         
         // Fetch documents from API
-        const res = await fetch('/api/dss/documents');
-        if (!res.ok) throw new Error('Failed to fetch documents');
-        const data = (await res.json()) as ApiDocument[] | ApiDocumentListResponse;
+        const res = await api.get<ApiDocument[] | ApiDocumentListResponse>('/api/dss/documents');
+        if (res.error) throw new Error(res.error || 'Failed to fetch documents');
+        const data = (res.data || []) as ApiDocument[] | ApiDocumentListResponse;
         const rawDocuments = Array.isArray(data) ? data : (data.documents || []);
 
         const docs: Document[] = rawDocuments.map((d) => ({
@@ -140,7 +140,7 @@ export default function DocumentsPage() {
     if (!file) return;
 
     if (file.type !== "application/pdf") {
-      alert("Please upload a PDF document.");
+      toast.error("Please upload a PDF document.");
       event.target.value = "";
       return;
     }
@@ -153,21 +153,15 @@ export default function DocumentsPage() {
       formData.append("title", file.name.replace(/\.pdf$/i, ""));
       formData.append("participants", "[]");
 
-      const response = await fetch("/api/dss/documents", {
+      const response = await api.request<{ data?: UploadedDocumentPayload; error?: string }>("/api/dss/documents", {
         method: "POST",
         body: formData,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (response.status === 402) {
-        setUpgradeErrorData(data as UpgradeErrorData);
-        setIsUpgradeModalOpen(true);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to upload document");
+      if (response.error) {
+        throw new Error(data?.error || response.error || "Failed to upload document");
       }
 
       const uploadedDoc = data?.data;
@@ -184,11 +178,11 @@ export default function DocumentsPage() {
       };
 
       setDocuments((prev) => [uploadedDocument, ...prev]);
-      alert("Document uploaded successfully to MinIO!");
+      toast.success("Document uploaded successfully.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed";
       console.error("Upload error:", error);
-      alert(message);
+      toast.error(message);
     } finally {
       setIsUploading(false);
       event.target.value = "";
@@ -221,7 +215,7 @@ export default function DocumentsPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto py-10 max-w-6xl">
-        <div className="text-sm text-gray-500">Loading documents...</div>
+        <LoadingSpinner text="Loading documents..." />
       </div>
     );
   }
@@ -417,11 +411,6 @@ export default function DocumentsPage() {
         </Card>
       )}
 
-      <UpgradeRequiredModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-        error={upgradeErrorData}
-      />
       <DocumentPreviewModal
         documentId={previewDocumentId}
         isOpen={isPreviewOpen}

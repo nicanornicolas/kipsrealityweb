@@ -1,24 +1,21 @@
 "use client"
 import React, { useEffect, useState } from 'react';
 import LedgerTable from '@/components/Dashboard/propertymanagerdash/finance/LedgerTable';
-import { useAuth } from "@/context/AuthContext";
+import { api } from '@/lib/api-client';
 import { Calculator, Download, RefreshCw } from 'lucide-react';
 
 const LedgerPage = () => {
-    const { user } = useAuth();
-    const token = typeof window !== 'undefined' ? localStorage.getItem('rentflow_tokens') : null;
-
-    const [ledgerData, setLedgerData] = useState([]);
+    const [ledgerData, setLedgerData] = useState<Record<string, unknown>[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchLedger = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/finance/ledger');
-            const result = await res.json();
-            if (result.success) {
-                setLedgerData(result.data);
+            const res = await api.get<{ success: boolean; data: Record<string, unknown>[]; error?: string }>('/api/finance/ledger');
+            if (res.error || !res.data?.success) {
+                throw new Error(res.data?.error || res.error || 'Failed to fetch ledger');
             }
+            setLedgerData(res.data.data || []);
         } catch (error) {
             console.error('Failed to fetch ledger:', error);
         } finally {

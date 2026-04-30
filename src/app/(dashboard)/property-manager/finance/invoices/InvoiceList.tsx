@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCcw } from 'lucide-react';
 
@@ -11,6 +12,8 @@ export default function InvoiceError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const router = useRouter();
+
   useEffect(() => {
     console.error('Invoice Module Crash (PM):', error);
   }, [error]);
@@ -32,7 +35,7 @@ export default function InvoiceError({
         <Button
           variant="outline"
           className="flex-1 bg-white hover:bg-gray-50 border-gray-200"
-          onClick={() => window.location.reload()}
+          onClick={() => router.refresh()}
         >
           Hard Refresh
         </Button>

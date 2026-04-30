@@ -1,10 +1,11 @@
 "use client"
 import React, { useEffect, useState } from 'react';
 import JournalTable from '@/components/Dashboard/propertymanagerdash/finance/JournalTable';
+import { api } from '@/lib/api-client';
 import { FileText, Search, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const JournalPage = () => {
-    const [entries, setEntries] = useState([]);
+    const [entries, setEntries] = useState<Record<string, unknown>[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [pagination, setPagination] = useState({ total: 0, pages: 1 });
@@ -12,12 +13,17 @@ const JournalPage = () => {
     const fetchJournal = async (p = 1) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/finance/journal?page=${p}&limit=10`);
-            const result = await res.json();
-            if (result.success) {
-                setEntries(result.data);
-                setPagination(result.pagination);
+            const res = await api.get<{
+                success: boolean;
+                data: Record<string, unknown>[];
+                pagination: { total: number; pages: number };
+                error?: string;
+            }>(`/api/finance/journal?page=${p}&limit=10`);
+            if (res.error || !res.data?.success) {
+                throw new Error(res.data?.error || res.error || 'Failed to fetch journal');
             }
+            setEntries(res.data.data || []);
+            setPagination(res.data.pagination || { total: 0, pages: 1 });
         } catch (error) {
             console.error('Failed to fetch journal:', error);
         } finally {

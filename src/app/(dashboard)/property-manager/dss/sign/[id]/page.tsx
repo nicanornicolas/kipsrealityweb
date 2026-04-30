@@ -4,18 +4,25 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
+import { api } from '@/lib/api-client';
 
 // Dynamically import PDF Viewer to avoid "DOMMatrix is not defined" error during SSR
 const PdfViewer = dynamic(() => import("@/components/dss/PdfViewer"), { ssr: false });
 import { toast } from "sonner";
 import { Loader2, PenTool } from "lucide-react";
 
+type SignDocumentView = {
+  title: string;
+  status: string;
+  originalFileUrl?: string | null;
+};
+
 export default function SigningRoomPage() {
   const params = useParams();
   const router = useRouter();
   const documentId = params.id as string;
 
-  const [document, setDocument] = useState<any>(null); // TODO: Define proper type
+  const [document, setDocument] = useState<SignDocumentView | null>(null);
   const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState(false);
@@ -25,17 +32,21 @@ export default function SigningRoomPage() {
   useEffect(() => {
     async function fetchDoc() {
       try {
-        const res = await fetch(`/api/dss/documents/${documentId}`);
-        const data = await res.json();
+        const res = await api.get<{ document: SignDocumentView; canSign: boolean; error?: string }>(
+          `/api/dss/documents/${documentId}`,
+        );
+        const data = res.data;
 
-        if (!res.ok) throw new Error(data.error);
+        if (res.error || !data?.document) throw new Error(data?.error || res.error || 'Failed to load');
 
         setDocument(data.document);
         setCanSign(data.canSign);
 
-        const viewRes = await fetch(`/api/dss/documents/${documentId}/view`);
-        const viewData = await viewRes.json();
-        if (viewRes.ok) {
+        const viewRes = await api.get<{ document?: { viewUrl?: string } }>(
+          `/api/dss/documents/${documentId}/view`,
+        );
+        const viewData = viewRes.data;
+        if (!viewRes.error) {
           setViewUrl(viewData.document?.viewUrl || null);
         }
       } catch (error) {
@@ -52,17 +63,15 @@ export default function SigningRoomPage() {
   const handleSign = async () => {
     setSigning(true);
     try {
-      const res = await fetch("/api/dss/sign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const res = await api.post<{ error?: string }>(
+        '/api/dss/sign',
+        {
           documentId,
           signatureData: "Signed by Property Manager via Web UI",
-        }),
-      });
+        },
+      );
 
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
+      if (res.error) throw new Error(res.data?.error || res.error);
 
       toast.success("Document Signed Successfully!");
       setCanSign(false);
