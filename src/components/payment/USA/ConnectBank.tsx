@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { usePlaidLink, PlaidLinkOnSuccess, PlaidLinkOnExit } from "react-plaid-link";
+import { api } from '@/lib/api-client';
+import { toast } from 'sonner';
 
 interface ConnectBankProps {
-    userId: string;
     onConnected: () => void;
 }
 
-export default function ConnectBank({ userId, onConnected }: ConnectBankProps) {
+export default function ConnectBank({ onConnected }: ConnectBankProps) {
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -15,14 +16,21 @@ export default function ConnectBank({ userId, onConnected }: ConnectBankProps) {
     useEffect(() => {
         async function createLinkToken() {
             try {
-                const res = await fetch("/api/plaid/create-link-token", { method: "POST" });
-                const data = await res.json();
-                if (data.link_token) {
-                    setToken(data.link_token);
+                const res = await api.post<{ linkToken?: string; error?: string }>(
+                  '/api/finance/plaid/create-link-token',
+                );
+                const data = res.data;
+                if (res.error) {
+                  throw new Error(data?.error || res.error || 'Failed to create Plaid link token');
+                }
+
+                if (data?.linkToken) {
+                    setToken(data.linkToken);
                 } else {
                     console.error("Failed to get link token", data);
                 }
             } catch (e) {
+                toast.error(e instanceof Error ? e.message : 'Error creating link token');
                 console.error("Error creating link token", e);
             }
         }
@@ -30,7 +38,7 @@ export default function ConnectBank({ userId, onConnected }: ConnectBankProps) {
     }, []);
 
     // 2. Handle Success (User selected bank)
-    const onSuccess = useCallback<PlaidLinkOnSuccess>(async (publicToken, metadata) => {
+    const onSuccess = useCallback<PlaidLinkOnSuccess>(async (publicToken) => {
         setLoading(true);
         try {
             // metadata contains account_id
@@ -38,27 +46,26 @@ export default function ConnectBank({ userId, onConnected }: ConnectBankProps) {
             // or we could let the user select if we support multiple. 
             // Plaid Link usually lets user select one account if we configure it so.
             // metadata.accounts is an array.
-            const accountId = metadata.accounts[0]?.id;
+            const res = await api.post<{ success?: boolean; error?: string }>(
+              '/api/finance/plaid/exchange-token',
+              { publicToken },
+            );
 
-            if (!accountId) {
-                throw new Error("No account selected");
+            if (res.error || res.data?.success === false) {
+              throw new Error(res.data?.error || res.error || 'Failed to link bank account');
             }
 
-            await fetch("/api/plaid/exchange-token", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ publicToken, accountId, userId }),
-            });
-
             onConnected(); // Refresh UI to show "Bank Connected"
+            toast.success('Bank account connected successfully');
         } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Exchange token failed');
             console.error("Exchange token failed", error);
         } finally {
             setLoading(false);
         }
-    }, [userId, onConnected]);
+    }, [onConnected]);
 
-    const onExit = useCallback<PlaidLinkOnExit>((error, metadata) => {
+    const onExit = useCallback<PlaidLinkOnExit>((error) => {
         if (error) {
             console.error("Plaid Link exited with error", error);
         }
