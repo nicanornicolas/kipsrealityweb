@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCcw } from 'lucide-react';
 
@@ -11,6 +12,8 @@ export default function TenantInvoiceError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const router = useRouter();
+
   useEffect(() => {
     console.error('Invoice Module Crash (Tenant):', error);
   }, [error]);
@@ -29,7 +32,7 @@ export default function TenantInvoiceError({
       <div className="flex gap-4">
         <Button
           variant="ghost"
-          onClick={() => window.location.reload()}
+          onClick={() => router.refresh()}
           className="text-slate-500 hover:text-slate-700"
         >
           Reload Dashboard

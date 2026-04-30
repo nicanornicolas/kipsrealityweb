@@ -23,6 +23,7 @@ import { useLease } from '@/hooks/useLease';
 import { useInvoices } from '@/hooks/useInvoice';
 import { useMaintenanceRequests } from '@/hooks/useMaintenanceRequests';
 import { PaymentModal } from '@/components/Dashboard/tenantsdash/PaymentModal';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const DashboardPage = () => {
   const [isLoading] = useState(false);
@@ -321,8 +322,7 @@ const DashboardPage = () => {
     return (
       <div className="bg-gray-50 h-full flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
+          <LoadingSpinner text="Loading..." />
         </div>
       </div>
     );
@@ -664,10 +664,7 @@ const DashboardPage = () => {
 
               {maintenanceLoading ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">
-                    Loading maintenance requests...
-                  </p>
+                  <LoadingSpinner text="Loading maintenance requests..." />
                 </div>
               ) : maintenanceError ? (
                 <div className="text-center py-8 text-red-500">

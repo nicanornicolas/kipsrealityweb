@@ -1,316 +1,230 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import dynamic from "next/dynamic"; // 1. Dynamic Import for PDF to avoid SSR issues
-import { Button } from "@/components/ui/button";
+import { Document, Page, pdfjs } from "react-pdf";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Loader2, PenTool, CheckCircle, Clock, ShieldCheck } from "lucide-react";
+import { api } from "@/lib/api-client";
+import { SignatureModal } from "@/components/dss/SignatureModal";
 
-// Dynamically import PDF Viewer
-const PdfViewer = dynamic(() => import("@/components/dss/PdfViewer"), { ssr: false });
+if (typeof window !== "undefined") {
+  pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+}
 
-export default function SigningRoomPage() {
-  const params = useParams(); // Next.js 15: params might be a Promise in server components, but this is "use client"
-  // Safe cast: In Client Components, params is unwrapped or accessible directly depending on version,
-  // but to be safe for Next 15 types, treat as unknown then string.
+type SignField = {
+  id: string;
+  participantId: string;
+  type: "SIGNATURE" | "DATE" | "INITIALS" | "TEXT";
+  pageNumber: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+type SigningDoc = {
+  id: string;
+  title: string;
+  status: string;
+  currentStep?: number;
+  originalFileUrl?: string | null;
+};
+
+export default function TenantSigningPage() {
+  const params = useParams();
   const documentId = params?.id as string;
 
-  const [docData, setDocData] = useState<any>(null);
-  const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [signing, setSigning] = useState(false);
-  const [signatureMode, setSignatureMode] = useState<"draw" | "tap">("draw");
-  const [signatureData, setSignatureData] = useState<string>("");
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const drawingRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedField, setSelectedField] = useState<SignField | null>(null);
 
-  // 2. Fetch Data
-  useEffect(() => {
-    if(!documentId) return;
+  const [documentData, setDocumentData] = useState<SigningDoc | null>(null);
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
+  const [fields, setFields] = useState<SignField[]>([]);
 
-    async function fetchData() {
-      try {
-        const res = await fetch(`/api/dss/documents/${documentId}`);
-        const data = await res.json();
+  const [numPages, setNumPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageDimensions, setPageDimensions] = useState({ width: 720, height: 980 });
 
-        if (!res.ok) throw new Error(data.error || "Failed to load");
+  const loadSigningData = useCallback(async () => {
+    if (!documentId) return;
 
-        setDocData(data);
+    setLoading(true);
+    try {
+      const [docRes, viewRes, fieldsRes] = await Promise.all([
+        api.get<{ document: SigningDoc; canSign: boolean; error?: string }>(`/api/dss/documents/${documentId}`),
+        api.get<{ document?: { viewUrl?: string; originalFileUrl?: string }; error?: string }>(`/api/dss/documents/${documentId}/view`),
+        api.get<{ fields?: SignField[]; error?: string }>(`/api/dss/documents/${documentId}/fields`),
+      ]);
 
-        const viewRes = await fetch(`/api/dss/documents/${documentId}/view`);
-        const viewData = await viewRes.json();
-        if (viewRes.ok) {
-          setViewUrl(viewData.document?.viewUrl || null);
-        }
-      } catch (error: any) {
-        toast.error(error.message);
-      } finally {
-        setLoading(false);
+      if (docRes.error || !docRes.data?.document) {
+        throw new Error(docRes.data?.error || docRes.error || "Unable to load document");
       }
+
+      if (fieldsRes.error) {
+        throw new Error(fieldsRes.data?.error || fieldsRes.error || "Unable to load sign targets");
+      }
+
+      setDocumentData(docRes.data.document);
+      setViewUrl(viewRes.data?.document?.viewUrl || viewRes.data?.document?.originalFileUrl || null);
+      setFields((fieldsRes.data?.fields || []).filter((field) => field.type === "SIGNATURE" || field.type === "TEXT"));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to load signing room");
+    } finally {
+      setLoading(false);
     }
-    fetchData();
   }, [documentId]);
 
-  // 3. Handle Sign Action
-  const getDeviceFingerprint = () => {
-    const rawFingerprint = [
-      navigator.userAgent,
-      navigator.language,
-      navigator.platform,
-      Intl.DateTimeFormat().resolvedOptions().timeZone,
-      window.screen.width,
-      window.screen.height,
-      window.devicePixelRatio,
-    ].join("|");
+  useEffect(() => {
+    void loadSigningData();
+  }, [loadSigningData]);
 
-    return btoa(unescape(encodeURIComponent(rawFingerprint))).slice(0, 120);
+  const currentPageFields = useMemo(
+    () => fields.filter((field) => field.pageNumber === currentPage),
+    [fields, currentPage],
+  );
+
+  const onDocumentLoadSuccess = useCallback(
+    ({ numPages, getPage }: { numPages: number; getPage: (pageNumber: number) => Promise<{ getViewport: (options: { scale: number }) => { width: number; height: number } }> }) => {
+      setNumPages(numPages);
+      getPage(1).then((page) => {
+        const { width, height } = page.getViewport({ scale: 1 });
+        setPageDimensions({ width: Math.min(width, 720), height: Math.min(height, 980) });
+      });
+    },
+    [],
+  );
+
+  const openSignatureModal = (field: SignField) => {
+    setSelectedField(field);
+    setIsModalOpen(true);
   };
 
-  const handleSign = async () => {
-    setSigning(true);
+  const handleApplySignature = async (typedName: string) => {
+    if (!selectedField || !documentId) return;
+
+    setSubmitting(true);
     try {
-      const payload =
-        signatureMode === "draw"
-          ? {
-              documentId,
-              signatureData: signatureData || "Signed via RentFlow360 Canvas",
-            }
-          : {
-              documentId,
-              signatureMode: "tap_to_agree",
-              agreementMetadata: {
-                timestamp: new Date().toISOString(),
-                deviceFingerprint: getDeviceFingerprint(),
-              },
-            };
+      const signatureHash = btoa(unescape(encodeURIComponent(typedName)));
+      const response = await api.post<{ success: boolean; error?: string }>(
+        `/api/dss/documents/${documentId}/sign`,
+        { signatureHash, fieldId: selectedField.id },
+      );
 
-      const res = await fetch("/api/dss/sign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      if (response.error || !response.data?.success) {
+        throw new Error(response.data?.error || response.error || "Failed to apply signature");
+      }
 
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-
-      toast.success("Signed successfully!");
-
-      // Refresh page data to show updated status
-      // We manually update local state to avoid full reload
-      setDocData((prev: any) => ({
-        ...prev,
-        canSign: false, // Turn off button
-        document: {
-             ...prev.document,
-             // Optimistically update the current user's status in list
-             // (Optional, or just force reload window)
-        }
-      }));
-
-      // Force reload to be safe
-      window.location.reload();
-
-    } catch (error: any) {
-      toast.error(error.message);
+      toast.success("Signature applied");
+      setIsModalOpen(false);
+      setSelectedField(null);
+      await loadSigningData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to apply signature");
     } finally {
-      setSigning(false);
+      setSubmitting(false);
     }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-blue-600 w-8 h-8" /></div>;
-  if (!docData) return <div className="p-10 text-center">Document not found</div>;
+  if (loading) {
+    return (
+      <div className="flex min-h-[420px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
-  const { document: signingDocument, canSign } = docData;
+  if (!documentData) {
+    return <div className="p-10 text-center">Document not found</div>;
+  }
 
-  const beginStroke = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
-    const context = canvasRef.current.getContext("2d");
-    if (!context) return;
-
-    event.preventDefault();
-    canvasRef.current.setPointerCapture(event.pointerId);
-    drawingRef.current = true;
-    window.document.body.style.overflow = "hidden";
-
-    const rect = canvasRef.current.getBoundingClientRect();
-    context.beginPath();
-    context.moveTo(event.clientX - rect.left, event.clientY - rect.top);
-  };
-
-  const drawStroke = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!drawingRef.current || !canvasRef.current) return;
-    const context = canvasRef.current.getContext("2d");
-    if (!context) return;
-
-    event.preventDefault();
-    const rect = canvasRef.current.getBoundingClientRect();
-    context.lineTo(event.clientX - rect.left, event.clientY - rect.top);
-    context.strokeStyle = "#0f172a";
-    context.lineWidth = 2.2;
-    context.lineCap = "round";
-    context.stroke();
-    setSignatureData(canvasRef.current.toDataURL("image/png"));
-  };
-
-  const endStroke = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
-    event.preventDefault();
-    drawingRef.current = false;
-    window.document.body.style.overflow = "";
-    setSignatureData(canvasRef.current.toDataURL("image/png"));
-  };
-
-  const clearCanvas = () => {
-    if (!canvasRef.current) return;
-    const context = canvasRef.current.getContext("2d");
-    if (!context) return;
-
-    context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    setSignatureData("");
-  };
+  if (!viewUrl) {
+    return <div className="p-10 text-center">No document preview available</div>;
+  }
 
   return (
-    <div className="container mx-auto py-8 max-w-5xl px-4">
+    <div className="mx-auto max-w-5xl space-y-6 p-6">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h1 className="text-2xl font-bold text-slate-900">{documentData.title}</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          Tap the pulsing yellow targets to sign your assigned fields.
+        </p>
+      </div>
 
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-white p-6 rounded-xl border shadow-sm">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{signingDocument.title}</h1>
-          <div className="flex items-center gap-2 mt-1">
-             <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                 signingDocument.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-             }`}>
-                {signingDocument.status}
-             </span>
-             <span className="text-gray-500 text-sm">• Step {signingDocument.currentStep}</span>
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mx-auto w-fit rounded-lg bg-white p-3 shadow-sm">
+          <div className="relative" style={{ width: pageDimensions.width, height: pageDimensions.height }}>
+            <Document
+              file={viewUrl}
+              onLoadSuccess={onDocumentLoadSuccess}
+              loading={
+                <div className="flex h-full items-center justify-center text-slate-500">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              }
+            >
+              <Page
+                pageNumber={currentPage}
+                width={pageDimensions.width}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+              />
+            </Document>
+
+            {currentPageFields.map((field) => (
+              <button
+                key={field.id}
+                type="button"
+                onClick={() => openSignatureModal(field)}
+                className="absolute rounded-md border-2 border-yellow-500 bg-yellow-300/60 shadow-[0_0_0_0_rgba(234,179,8,0.6)] animate-[pulse_1.5s_ease-in-out_infinite]"
+                style={{
+                  left: `${field.x}%`,
+                  top: `${field.y}%`,
+                  width: `${Math.max(field.width, 8)}%`,
+                  height: `${Math.max(field.height, 4)}%`,
+                }}
+                aria-label="Sign target"
+              />
+            ))}
           </div>
         </div>
 
-        {/* Dynamic Action Button */}
-        {canSign ? (
-          <Button
-            onClick={handleSign}
-            disabled={signing || (signatureMode === "draw" && !signatureData)}
-            size="lg"
-            className="bg-green-600 hover:bg-green-700 w-full md:w-auto"
-          >
-            {signing ? <Loader2 className="animate-spin mr-2" /> : <PenTool className="mr-2 w-5 h-5" />}
-            {signatureMode === "tap" ? "Tap to Agree" : "Sign Now"}
-          </Button>
-        ) : (
-          <Button disabled variant="outline" size="lg" className="w-full md:w-auto">
-            {signingDocument.status === 'COMPLETED' ?
-               <><CheckCircle className="mr-2 w-5 h-5 text-green-500"/> Document Completed</> :
-               <><Clock className="mr-2 w-5 h-5"/> Waiting for others</>
-            }
-          </Button>
+        {numPages > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage <= 1}
+              className="rounded-md border border-slate-300 bg-white p-2 disabled:opacity-40"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <span className="text-sm text-slate-600">
+              Page {currentPage} of {numPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.min(numPages, page + 1))}
+              disabled={currentPage >= numPages}
+              className="rounded-md border border-slate-300 bg-white p-2 disabled:opacity-40"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
         )}
       </div>
 
-      {canSign && (
-        <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setSignatureMode("draw")}
-              className={`rounded-md px-3 py-2 text-sm font-medium ${
-                signatureMode === "draw"
-                  ? "bg-blue-600 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              Draw Signature
-            </button>
-            <button
-              type="button"
-              onClick={() => setSignatureMode("tap")}
-              className={`rounded-md px-3 py-2 text-sm font-medium ${
-                signatureMode === "tap"
-                  ? "bg-blue-600 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              Tap to Agree
-            </button>
-          </div>
-
-          {signatureMode === "draw" ? (
-            <div className="space-y-2">
-              <p className="text-xs text-slate-600">
-                Draw with your finger or stylus. Page scrolling is locked while drawing.
-              </p>
-              <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-                <canvas
-                  ref={canvasRef}
-                  width={900}
-                  height={220}
-                  className="h-[220px] w-full touch-none"
-                  onPointerDown={beginStroke}
-                  onPointerMove={drawStroke}
-                  onPointerUp={endStroke}
-                  onPointerCancel={endStroke}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={clearCanvas}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Clear Signature
-              </button>
-            </div>
-          ) : (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-              <div className="flex items-center gap-2 font-semibold">
-                <ShieldCheck className="h-4 w-4" />
-                Legally Binding Tap-to-Agree Enabled
-              </div>
-              <p className="mt-1 text-xs">
-                We capture your timestamp, IP address, and device fingerprint as audit metadata.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-        {/* Main Content: PDF */}
-        <div className="lg:col-span-2">
-           {viewUrl || signingDocument.originalFileUrl ? (
-             <PdfViewer url={viewUrl || signingDocument.originalFileUrl} />
-           ) : (
-             <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
-               No document file available
-             </div>
-           )}
-        </div>
-
-        {/* Sidebar: Participants List */}
-        <div className="bg-white p-6 rounded-xl border shadow-sm h-fit">
-          <h3 className="font-semibold text-gray-900 mb-4">Signers</h3>
-          <div className="space-y-4">
-             {signingDocument.participants.map((p: any, idx: number) => (
-               <div key={idx} className="flex items-center justify-between">
-                 <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                        p.status === 'SIGNED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                        {idx + 1}
-                    </div>
-                    <div>
-                        <p className="text-sm font-medium text-gray-900">{p.name || p.email}</p>
-                        <p className="text-xs text-gray-500 uppercase">{p.role}</p>
-                    </div>
-                 </div>
-                 {p.status === 'SIGNED' && <CheckCircle className="w-4 h-4 text-green-500" />}
-               </div>
-             ))}
-          </div>
-        </div>
-
-      </div>
+      <SignatureModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedField(null);
+        }}
+        onSubmit={handleApplySignature}
+        submitting={submitting}
+      />
     </div>
   );
 }
