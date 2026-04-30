@@ -1,16 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast, Toaster } from 'sonner';
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-  Paper,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+import { FolderKanban, Plus } from 'lucide-react';
 
 import CategoryCard from './CatergoryCard';
 import CategoryModal from './CategoryModal';
@@ -21,21 +14,39 @@ import {
   ServiceFormData,
   Service,
 } from '../../type';
+import { useApiMutation } from '@/hooks/use-api-mutation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface Props {
   initialCategories: Category[];
 }
 
 export default function ServiceCrud({ initialCategories }: Props) {
+  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>(
     initialCategories || [],
   );
   const [loading, setLoading] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null,
-  );
+  const [deleteTarget, setDeleteTarget] = useState<
+    | { kind: 'category'; id: number; name: string }
+    | { kind: 'service'; id: number; name: string }
+    | null
+  >(null);
 
   const [categoryForm, setCategoryForm] = useState<CategoryFormData>({
     id: 0,
@@ -54,7 +65,79 @@ export default function ServiceCrud({ initialCategories }: Props) {
     icon: '',
   });
 
-  // ✅ Handlers for modals
+  const refreshCategories = async () => {
+    const response = await fetch('/api/categories');
+    if (!response.ok) {
+      throw new Error('Failed to refresh categories');
+    }
+
+    const data = (await response.json()) as Category[];
+    setCategories(data);
+    router.refresh();
+  };
+
+  const saveCategoryMutation = useApiMutation(
+    async (payload: { isEdit: boolean; form: CategoryFormData }) => {
+      const response = await fetch(
+        payload.isEdit ? `/api/categories/${payload.form.id}` : '/api/categories',
+        {
+          method: payload.isEdit ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload.form),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to save category');
+      }
+
+      return response.json();
+    },
+    { successMessage: 'Category saved successfully', invalidateQueries: ['categories'] },
+  );
+
+  const deleteCategoryMutation = useApiMutation(
+    async (id: number) => {
+      const response = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        throw new Error('Failed to delete category');
+      }
+      return response.json();
+    },
+    { successMessage: 'Category deleted successfully', invalidateQueries: ['categories'] },
+  );
+
+  const saveServiceMutation = useApiMutation(
+    async (payload: { isEdit: boolean; form: ServiceFormData }) => {
+      const response = await fetch(
+        payload.isEdit ? `/api/services/${payload.form.id}` : '/api/services',
+        {
+          method: payload.isEdit ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload.form),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to save service');
+      }
+
+      return response.json();
+    },
+    { successMessage: 'Service saved successfully', invalidateQueries: ['services'] },
+  );
+
+  const deleteServiceMutation = useApiMutation(
+    async (id: number) => {
+      const response = await fetch(`/api/services/${id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        throw new Error('Failed to delete service');
+      }
+      return response.json();
+    },
+    { successMessage: 'Service deleted successfully', invalidateQueries: ['services'] },
+  );
+
   const openCategoryModal = (category?: Category) => {
     if (category) {
       setCategoryForm({
@@ -84,23 +167,12 @@ export default function ServiceCrud({ initialCategories }: Props) {
 
     try {
       setLoading(true);
-      if (categoryForm.id) {
-        await fetch(`/api/categories/${categoryForm.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(categoryForm),
-        });
-        toast.success('Category updated successfully');
-      } else {
-        await fetch('/api/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(categoryForm),
-        });
-        toast.success('Category created successfully');
-      }
+      await saveCategoryMutation.mutateAsync({
+        isEdit: Boolean(categoryForm.id),
+        form: categoryForm,
+      });
       setCategoryModalOpen(false);
-      window.location.reload(); // ✅ Refresh server data
+      await refreshCategories();
     } catch (err) {
       toast.error('Error saving category');
       console.error(err);
@@ -110,13 +182,11 @@ export default function ServiceCrud({ initialCategories }: Props) {
   };
 
   const deleteCategory = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this category?')) return;
 
     try {
       setLoading(true);
-      await fetch(`/api/categories/${id}`, { method: 'DELETE' });
-      toast.success('Category deleted successfully');
-      window.location.reload();
+      await deleteCategoryMutation.mutateAsync(id);
+      await refreshCategories();
     } catch (err) {
       toast.error('Failed to delete category');
       console.error(err);
@@ -126,8 +196,6 @@ export default function ServiceCrud({ initialCategories }: Props) {
   };
 
   const openServiceModal = (category: Category, service?: Service) => {
-    setSelectedCategory(category);
-
     if (service) {
       setServiceForm({
         ...service,
@@ -169,27 +237,16 @@ export default function ServiceCrud({ initialCategories }: Props) {
             .filter(Boolean)
         : serviceForm.features;
 
-    const body = { ...serviceForm, features: featuresArray };
+    const form = { ...serviceForm, features: featuresArray };
 
     try {
       setLoading(true);
-      if (serviceForm.id) {
-        await fetch(`/api/services/${serviceForm.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        toast.success('Service updated successfully');
-      } else {
-        await fetch('/api/services', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        toast.success('Service created successfully');
-      }
+      await saveServiceMutation.mutateAsync({
+        isEdit: Boolean(serviceForm.id),
+        form,
+      });
       setServiceModalOpen(false);
-      window.location.reload();
+      await refreshCategories();
     } catch (err) {
       toast.error('Error saving service');
       console.error(err);
@@ -199,13 +256,11 @@ export default function ServiceCrud({ initialCategories }: Props) {
   };
 
   const deleteService = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this service?')) return;
 
     try {
       setLoading(true);
-      await fetch(`/api/services/${id}`, { method: 'DELETE' });
-      toast.success('Service deleted successfully');
-      window.location.reload();
+      await deleteServiceMutation.mutateAsync(id);
+      await refreshCategories();
     } catch (err) {
       toast.error('Failed to delete service');
       console.error(err);
@@ -214,90 +269,64 @@ export default function ServiceCrud({ initialCategories }: Props) {
     }
   };
 
-  // ✅ Render UI
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <div className="space-y-6">
       <Toaster position="top-right" />
 
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 4,
-          pb: 2,
-          borderBottom: 2,
-          borderColor: 'divider',
-        }}
-      >
-        <Box>
-          <Typography variant="h3" fontWeight={700}>
-            Categories & Services Management
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Manage your service categories and offerings
-          </Typography>
-        </Box>
+      <Card className="border-border/60 shadow-sm">
+        <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Admin catalog
+            </p>
+            <div className="space-y-1">
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                Categories & Services Management
+              </h1>
+              <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
+                Manage service categories, service cards, and supporting content from one place.
+              </p>
+            </div>
+          </div>
 
-        <Button
-          variant="contained"
-          size="large"
-          startIcon={<AddIcon />}
-          onClick={() => openCategoryModal()}
-        >
-          Add Category
-        </Button>
-      </Box>
+          <Button size="lg" onClick={() => openCategoryModal()} className="w-full sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Category
+          </Button>
+        </CardContent>
+      </Card>
 
       {loading ? (
-        <Box display="flex" justifyContent="center" py={8}>
-          <CircularProgress size={60} />
-        </Box>
+        <div className="flex min-h-[280px] items-center justify-center rounded-xl border border-dashed border-border bg-muted/20">
+          <LoadingSpinner size="lg" text="Refreshing categories" />
+        </div>
       ) : categories.length === 0 ? (
-        <Paper
-          elevation={0}
-          sx={{
-            textAlign: 'center',
-            py: 8,
-            px: 4,
-            bgcolor: 'grey.50',
-            border: 2,
-            borderColor: 'grey.200',
-            borderStyle: 'dashed',
-            borderRadius: 2,
-          }}
-        >
-          <Typography variant="h6" gutterBottom>
-            No categories yet
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mb={3}>
-            Create your first category to get started!
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => openCategoryModal()}
-          >
-            Create Category
-          </Button>
-        </Paper>
+        <EmptyState
+          icon={<FolderKanban className="h-10 w-10 text-muted-foreground" />}
+          title="No categories yet"
+          description="Create your first category to get started."
+          action={{ label: 'Create Category', onClick: () => openCategoryModal() }}
+        />
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: '24px',
-          }}
-        >
+        <div className="grid gap-6 xl:grid-cols-2 2xl:grid-cols-3">
           {categories.map((cat) => (
-            <div key={cat.id}>
+            <div key={cat.id} className="min-w-0">
               <CategoryCard
                 category={cat}
                 onEditCategory={openCategoryModal}
-                onDeleteCategory={deleteCategory}
+                onDeleteCategory={(id) =>
+                  setDeleteTarget({ kind: 'category', id, name: cat.name })
+                }
                 onAddService={openServiceModal}
                 onEditService={openServiceModal}
-                onDeleteService={deleteService}
+                onDeleteService={(id) => {
+                  const service = cat.services.find((item) => item.id === id);
+                  setDeleteTarget({
+                    kind: 'service',
+                    id,
+                    name: service?.name || 'this service',
+                  });
+                }}
               />
             </div>
           ))}
@@ -319,7 +348,49 @@ export default function ServiceCrud({ initialCategories }: Props) {
         onClose={() => setServiceModalOpen(false)}
         onSave={saveService}
         onChange={handleServiceChange}
+        isSaving={loading}
       />
-    </Container>
+
+      <AlertDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {deleteTarget?.kind === 'category' ? 'category' : 'service'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The item will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={loading}
+              onClick={() => {
+                if (!deleteTarget) {
+                  return;
+                }
+
+                if (deleteTarget.kind === 'category') {
+                  void deleteCategory(deleteTarget.id);
+                } else {
+                  void deleteService(deleteTarget.id);
+                }
+
+                setDeleteTarget(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

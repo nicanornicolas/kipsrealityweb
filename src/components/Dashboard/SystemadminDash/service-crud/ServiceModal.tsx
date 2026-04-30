@@ -1,18 +1,25 @@
-// ServiceModal.tsx
+import { ServiceFormData, Category } from '../../type';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Box,
-  MenuItem,
-  FormHelperText,
-  IconButton,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import { ServiceFormData, Category } from '../../type';
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingButton } from '@/components/ui/loading-button';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { X, Palette } from 'lucide-react';
 
 interface ServiceModalProps {
   isOpen: boolean;
@@ -21,6 +28,7 @@ interface ServiceModalProps {
   onClose: () => void;
   onSave: () => void;
   onChange: (field: keyof ServiceFormData, value: string | number | string[]) => void;
+  isSaving?: boolean;
 }
 
 export default function ServiceModal({
@@ -30,116 +38,130 @@ export default function ServiceModal({
   onClose,
   onSave,
   onChange,
+  isSaving = false,
 }: ServiceModalProps) {
+  const featuresValue = Array.isArray(serviceForm.features)
+    ? serviceForm.features.join(', ')
+    : serviceForm.features;
+
   return (
-    <Dialog
-      open={isOpen}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{ sx: { borderRadius: 2 } }}
-    >
-      <DialogTitle sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        pb: 2,
-        fontWeight: 700,
-      }}>
-        {serviceForm.id ? "Edit Service" : "Add Service"}
-        <IconButton size="small" onClick={onClose}>
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl border-border/60 bg-background p-0 shadow-xl" showCloseButton={false}>
+        <DialogHeader className="border-b border-border/60 px-6 py-5 text-left">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <DialogTitle className="text-2xl font-semibold tracking-tight">
+                {serviceForm.id ? 'Edit Service' : 'Add Service'}
+              </DialogTitle>
+              <DialogDescription>
+                Update service details and keep the category catalog consistent.
+              </DialogDescription>
+            </div>
 
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          <TextField
-            label="Name"
-            placeholder="Enter service name"
-            value={serviceForm.name}
-            onChange={(e) => onChange('name', e.target.value)}
-            fullWidth
-            required
-          />
+            <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close dialog">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </DialogHeader>
 
-          <TextField
-            label="Description"
-            placeholder="Enter service description"
-            value={serviceForm.description}
-            onChange={(e) => onChange('description', e.target.value)}
-            fullWidth
-            multiline
-            rows={3}
-          />
-
-          <Box sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '2fr 1fr' },
-            gap: 2
-          }}>
-            <Box>
-              <TextField
-                label="Features"
-                placeholder="Enter features (comma separated)"
-                value={Array.isArray(serviceForm.features) ? serviceForm.features.join(", ") : serviceForm.features}
-                onChange={(e) => onChange('features', e.target.value)}
-                fullWidth
-              />
-              <FormHelperText>Separate multiple features with commas</FormHelperText>
-            </Box>
-
-            <TextField
-              label="Icon"
-              placeholder="Enter icon name or emoji"
-              value={serviceForm.icon}
-              onChange={(e) => onChange('icon', e.target.value)}
-              fullWidth
-              inputProps={{ style: { fontSize: '1.5rem', textAlign: 'center' } }}
+        <div className="space-y-5 px-6 py-5">
+          <div className="space-y-2">
+            <Label htmlFor="service-name">Name</Label>
+            <Input
+              id="service-name"
+              placeholder="Enter service name"
+              value={serviceForm.name}
+              onChange={(e) => onChange('name', e.target.value)}
+              required
             />
-          </Box>
+          </div>
 
-          <TextField
-            label="Impact"
-            placeholder="Enter service impact"
-            value={serviceForm.impact}
-            onChange={(e) => onChange('impact', e.target.value)}
-            fullWidth
-            multiline
-            rows={2}
-          />
+          <div className="space-y-2">
+            <Label htmlFor="service-description">Description</Label>
+            <Textarea
+              id="service-description"
+              placeholder="Enter service description"
+              value={serviceForm.description}
+              onChange={(e) => onChange('description', e.target.value)}
+              rows={4}
+            />
+          </div>
 
-          <TextField
-            select
-            label="Category"
-            value={serviceForm.categoryId || ''}
-            onChange={(e) => onChange('categoryId', Number(e.target.value))}
-            fullWidth
-            required
-          >
-            <MenuItem value={0} disabled>
-              Select a category
-            </MenuItem>
-            {categories.map((c) => (
-              <MenuItem key={c.id} value={c.id}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: c.color }} />
-                  {c.name}
-                </Box>
-              </MenuItem>
-            ))}
-          </TextField>
-        </Box>
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+            <div className="space-y-2">
+              <Label htmlFor="service-features">Features</Label>
+              <Input
+                id="service-features"
+                placeholder="Enter features, comma separated"
+                value={featuresValue}
+                onChange={(e) => onChange('features', e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Separate multiple features with commas.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="service-icon" className="inline-flex items-center gap-2">
+                <Palette className="h-4 w-4" />
+                Icon
+              </Label>
+              <Input
+                id="service-icon"
+                placeholder="Emoji or icon text"
+                value={serviceForm.icon}
+                onChange={(e) => onChange('icon', e.target.value)}
+                className="text-center text-2xl"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="service-impact">Impact</Label>
+            <Textarea
+              id="service-impact"
+              placeholder="Enter service impact"
+              value={serviceForm.impact}
+              onChange={(e) => onChange('impact', e.target.value)}
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Select
+              value={serviceForm.categoryId ? String(serviceForm.categoryId) : ''}
+              onValueChange={(value) => onChange('categoryId', Number(value))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={String(category.id)}>
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="h-3 w-3 rounded-full border border-border"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      {category.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <DialogFooter className="border-t border-border/60 px-6 py-4">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <LoadingButton onClick={onSave} isLoading={isSaving}>
+            Save Service
+          </LoadingButton>
+        </DialogFooter>
       </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 2.5, pt: 2, gap: 1 }}>
-        <Button onClick={onClose} color="inherit" size="large">
-          Cancel
-        </Button>
-        <Button onClick={onSave} variant="contained" color="primary" size="large">
-          Save Service
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
