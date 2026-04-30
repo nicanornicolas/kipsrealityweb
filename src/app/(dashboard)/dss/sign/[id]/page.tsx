@@ -7,6 +7,7 @@ import {
   AlertTriangle, CheckCircle, FileText, XCircle,
   UserCheck, ShieldAlert
 } from "lucide-react";
+import { api } from '@/lib/api-client';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,16 +53,20 @@ export default function SigningRoom() {
   useEffect(() => {
     async function fetchDocument() {
       try {
-        const res = await fetch(`/api/dss/documents/${documentId}`);
-        if (!res.ok) throw new Error("Failed to load document");
-        const data = await res.json();
+        const res = await api.get<{ success?: boolean; document?: DocumentData; error?: string }>(
+          `/api/dss/documents/${documentId}`,
+        );
+        const data = res.data;
+        if (res.error) throw new Error(data?.error || res.error || "Failed to load document");
 
         if (data.success) {
           setDocument(data.document);
 
-          const viewRes = await fetch(`/api/dss/documents/${documentId}/view`);
-          const viewData = await viewRes.json();
-          if (viewRes.ok) {
+          const viewRes = await api.get<{ document?: { viewUrl?: string } }>(
+            `/api/dss/documents/${documentId}/view`,
+          );
+          const viewData = viewRes.data;
+          if (!viewRes.error) {
             setViewUrl(viewData.document?.viewUrl || null);
           }
 
@@ -104,18 +109,16 @@ export default function SigningRoom() {
     setIsSubmitting(true);
     try {
       // Call your API
-      const res = await fetch("/api/dss/sign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const res = await api.post<{ error?: string }>(
+        '/api/dss/sign',
+        {
           documentId: documentId,
           signatureData: "Signed via RentFlow360 Web UI", // In real app, use canvas signature
           onBehalfOf: myRole === 'CUSTODIAN' ? beneficiaryName : null
-        })
-      });
+        },
+      );
 
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
+      if (res.error) throw new Error(res.data?.error || res.error);
 
       toast.success("Document Signed Successfully");
       // Refresh page data
@@ -137,17 +140,15 @@ export default function SigningRoom() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/dss/reject", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const res = await api.post<{ error?: string }>(
+        '/api/dss/reject',
+        {
           documentId: documentId,
           reason: rejectReason
-        })
-      });
+        },
+      );
 
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
+      if (res.error) throw new Error(res.data?.error || res.error);
 
       toast.success("Document Rejected");
       setIsRejectModalOpen(false);
