@@ -1553,6 +1553,7 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		fileSizeBytes: "fileSizeBytes",
 		originalPdfSha256Hex: "originalPdfSha256Hex",
 		finalPdfSha256Hex: "finalPdfSha256Hex",
+		finalFileUrl: "finalFileUrl",
 		status: "status",
 		signingMode: "signingMode",
 		currentStep: "currentStep",
@@ -2345,7 +2346,8 @@ In case this error is unexpected for you, please report it in https://pris.ly/pr
 		originalFileKey: "originalFileKey",
 		mimeType: "mimeType",
 		originalPdfSha256Hex: "originalPdfSha256Hex",
-		finalPdfSha256Hex: "finalPdfSha256Hex"
+		finalPdfSha256Hex: "finalPdfSha256Hex",
+		finalFileUrl: "finalFileUrl"
 	}, i.Prisma.DssParticipantOrderByRelevanceFieldEnum = {
 		id: "id",
 		documentId: "documentId",

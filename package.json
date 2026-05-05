@@ -6,12 +6,13 @@
     "libs/*"
   ],
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "scripts": {
-    "dev": "nx dev --turbo",
+    "dev": "nx dev --webpack",
+    "dev:turbo": "nx dev --turbo",
     "postinstall": "prisma generate",
-    "build": "cross-env NODE_OPTIONS=--max-old-space-size=6144 nx build --webpack",
+    "build": "NODE_OPTIONS=--max-old-space-size=6144 nx build --webpack",
     "// --- DEPLOYMENT SCRIPTS ---": "",
     "postbuild": "node scripts/build-standalone.mjs",
     "start": "nx start",
