@@ -5,13 +5,9 @@ import { AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { api } from '@/lib/api-client';
+import { formatUSD } from '@/lib/format-currency';
 import { VendorListItem } from '@rentflow/finance';
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
 
 /**
  * VendorComplianceTable Component
@@ -28,11 +24,13 @@ export function VendorComplianceTable() {
   const { data: vendors, isLoading, error } = useQuery({
     queryKey: ['vendor-compliance'],
     queryFn: async () => {
-      const res = await fetch('/api/finance/vendors/compliance', {
-        cache: 'no-store',
-      });
-      if (!res.ok) throw new Error('Failed to fetch vendor compliance data');
-      const json = await res.json();
+      const res = await api.get<{ success: boolean; data: VendorListItem[]; error?: string }>(
+        '/api/finance/vendors/compliance',
+      );
+      if (res.error || !res.data?.success) {
+        throw new Error(res.data?.error || res.error || 'Failed to fetch vendor compliance data');
+      }
+      const json = res.data;
       return json.data as VendorListItem[];
     },
   });
@@ -66,7 +64,7 @@ export function VendorComplianceTable() {
   }
 
   const highRiskVendors = (vendors || []).filter(
-    (v) => v.requires1099 && v.w9Status === 'MISSING'
+    (v) => v.totalPaidYTD > 600 && v.w9Status === 'MISSING'
   );
 
   return (
@@ -154,14 +152,14 @@ export function VendorComplianceTable() {
 
                     <TableCell className="px-4 py-3 text-right">
                       <span className="font-mono text-sm font-medium text-slate-900">
-                        {currencyFormatter.format(vendor.totalPaidYTD)}
+                        {formatUSD(vendor.totalPaidYTD)}
                       </span>
                     </TableCell>
 
                     <TableCell className="px-4 py-3 text-center">
-                      {vendor.requires1099 && vendor.w9Status !== 'COLLECTED' ? (
-                        <span className="inline-block bg-rose-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-rose-700 rounded">
-                          ⚠️ IRS Block
+                      {vendor.totalPaidYTD > 600 && vendor.w9Status === 'MISSING' ? (
+                        <span className="inline-block animate-pulse rounded bg-rose-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-rose-700">
+                          [IRS BLOCK]
                         </span>
                       ) : vendor.totalPaidYTD > 500 ? (
                         <span className="inline-block text-xs font-medium text-amber-600">

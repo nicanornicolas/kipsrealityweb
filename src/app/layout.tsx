@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import type { Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
 import { QueryProvider } from "@/context/QueryProvider";
 import { LoadingBar } from "@/components/ui/loading-bar";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { GlobalUpgradeModalHost } from "@/components/monetization/GlobalUpgradeModalHost";
 import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
-import { Inter, Plus_Jakarta_Sans, Sen } from "next/font/google";
+import { Caveat, Inter, Plus_Jakarta_Sans, Sen } from "next/font/google";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -24,6 +25,11 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 const sen = Sen({
   variable: "--font-sen",
+  subsets: ["latin"],
+});
+
+const caveat = Caveat({
+  variable: "--font-caveat",
   subsets: ["latin"],
 });
 
@@ -67,7 +73,7 @@ export default function RootLayout({
     <html lang="en" className="light" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${plusJakartaSans.variable} ${inter.variable} ${sen.variable} font-sans antialiased min-h-screen transition-colors duration-500`}
+        className={`${plusJakartaSans.variable} ${inter.variable} ${sen.variable} ${caveat.variable} font-sans antialiased min-h-screen transition-colors duration-500`}
       >
         <QueryProvider>
           <AuthProvider>
@@ -75,14 +81,14 @@ export default function RootLayout({
               fallback={
                 <div className="min-h-screen flex items-center justify-center">
                   <div className="text-center">
-                    <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    <p className="text-gray-600">Loading...</p>
+                    <LoadingSpinner text="Loading..." />
                   </div>
                 </div>
               }
             >
               <LoadingBar />
               {children}
+              <GlobalUpgradeModalHost />
               <ServiceWorkerRegister />
               <Toaster
                 position="top-center"

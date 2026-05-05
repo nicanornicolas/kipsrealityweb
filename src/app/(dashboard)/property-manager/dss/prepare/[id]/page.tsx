@@ -23,6 +23,7 @@ import {
   PenLine,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import { api } from '@/lib/api-client';
 
 if (typeof window !== 'undefined') {
   pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -45,17 +46,24 @@ interface ExistingField {
 }
 
 interface Participant {
-  id: string;
+  id?: string;
   fullName: string;
   email: string;
   role: string;
 }
 
-interface ViewDocumentData {
+type DocumentStatus = 'DRAFT' | 'SENT' | 'IN_PROGRESS' | 'COMPLETED' | 'VOIDED';
+
+interface DocumentData {
   id: string;
   title: string;
-  viewUrl: string;
+  originalPdfUrl: string;
   participants: Participant[];
+  status?: DocumentStatus;
+}
+
+interface PdfPageLike {
+  getViewport: (options: { scale: number }) => { width: number; height: number };
 }
 
 type FieldType = 'SIGNATURE' | 'DATE' | 'INITIALS' | 'TEXT';
@@ -76,15 +84,18 @@ function DraggableFieldTool({
   type,
   label,
   icon,
+  disabled,
 }: {
   type: FieldType;
   label: string;
   icon: React.ReactNode;
+  disabled?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: `tool-${type}`,
       data: { type, isTool: true },
+      disabled,
     });
 
   const style = {
@@ -98,7 +109,11 @@ function DraggableFieldTool({
       style={style}
       {...listeners}
       {...attributes}
-      className="flex items-center gap-2 p-3 bg-white border border-gray-200 rounded-lg cursor-grab hover:bg-gray-50 hover:border-blue-300 transition-colors"
+      className={`flex items-center gap-2 p-3 bg-white border border-gray-200 rounded-lg transition-colors ${
+        disabled
+          ? 'cursor-not-allowed opacity-60'
+          : 'cursor-grab hover:bg-gray-50 hover:border-blue-300'
+      }`}
     >
       {icon}
       <span className="text-sm font-medium">{label}</span>
@@ -113,6 +128,7 @@ function DroppablePage({
   fields,
   onFieldClick,
   activeField,
+  canEdit,
 }: {
   pageNumber: number;
   pdfWidth: number;
@@ -120,10 +136,11 @@ function DroppablePage({
   fields: ExistingField[];
   onFieldClick: (field: ExistingField) => void;
   activeField: { type: FieldType; x: number; y: number } | null;
+  canEdit: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `page-${pageNumber}`,
-    data: { pageNumber, pdfWidth, pdfHeight },
+    data: { pageNumber },
   });
 
   const pageFields = fields.filter((f) => f.pageNumber === pageNumber);
@@ -131,7 +148,8 @@ function DroppablePage({
   return (
     <div
       ref={setNodeRef}
-      className={`relative bg-white shadow-2xl ${isOver ? 'ring-2 ring-blue-400' : ''}`}
+      className={`relative bg-white ${isOver ? 'ring-2 ring-blue-400' : ''}`}
+      id={`dss-page-${pageNumber}`}
       style={{ width: pdfWidth, height: pdfHeight }}
     >
       <Page
@@ -152,7 +170,7 @@ function DroppablePage({
         return (
           <div
             key={field.id}
-            onClick={() => onFieldClick(field)}
+            onClick={() => canEdit && onFieldClick(field)}
             className={`absolute border-2 cursor-pointer ${
               isSelected
                 ? 'border-blue-500 bg-blue-50'
@@ -191,7 +209,7 @@ export default function DocumentPreparePage() {
   const params = useParams();
   const documentId = params.id as string;
 
-  const [document, setDocument] = useState<ViewDocumentData | null>(null);
+  const [document, setDocument] = useState<DocumentData | null>(null);
   const [fields, setFields] = useState<ExistingField[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -221,21 +239,24 @@ export default function DocumentPreparePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [viewRes, fieldsRes] = await Promise.all([
-          fetch(`/api/dss/documents/${documentId}/view`),
-          fetch(`/api/dss/documents/${documentId}/fields`),
+        const [docRes, fieldsRes] = await Promise.all([
+          api.get<{ document?: DocumentData }>(`/api/dss/documents/${documentId}`),
+          api.get<{ fields?: ExistingField[] }>(`/api/dss/documents/${documentId}/fields`),
         ]);
 
-        if (viewRes.ok) {
-          const viewData = await viewRes.json();
-          setDocument(viewData.document);
-          if (viewData.document.participants?.length > 0) {
-            setSelectedParticipantId(viewData.document.participants[0].id);
+        if (!docRes.error && docRes.data?.document) {
+          const docData = docRes.data;
+          setDocument(docData.document);
+          const firstParticipantWithId = docData.document.participants?.find(
+            (participant: Participant) => participant.id,
+          );
+          if (firstParticipantWithId?.id) {
+            setSelectedParticipantId(firstParticipantWithId.id);
           }
         }
 
-        if (fieldsRes.ok) {
-          const fieldsData = await fieldsRes.json();
+        if (!fieldsRes.error) {
+          const fieldsData = fieldsRes.data || {};
           setFields(fieldsData.fields || []);
         }
       } catch (error) {
@@ -254,14 +275,14 @@ export default function DocumentPreparePage() {
       getPage,
     }: {
       numPages: number;
-      getPage: (pageNumber: number) => any;
+      getPage: (pageNumber: number) => Promise<PdfPageLike>;
     }) => {
       setNumPages(numPages);
-      getPage(1).then((page: any) => {
+      getPage(1).then((page) => {
         const { width, height } = page.getViewport({ scale: 1 });
         setPdfDimensions({
-          width: Math.min(width, 800),
-          height: Math.min(height, 1000),
+          width: Math.min(width, 600),
+          height: Math.min(height, 800),
         });
       });
     },
@@ -269,6 +290,11 @@ export default function DocumentPreparePage() {
   );
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    if (!document || (document.status && document.status !== 'DRAFT')) {
+      setActiveField(null);
+      return;
+    }
+
     const { active, over } = event;
 
     if (!over || !selectedParticipantId) {
@@ -288,10 +314,22 @@ export default function DocumentPreparePage() {
       return;
     }
 
-    const { pageNumber, pdfWidth, pdfHeight } = overData;
-    const dropPoint = event.activatorEvent as PointerEvent;
-    const x = ((dropPoint.clientX - 50) / pdfWidth) * 100;
-    const y = ((dropPoint.clientY - 50) / pdfHeight) * 100;
+    const { pageNumber } = overData;
+    const pointerLikeEvent = event.activatorEvent as MouseEvent | PointerEvent;
+    if (!pointerLikeEvent || typeof pointerLikeEvent.clientX !== 'number') {
+      setActiveField(null);
+      return;
+    }
+
+    const pageElement = window.document.getElementById(`dss-page-${pageNumber}`);
+    if (!pageElement) {
+      setActiveField(null);
+      return;
+    }
+
+    const pageRect = pageElement.getBoundingClientRect();
+    const x = ((pointerLikeEvent.clientX - pageRect.left) / pageRect.width) * 100;
+    const y = ((pointerLikeEvent.clientY - pageRect.top) / pageRect.height) * 100;
 
     const clampedX = Math.max(0, Math.min(100, x));
     const clampedY = Math.max(0, Math.min(100, y));
@@ -308,15 +346,15 @@ export default function DocumentPreparePage() {
 
     setSaving(true);
     try {
-      const res = await fetch(`/api/dss/documents/${documentId}/fields`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newField),
-      });
+      const res = await api.post<{ fields: ExistingField[] | ExistingField; error?: string }>(
+        `/api/dss/documents/${documentId}/fields`,
+        newField,
+      );
 
-      if (res.ok) {
-        const data = await res.json();
-        setFields([...fields, ...data.fields]);
+      if (!res.error && res.data) {
+        const data = res.data;
+        const createdFields = Array.isArray(data.fields) ? data.fields : [data.fields];
+        setFields((prev) => [...prev, ...createdFields]);
       }
     } catch (error) {
       console.error('Failed to save field:', error);
@@ -327,16 +365,15 @@ export default function DocumentPreparePage() {
   };
 
   const handleFieldClick = async (field: ExistingField) => {
+    if (document?.status && document.status !== 'DRAFT') return;
+
     if (window.confirm(`Delete ${field.type} field?`)) {
       try {
-        const res = await fetch(
+        const res = await api.delete<{ success: boolean; error?: string }>(
           `/api/dss/documents/${documentId}/fields?fieldId=${field.id}`,
-          {
-            method: 'DELETE',
-          },
         );
 
-        if (res.ok) {
+        if (!res.error && res.data?.success) {
           setFields(fields.filter((f) => f.id !== field.id));
         }
       } catch (error) {
@@ -357,48 +394,64 @@ export default function DocumentPreparePage() {
     return <div className="text-center py-10">Document not found</div>;
   }
 
+  const canEdit = !document.status || document.status === 'DRAFT';
+
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="min-h-screen bg-gray-200">
-        <div className="bg-white border-b px-6 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Prepare Document</h1>
+      <div className="container mx-auto py-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Prepare Document</h1>
           <p className="text-gray-600">{document.title}</p>
+          {!canEdit && (
+            <p className="mt-2 text-sm text-amber-700">
+              This document is {document.status}. Field placement is disabled outside DRAFT state.
+            </p>
+          )}
         </div>
 
-        <div className="flex">
-          <div className="w-72 bg-white border-r min-h-[calc(100vh-73px)] p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Signer</h3>
-            <select
-              value={selectedParticipantId || ''}
-              onChange={(e) => setSelectedParticipantId(e.target.value)}
-              className="w-full p-2 border rounded-md mb-6"
-            >
-              {document.participants.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.fullName || p.email}
-                </option>
-              ))}
-            </select>
+        <div className="flex gap-6">
+          <div className="w-64 flex-shrink-0">
+            <div className="bg-white rounded-lg border p-4 sticky top-4">
+              <h3 className="font-semibold mb-4">Signer</h3>
+              <select
+                value={selectedParticipantId || ''}
+                onChange={(e) => setSelectedParticipantId(e.target.value)}
+                disabled={!canEdit}
+                className="w-full p-2 border rounded-md mb-4"
+              >
+                {document.participants.map((p) => (
+                  <option key={p.id || p.email} value={p.id || ''}>
+                    {p.fullName || p.email}
+                  </option>
+                ))}
+              </select>
 
-            <h3 className="font-semibold text-gray-900 mb-4">Field Tools</h3>
-            <div className="space-y-2">
-              {FIELD_TOOLS.map((tool) => (
-                <DraggableFieldTool key={tool.type} {...tool} />
-              ))}
-            </div>
-
-            {saving && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-blue-600">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving...
+              <h3 className="font-semibold mb-4">Field Tools</h3>
+              <div className="space-y-2">
+                {FIELD_TOOLS.map((tool) => (
+                  <DraggableFieldTool key={tool.type} {...tool} disabled={!canEdit} />
+                ))}
               </div>
-            )}
+
+              {!canEdit && (
+                <p className="mt-3 text-xs text-slate-500">
+                  Drag-and-drop is only enabled while the document is in DRAFT.
+                </p>
+              )}
+
+              {saving && (
+                <div className="mt-4 flex items-center gap-2 text-sm text-blue-600">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-start pt-8 px-4 overflow-auto max-h-[calc(100vh-73px)]">
-            <div className="bg-gray-200 rounded-lg p-4">
+          <div className="flex-1">
+            <div className="bg-gray-100 rounded-lg p-4 overflow-auto max-h-[90vh]">
               <Document
-                file={document.viewUrl}
+                file={document.originalPdfUrl}
                 onLoadSuccess={onDocumentLoadSuccess}
                 loading={
                   <div className="flex items-center justify-center h-64">
@@ -417,6 +470,7 @@ export default function DocumentPreparePage() {
                         fields={fields}
                         onFieldClick={handleFieldClick}
                         activeField={activeField}
+                        canEdit={canEdit}
                       />
                     ),
                   )}

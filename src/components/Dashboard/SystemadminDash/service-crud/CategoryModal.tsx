@@ -1,17 +1,18 @@
+import { CategoryFormData } from '../../type';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Box,
-  Typography,
-  IconButton,
-  Stack,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import { CategoryFormData } from '../../type';
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingButton } from '@/components/ui/loading-button';
+import { Textarea } from '@/components/ui/textarea';
+import { X, Palette } from 'lucide-react';
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface CategoryModalProps {
   onClose: () => void;
   onSave: () => void;
   onChange: (field: keyof CategoryFormData, value: string) => void;
+  isSaving?: boolean;
 }
 
 export default function CategoryModal({
@@ -27,6 +29,7 @@ export default function CategoryModal({
   onClose,
   onSave,
   onChange,
+  isSaving = false,
 }: CategoryModalProps) {
   const presetColors = [
     '#03346E', '#2196F3', '#4CAF50', '#FF9800', 
@@ -34,106 +37,106 @@ export default function CategoryModal({
   ];
 
   return (
-    <Dialog 
-      open={isOpen} 
-      onClose={onClose} 
-      maxWidth="sm" 
-      fullWidth
-      PaperProps={{ sx: { borderRadius: 2 } }}
-    >
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        pb: 2,
-        fontWeight: 700,
-      }}>
-        {categoryForm.id ? "Edit Category" : "Add Category"}
-        <IconButton size="small" onClick={onClose}>
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          <TextField
-            label="Name"
-            placeholder="Enter category name"
-            value={categoryForm.name}
-            onChange={(e) => onChange('name', e.target.value)}
-            fullWidth
-            required
-          />
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-xl border-border/60 bg-background p-0 shadow-xl" showCloseButton={false}>
+        <DialogHeader className="border-b border-border/60 px-6 py-5 text-left">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <DialogTitle className="text-2xl font-semibold tracking-tight">
+                {categoryForm.id ? 'Edit Category' : 'Add Category'}
+              </DialogTitle>
+              <DialogDescription>
+                Define the category identity, copy, and brand color.
+              </DialogDescription>
+            </div>
 
-          <TextField
-            label="Tagline"
-            placeholder="Enter category tagline"
-            value={categoryForm.tagline}
-            onChange={(e) => onChange('tagline', e.target.value)}
-            fullWidth
-            multiline
-            rows={2}
-          />
+            <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close dialog">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </DialogHeader>
 
-          <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 600 }}>
+        <div className="space-y-5 px-6 py-5">
+          <div className="space-y-2">
+            <Label htmlFor="category-name">Name</Label>
+            <Input
+              id="category-name"
+              placeholder="Enter category name"
+              value={categoryForm.name}
+              onChange={(e) => onChange('name', e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category-tagline">Tagline</Label>
+            <Textarea
+              id="category-tagline"
+              placeholder="Enter category tagline"
+              value={categoryForm.tagline}
+              onChange={(e) => onChange('tagline', e.target.value)}
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <Label className="inline-flex items-center gap-2">
+              <Palette className="h-4 w-4" />
               Color
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            </Label>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
                 type="color"
                 value={categoryForm.color}
                 onChange={(e) => onChange('color', e.target.value)}
-                style={{
-                  width: 60,
-                  height: 50,
-                  border: '2px solid #e0e0e0',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                }}
+                className="h-12 w-full cursor-pointer rounded-md border border-border bg-background p-1 sm:w-16"
+                aria-label="Category color picker"
               />
-              <TextField
+
+              <Input
                 value={categoryForm.color}
                 onChange={(e) => onChange('color', e.target.value)}
-                size="small"
-                sx={{ flex: 1 }}
+                className="font-mono uppercase"
               />
-            </Box>
-            
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-              Quick select
-            </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {presetColors.map((color) => (
-                <Box
-                  key={color}
-                  onClick={() => onChange('color', color)}
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    bgcolor: color,
-                    borderRadius: 1,
-                    cursor: 'pointer',
-                    border: categoryForm.color === color ? '3px solid' : '2px solid',
-                    borderColor: categoryForm.color === color ? 'primary.main' : 'grey.300',
-                    transition: 'all 0.2s',
-                    '&:hover': { transform: 'scale(1.1)' }
-                  }}
-                />
-              ))}
-            </Stack>
-          </Box>
-        </Box>
-      </DialogContent>
+            </div>
 
-      <DialogActions sx={{ px: 3, pb: 2.5, pt: 2, gap: 1 }}>
-        <Button onClick={onClose} color="inherit" size="large">
-          Cancel
-        </Button>
-        <Button onClick={onSave} variant="contained" color="primary" size="large">
-          Save Category
-        </Button>
-      </DialogActions>
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                Quick select
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {presetColors.map((color) => {
+                  const isActive = categoryForm.color === color;
+
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => onChange('color', color)}
+                      className={[
+                        'h-10 w-10 rounded-md border transition-transform duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                        isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'border-border',
+                      ].join(' ')}
+                      style={{ backgroundColor: color }}
+                      aria-label={`Select color ${color}`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="border-t border-border/60 px-6 py-4">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <LoadingButton onClick={onSave} isLoading={isSaving}>
+            Save Category
+          </LoadingButton>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   );
 }

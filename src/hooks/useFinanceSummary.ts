@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api-client';
 
 export interface FinanceSummaryView {
   cashInBank: number;
@@ -28,65 +29,45 @@ const toNumber = (value: number | string | undefined): number => {
 };
 
 export function useFinanceSummary(propertyId?: string) {
-  const [data, setData] = useState<FinanceSummaryView | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const scopedPropertyId = propertyId && propertyId !== 'all' ? propertyId : 'all';
 
-  useEffect(() => {
-    let isCancelled = false;
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['finance-summary', scopedPropertyId],
+    queryFn: async () => {
+      const query =
+        scopedPropertyId !== 'all'
+          ? `?propertyId=${encodeURIComponent(scopedPropertyId)}`
+          : '';
 
-    async function fetchFinanceSummary() {
-      setIsLoading(true);
-      setError(null);
+      const response = await api.get<{
+        success: boolean;
+        data: FinanceSummaryApi;
+        error?: string;
+      }>(`/api/finance/summary${query}`);
+      const result = response.data;
 
-      try {
-        const query =
-          propertyId && propertyId !== 'all'
-            ? `?propertyId=${encodeURIComponent(propertyId)}`
-            : '';
-
-        const response = await fetch(`/api/finance/summary${query}`, {
-          method: 'GET',
-          cache: 'no-store',
-        });
-
-        const result = await response.json();
-
-        if (!response.ok || !result?.success) {
-          throw new Error(result?.error ?? 'Failed to fetch finance summary');
-        }
-
-        const payload = result.data as FinanceSummaryApi;
-        const normalized: FinanceSummaryView = {
-          cashInBank: toNumber(payload.cashInBank),
-          accountsReceivable: toNumber(payload.accountsReceivable),
-          salesTaxLiability: toNumber(payload.salesTaxLiability),
-          totalRevenue: toNumber(payload.totalRevenue),
-          operatingExpenses: toNumber(payload.operatingExpenses),
-          overdueAmount: toNumber(payload.overdueAmount),
-        };
-
-        if (!isCancelled) {
-          setData(normalized);
-        }
-      } catch (err) {
-        if (!isCancelled) {
-          setError(err instanceof Error ? err.message : 'Network error');
-          setData(null);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoading(false);
-        }
+      if (response.error || !result?.success) {
+        throw new Error(result?.error ?? response.error ?? 'Failed to fetch finance summary');
       }
-    }
 
-    fetchFinanceSummary();
+      const payload = result.data as FinanceSummaryApi;
+      const normalized: FinanceSummaryView = {
+        cashInBank: toNumber(payload.cashInBank),
+        accountsReceivable: toNumber(payload.accountsReceivable),
+        salesTaxLiability: toNumber(payload.salesTaxLiability),
+        totalRevenue: toNumber(payload.totalRevenue),
+        operatingExpenses: toNumber(payload.operatingExpenses),
+        overdueAmount: toNumber(payload.overdueAmount),
+      };
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [propertyId]);
+      return normalized;
+    },
+    staleTime: 30_000,
+  });
 
-  return { data, isLoading, error };
+  return {
+    data: data ?? null,
+    isLoading,
+    error: error instanceof Error ? error.message : null,
+  };
 }

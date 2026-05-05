@@ -4,21 +4,32 @@ import { prisma } from "@rentflow/iam";
 import { PaymentFactory, PaymentRequest } from "@rentflow/payments";
 import { PaymentMethod, TransactionStatus, Prisma } from "@prisma/client";
 
+interface StrategyInitializeResult {
+    gateway: string;
+    transactionId: string;
+    checkoutUrl?: string;
+    redirectUrl?: string;
+    url?: string;
+    rawResponse?: {
+        mpesaCheckoutId?: string;
+        customerMessage?: string;
+    };
+}
+
 export async function POST(req: NextRequest) {
     try {
-        const user = await getCurrentUser();
+        const user = await getCurrentUser(req);
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const body = await req.json();
-        const { invoiceId } = body;
+        const { invoiceId, region } = body;
 
         if (!invoiceId) {
             return NextResponse.json({ error: "Invoice ID is required" }, { status: 400 });
         }
 
-        // 1. Fetch Invoice and related data
         const invoice = await prisma.invoice.findUnique({
             where: { id: invoiceId },
             include: {
@@ -38,20 +49,18 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
         }
 
+        if (user.role === "TENANT" && invoice.Lease?.tenantId !== user.id) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
         const organization = invoice.Lease.property.organization;
         if (!organization) {
             return NextResponse.json({ error: "Organization not found for this invoice" }, { status: 404 });
         }
 
-        // 2. Determine Strategy
-        // Default to 'KEN' if region is null
-        const region = organization.region || "KEN";
-        const strategy = PaymentFactory.getStrategy(region);
+        const resolvedRegion = region === "USA" ? "USA" : organization.region || "KEN";
+        const strategy = PaymentFactory.getStrategy(resolvedRegion);
 
-        // 3. Prepare Payment Request
-        // We need a full User object for the PaymentRequest interface, 
-        // but getCurrentUser returns a subset. We should fetch the full user or cast/map it.
-        // Let's fetch the full user to be safe and get all required fields.
         const fullUser = await prisma.user.findUnique({
             where: { id: user.id }
         });
@@ -63,27 +72,21 @@ export async function POST(req: NextRequest) {
         const paymentRequest: PaymentRequest = {
             user: fullUser,
             organization: organization,
-            amount: invoice.totalAmount, // or invoice.balance? Using totalAmount for now as per "Pay Now" logic usually implies paying the bill.
-            currency: "KES", // This should probably be dynamic based on region or invoice currency.
+            amount: invoice.totalAmount,
+            currency: "KES",
             invoiceId: invoice.id,
             metadata: {
                 source: "web_app",
             },
         };
 
-        // Override currency if region is USA
-        if (region === 'USA') {
+        if (resolvedRegion === 'USA') {
             paymentRequest.currency = 'USD';
         }
+        const result = await strategy.initializePayment(paymentRequest) as StrategyInitializeResult;
 
-
-        // 4. Initialize Payment via Strategy
-        const result = await strategy.initializePayment(paymentRequest);
-
-        // 5. Log Intent to DB (Create Payment Record)
-        // We create a payment record with status PENDING.
         const paymentMethod =
-            region === "KEN" && result.gateway === "MPESA_DIRECT"
+            resolvedRegion === "KEN" && result.gateway === "MPESA_DIRECT"
                 ? PaymentMethod.MPESA
                 : PaymentMethod.CREDIT_CARD;
         
@@ -98,7 +101,6 @@ export async function POST(req: NextRequest) {
             method: paymentMethod,
         };
 
-        // Add metadata for M-Pesa payments
         if (result.gateway === "MPESA_DIRECT" && result.rawResponse?.mpesaCheckoutId) {
             const metadata: Record<string, Prisma.InputJsonValue> = {
                 checkoutRequestId: result.rawResponse.mpesaCheckoutId,
@@ -118,7 +120,13 @@ export async function POST(req: NextRequest) {
             data: paymentData,
         });
 
-        return NextResponse.json(result);
+        const checkoutUrl = result.checkoutUrl || result.url || result.redirectUrl;
+
+        if (!checkoutUrl) {
+            return NextResponse.json({ error: "Payment provider did not return a checkout url" }, { status: 502 });
+        }
+
+        return NextResponse.json({ url: checkoutUrl, checkoutUrl });
 
     } catch (error: unknown) {
         console.error("Payment Initialization Error:", error);

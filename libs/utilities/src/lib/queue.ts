@@ -5,9 +5,14 @@ const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const isBuildPhase =
   process.env.NEXT_PHASE === 'phase-production-build' ||
   process.env.npm_lifecycle_event === 'build';
+const isTestPhase =
+  process.env.NODE_ENV === 'test' ||
+  process.env.VITEST === 'true' ||
+  Boolean(process.env.VITEST_WORKER_ID);
+const shouldDisableQueues = isBuildPhase || isTestPhase;
 
 // Shared Redis connection for BullMQ queues
-export const connection = isBuildPhase
+export const connection = shouldDisableQueues
   ? (null as unknown as IORedis)
   : new IORedis(redisUrl, {
       maxRetriesPerRequest: null,
@@ -15,7 +20,7 @@ export const connection = isBuildPhase
       retryStrategy: (attempts: number) => Math.min(attempts * 50, 3000),
     });
 
-if (!isBuildPhase) {
+if (!shouldDisableQueues) {
   connection.on('error', (err: Error) => {
     if (process.env.NODE_ENV === 'production') throw err;
     console.warn('[Redis] Connection error:', err.message);
@@ -30,7 +35,7 @@ export const defaultJobOptions: DefaultJobOptions = {
 };
 
 // The Webhook Queue
-export const webhookQueue = isBuildPhase
+export const webhookQueue = shouldDisableQueues
   ? (null as unknown as Queue)
   : new Queue('stripe-webhooks', {
       connection,
@@ -38,7 +43,7 @@ export const webhookQueue = isBuildPhase
     });
 
 // Future: The Bulk Invoice Queue
-export const invoiceQueue = isBuildPhase
+export const invoiceQueue = shouldDisableQueues
   ? (null as unknown as Queue)
   : new Queue('bulk-invoices', {
       connection,
@@ -46,7 +51,7 @@ export const invoiceQueue = isBuildPhase
     });
 
 // Email Notifications Queue
-export const emailQueue = isBuildPhase
+export const emailQueue = shouldDisableQueues
   ? (null as unknown as Queue)
   : new Queue('email-notifications', {
       connection,

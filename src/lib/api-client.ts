@@ -27,15 +27,31 @@ interface ApiRequestOptions extends RequestInit {
   retryOnAuthFailure?: boolean;
 }
 
+export interface PaymentRequiredEventDetail {
+  message?: string;
+  featureKey?: string;
+  limit?: number;
+  used?: number;
+  remaining?: number;
+}
+
+export const PAYMENT_REQUIRED_EVENT = 'rentflow:payment-required';
+
 class ApiError extends Error {
   constructor(
     public status: number,
     public message: string,
-    public response?: Response
+    public response?: Response,
+    public details?: PaymentRequiredEventDetail
   ) {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+function dispatchPaymentRequiredEvent(detail: PaymentRequiredEventDetail): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent<PaymentRequiredEventDetail>(PAYMENT_REQUIRED_EVENT, { detail }));
 }
 
 /**
@@ -146,7 +162,6 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 
   return {
     'Authorization': `Bearer ${tokens.accessToken}`,
-    'Content-Type': 'application/json',
   };
 }
 
@@ -190,6 +205,15 @@ async function apiRequest<T = unknown>(
     ...headers,
   };
 
+  const hasJsonBody =
+    fetchOptions.body !== undefined &&
+    fetchOptions.body !== null &&
+    typeof fetchOptions.body === 'string';
+
+  if (hasJsonBody && !('Content-Type' in requestHeaders)) {
+    requestHeaders['Content-Type'] = 'application/json';
+  }
+
   try {
     const response = await fetch(url, {
       ...fetchOptions,
@@ -227,14 +251,26 @@ async function apiRequest<T = unknown>(
 
     if (!response.ok) {
       let errorMessage = `Request failed with status ${response.status}`;
+      let errorDetails: PaymentRequiredEventDetail | undefined;
       try {
         const errorData = await response.json();
         errorMessage = errorData.error || errorData.message || errorMessage;
+        errorDetails = {
+          message: errorData.message || errorData.error,
+          featureKey: errorData.featureKey,
+          limit: errorData.limit,
+          used: errorData.used,
+          remaining: errorData.remaining,
+        };
       } catch {
         // Ignore JSON parsing errors
       }
+
+      if (response.status === 402) {
+        dispatchPaymentRequiredEvent(errorDetails || { message: errorMessage });
+      }
       
-      throw new ApiError(response.status, errorMessage, response);
+      throw new ApiError(response.status, errorMessage, response, errorDetails);
     }
 
     // For 204 No Content responses
@@ -264,6 +300,12 @@ async function apiRequest<T = unknown>(
  * Convenience methods for common HTTP operations
  */
 export const api = {
+  /**
+   * Generic request helper for cases requiring custom RequestInit (e.g., FormData uploads)
+   */
+  request: <T = unknown>(url: string, options?: ApiRequestOptions) =>
+    apiRequest<T>(url, options),
+
   /**
    * GET request
    */

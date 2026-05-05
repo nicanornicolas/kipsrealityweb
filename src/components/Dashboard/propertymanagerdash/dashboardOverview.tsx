@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { 
 	CheckCircle, Clock, AlertCircle, Wrench, 
-	TrendingUp, TrendingDown, DollarSign, 
-	FileText, Plus, Search, Building2
+	TrendingUp, TrendingDown, Plus, Search
 } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import RevenueChart from "./RevenueChart";
-import { PendingLeasesCard } from "./pending-leases-card";
 import OccupancyLineChart from "./OccupancyLineChart";
 import InvoiceQueueCard from "./InvoiceQueueCard";
 import { DashboardFilters } from "@/components/Dashboard/DashboardFilters";
@@ -17,9 +16,10 @@ import { FinancialHealthGrid } from "@/components/Dashboard/FinancialHealthGrid"
 import { InvoiceTable } from "@/components/finance/InvoiceTable";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { api } from "@/lib/api-client";
 
 // --- Alert Chip Component ---
-function AlertChip({ icon: Icon, color, text }: { icon: any; color: string; text: string }) {
+function AlertChip({ icon: Icon, color, text }: { icon: React.ComponentType<{ className?: string }>; color: string; text: string }) {
 	return (
 		<div className={cn("flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-medium", color)}>
 			<Icon className="w-4 h-4" />
@@ -29,7 +29,7 @@ function AlertChip({ icon: Icon, color, text }: { icon: any; color: string; text
 }
 
 // --- KPI Card with Trend ---
-function KpiCard({ title, value, trend, trendUp, icon: Icon }: { title: string; value: string; trend: string; trendUp: boolean; icon?: any }) {
+function KpiCard({ title, value, trend, trendUp }: { title: string; value: string; trend: string; trendUp: boolean }) {
 	return (
 		<div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
 			<div className="flex justify-between items-start mb-2">
@@ -47,7 +47,15 @@ function KpiCard({ title, value, trend, trendUp, icon: Icon }: { title: string; 
 }
 
 // --- Queue Card Component ---
-function QueueCard({ title, items, type }: { title: string; items: any[]; type: string }) {
+type QueueCardItem = {
+	name: string;
+	subtext: string;
+	value: string;
+	badge?: string;
+	badgeColor: string;
+};
+
+function QueueCard({ title, items }: { title: string; items: QueueCardItem[] }) {
 	return (
 		<div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[320px]">
 			<div className="px-5 py-4 border-b border-slate-50 flex justify-between items-center">
@@ -59,7 +67,7 @@ function QueueCard({ title, items, type }: { title: string; items: any[]; type: 
 						No items found
 					</div>
 				) : (
-					items.map((item: any, i: number) => (
+					items.map((item, i: number) => (
 						<div key={i} className="px-5 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer flex justify-between items-center">
 							<div className="space-y-0.5">
 								<p className="text-sm font-bold text-slate-900">{item.name}</p>
@@ -84,10 +92,35 @@ function QueueCard({ title, items, type }: { title: string; items: any[]; type: 
 // --- Main Dashboard Page ---
 
 export default function Dashboard() {
-	const [data, setData] = useState<any>(null);
-	const [loading, setLoading] = useState(true);
 	const [selectedProperty, setSelectedProperty] = useState("all");
 	const [selectedTimeRange, setSelectedTimeRange] = useState("6m");
+
+	const scopedPropertyId = selectedProperty && selectedProperty !== "all" ? selectedProperty : "all";
+
+	const { data, isLoading: loading } = useQuery({
+		queryKey: ["dashboard-analytics", { propertyId: scopedPropertyId, timeRange: selectedTimeRange }],
+		queryFn: async () => {
+			let url = "/api/dashboard/analytics";
+			const params = new URLSearchParams();
+			if (scopedPropertyId !== "all") params.append("propertyId", scopedPropertyId);
+			if (selectedTimeRange) params.append("timeRange", selectedTimeRange);
+
+			if (Array.from(params).length > 0) {
+				url += `?${params.toString()}`;
+			}
+
+			const response = await api.get<any>(url);
+			if (response.error) {
+				throw new Error(response.error);
+			}
+
+			return response.data;
+		},
+		staleTime: 20_000,
+		onError: () => {
+			toast.error("Could not update live stats.");
+		},
+	});
 
 	// Check if this is a zero-data state (no properties yet)
 	const isZeroDataState = !data || data.kpis?.totalUnits === 0;
@@ -132,34 +165,6 @@ export default function Dashboard() {
 
 		return items.length > 0 ? items : [{ name: "No active requests", subtext: "All clear", value: "Clear", badge: "OK", badgeColor: "bg-slate-100 text-slate-500" }];
 	}, [data]);
-
-	useEffect(() => {
-		const fetchData = async (propId: string, timeRange: string) => {
-			try {
-				setLoading(true);
-				let url = "/api/dashboard/analytics";
-				const params = new URLSearchParams();
-				if (propId && propId !== "all") params.append("propertyId", propId);
-				if (timeRange) params.append("timeRange", timeRange);
-
-				if (Array.from(params).length > 0) {
-					url += `?${params.toString()}`;
-				}
-
-				const res = await fetch(url);
-				if (res.ok) {
-					const json = await res.json();
-					setData(json);
-				}
-			} catch (err) {
-				console.error(err);
-				toast.error("Could not update live stats.");
-			} finally {
-				setLoading(false);
-			}
-		};
-		fetchData(selectedProperty, selectedTimeRange);
-	}, [selectedProperty, selectedTimeRange]);
 
 	if (loading) {
 		return (
@@ -214,16 +219,6 @@ export default function Dashboard() {
 	};
 
 	// Build queue data from API - FIXED: Access nested tenant and unit objects
-	const invoiceItems = (breakdowns?.openInvoices?.details || []).slice(0, 5).map((inv: any) => ({
-		name: inv.Lease?.tenant?.firstName && inv.Lease?.tenant?.lastName 
-			? `${inv.Lease.tenant.firstName} ${inv.Lease.tenant.lastName}` 
-			: "Unknown Tenant",
-		subtext: inv.dueDate ? `Due ${new Date(inv.dueDate).toLocaleDateString()}` : "Due date unknown",
-		value: formatCurrency(inv.totalAmount || 0),
-		badge: inv.Lease?.unit?.unitNumber || "Unit",
-		badgeColor: inv.status === "OVERDUE" ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-600"
-	}));
-
 	const leaseItems = (breakdowns?.leaseExpirations?.details || []).slice(0, 5).map((lease: any) => ({
 		name: lease.tenant?.firstName && lease.tenant?.lastName 
 			? `${lease.tenant.firstName} ${lease.tenant.lastName}` 
@@ -406,10 +401,10 @@ export default function Dashboard() {
 				<InvoiceQueueCard />
 				
 				{/* Work Orders */}
-				<QueueCard title="Open Work Orders" items={kpis.activeMaintenance > 0 ? maintenanceItems : []} type="workorder" />
+				<QueueCard title="Open Work Orders" items={kpis.activeMaintenance > 0 ? maintenanceItems : []} />
 				
 				{/* Lease Expirations */}
-				<QueueCard title="Upcoming Lease Expirations" items={leaseItems} type="lease" />
+				<QueueCard title="Upcoming Lease Expirations" items={leaseItems} />
 			</div>
 
 			{/* 9. Tooltip Banner */}

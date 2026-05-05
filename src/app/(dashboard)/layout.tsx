@@ -5,10 +5,10 @@ import { DashboardSidebar } from "@/components/Dashboard/DashboardSidebar";
 import { DashboardNavbar } from "@/components/Dashboard/DashboardNavbar";
 import { useAuth } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { Loader2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { DashboardProvider, useDashboard } from "@/context/DashboardContext";
 import { TenantMobileBottomNav } from "@/components/Dashboard/tenant-mobile-bottom-nav";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function DashboardLayout({
   children,
@@ -65,8 +65,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <p className="text-gray-600">Loading...</p>
+          <LoadingSpinner text="Loading..." />
         </div>
       </div>
     );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +54,7 @@ type TenantApi = {
 };
 
 export default function DirectoryPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [propertyFilter, setPropertyFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -141,7 +143,7 @@ export default function DirectoryPage() {
             <AlertCircle className="h-12 w-12 text-red-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">Failed to load tenants</h3>
             <p className="text-gray-500 mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()}>
+            <Button onClick={() => router.refresh()}>
               Retry
             </Button>
           </CardContent>
