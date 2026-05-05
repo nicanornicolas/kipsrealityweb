@@ -209920,12 +209920,12 @@ var getNextMillis = (i, u) => {
 })(ClientType ||= {});
 //#endregion
 //#region ../utilities/src/lib/queue.ts
-var redisUrl = process.env.REDIS_URL || "redis://localhost:6379", isBuildPhase$1 = process.env.NEXT_PHASE === "phase-production-build" || process.env.npm_lifecycle_event === "build", connection = isBuildPhase$1 ? null : new import_built.default(redisUrl, {
+var redisUrl = process.env.REDIS_URL || "redis://localhost:6379", isBuildPhase$1 = process.env.NEXT_PHASE === "phase-production-build" || process.env.npm_lifecycle_event === "build", isTestPhase$1 = process.env.NODE_ENV === "test" || process.env.VITEST === "true" || !!process.env.VITEST_WORKER_ID, shouldDisableQueues = isBuildPhase$1 || isTestPhase$1, connection = shouldDisableQueues ? null : new import_built.default(redisUrl, {
 	maxRetriesPerRequest: null,
 	lazyConnect: !0,
 	retryStrategy: (i) => Math.min(i * 50, 3e3)
 });
-isBuildPhase$1 || connection.on("error", (i) => {
+shouldDisableQueues || connection.on("error", (i) => {
 	if (process.env.NODE_ENV === "production") throw i;
 	console.warn("[Redis] Connection error:", i.message);
 });
@@ -209937,16 +209937,16 @@ var defaultJobOptions = {
 	},
 	removeOnComplete: !0,
 	removeOnFail: !1
-}, webhookQueue = isBuildPhase$1 ? null : new Queue("stripe-webhooks", {
+}, webhookQueue = shouldDisableQueues ? null : new Queue("stripe-webhooks", {
 	connection,
 	defaultJobOptions
-}), invoiceQueue = isBuildPhase$1 ? null : new Queue("bulk-invoices", {
+}), invoiceQueue = shouldDisableQueues ? null : new Queue("bulk-invoices", {
 	connection,
 	defaultJobOptions
-}), emailQueue = isBuildPhase$1 ? null : new Queue("email-notifications", {
+}), emailQueue = shouldDisableQueues ? null : new Queue("email-notifications", {
 	connection,
 	defaultJobOptions
-}), isBuildPhase = process.env.NEXT_PHASE === "phase-production-build" || process.env.npm_lifecycle_event === "build", dssPdfQueue = isBuildPhase ? null : new Queue("dss-pdf-generation", {
+}), isBuildPhase = process.env.NEXT_PHASE === "phase-production-build" || process.env.npm_lifecycle_event === "build", isTestPhase = process.env.NODE_ENV === "test" || process.env.VITEST === "true" || !!process.env.VITEST_WORKER_ID, shouldDisableQueue = isBuildPhase || isTestPhase, dssPdfQueue = shouldDisableQueue ? null : new Queue("dss-pdf-generation", {
 	connection,
 	defaultJobOptions
 }), require_cookies = /* @__PURE__ */ __commonJSMin(((i, u) => {
