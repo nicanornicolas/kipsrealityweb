@@ -1,7 +1,7 @@
 # RentFlow360 API Documentation
 
-**Version:** 7.1
-**Date:** April 21, 2026
+**Version:** 7.2
+**Date:** May 13, 2026
 **Status:** Production Ready - Route Inventory Reconciled with Source Handlers
 
 ---
@@ -41,7 +41,7 @@ RentFlow360 is a comprehensive property rental management platform with multi-re
 
 ### API Statistics
 
-- **Total API Endpoints**: 205 (from `src/app/api/**/route.ts`)
+- **Total API Endpoints**: 208 (from `src/app/api/**/route.ts`)
 - **Database Models**: 81
 - **Prisma Schema**: Comprehensive (updated from 79 models)
 
@@ -1622,7 +1622,7 @@ Non-PCI payment metadata is encrypted using AES-256-GCM.
 This documentation is now paired with a generated route inventory sourced directly from implementation files under `src/app/api/**/route.ts`.
 
 - **Inventory File:** `API_ROUTE_INVENTORY.md`
-- **Indexed Route Count:** 205
+- **Indexed Route Count:** 208
 - **Method Coverage:** `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, plus exported secure wrappers
 
 ### 20.1 Notable Additions Since v7.0
@@ -1652,6 +1652,16 @@ This documentation is now paired with a generated route inventory sourced direct
   - `/api/utilities/allocations/status`
   - `/api/utilities/allocations/upload`
   - `/api/utilities/allocations/[id]/approve`
+- Document signing expansion:
+  - `/api/dss/documents/[id]/download` (GET) — Download signed document
+- Lease management additions:
+  - `/api/lease/[id]/tenant-action` (POST) — Tenant action on lease (sign/approve)
+  - `/api/lease/tenant/active` (GET) — Get active lease for current tenant
+- Cron automation additions:
+  - `/api/cron/dss-expiry` (GET) — Check and expire documents past their scheduled date
+  - `/api/applications/cleanup-orphaned` (POST) — Clean up orphaned applications
+  - `/api/applications/integrity-check` (POST, GET) — Run/get application integrity validation
+  - `/api/applications/integrity-report` (GET, POST) — Generate application integrity reports
 
 For full path/method/file mapping, use `API_ROUTE_INVENTORY.md` as source-of-truth.
 
@@ -1697,4 +1707,4 @@ ADMIN_EMAIL=admin@rentflow360.com
 
 ---
 
-_Document updated on April 21, 2026_
+_Document updated on May 13, 2026_
